@@ -1,0 +1,17 @@
+{
+    "apps": [
+        {
+            "name": "myNextApp",
+            "script": "node_modules/next/dist/bin/next",
+            "args": "start",
+            "cwd": "./",
+            "instances": 10,
+            "exec_mode": "cluster",
+            "out_file": "/var/log/myNextApp/myNextApp.log",
+            "error_file": "/var/log/myNextApp/myNextAppError.log",
+            "watch": [
+                "/.next/"
+            ]
+        }
+    ]
+}

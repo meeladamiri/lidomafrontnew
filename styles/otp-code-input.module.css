@@ -1,0 +1,43 @@
+.inputText,
+.inputTextError {
+  display: flex !important;
+  align-items: center;
+  column-gap: 10px;
+}
+
+.inputText input {
+  border: 1px solid theme(colors.gray.C4CAD3);
+  border-radius: 8px;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  width: 36px;
+  height: 36px;
+  font-size: 16px;
+  line-height: 24px;
+  font-family: IranYekanRegular;
+}
+
+.inputTextError input {
+  border: 1px solid theme(colors.error.light);
+  border-radius: 8px;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  text-align: center;
+  font-size: 16px;
+  line-height: 24px;
+  font-family: IranYekanRegular;
+}
+.inputTextError input:focus {
+  box-shadow: none;
+  border-color: theme(colors.error.light);
+}
+
+.inputText input:focus {
+  box-shadow: none;
+  border-color: theme(colors.black);
+}

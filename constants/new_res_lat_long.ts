@@ -1,0 +1,4 @@
+export enum new_res_lat_long_enum {
+  NEW_RES_PROVINCE_LAT = "NEW_RES_PROVINCE_LAT",
+  NEW_RES_PROVINCE_LONG = "NEW_RES_PROVINCE_LONG",
+}

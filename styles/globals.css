@@ -1,0 +1,204 @@
+/* purgecss start ignore */
+@tailwind base;
+@tailwind components;
+/* purgecss end ignore */
+@tailwind utilities;
+@tailwind screens;
+
+@import "styles/CustomContainer.css";
+@import "styles/font-faces.css";
+@import "styles/icomoon.css";
+@import "styles/leaflet-map.css";
+@import "styles/Toasts.css";
+
+body {
+  direction: rtl;
+  scroll-behavior: smooth;
+  /* scrollbar-color: green green; */
+  background: #fff;
+  scrollbar-width: none; /* Also needed to disable scrollbar Firefox */
+  -ms-overflow-style: none; /* Disable scrollbar IE 10+ */
+  scrollbar-color: transparent transparent;
+}
+
+body::-webkit-scrollbar {
+  display: none;
+  scrollbar-width: none; /* Also needed to disable scrollbar Firefox */
+  -ms-overflow-style: none; /* Disable scrollbar IE 10+ */
+  scrollbar-color: transparent transparent;
+}
+
+a:hover {
+  color: theme(colors.primary.main) !important;
+  transition-property: all;
+  transition-duration: 150ms; /* tailwind's default 'transition-duration'; In case the tailwind's default changes, update this too so the animation stays consistent in the whole application. */
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1); /* hamun 'ease-in-out' hast. */
+}
+
+@layer utilities {
+  ::-webkit-scrollbar {
+    width: 0px;
+    border-radius: 3px;
+  }
+
+  /* Track */
+  ::-webkit-scrollbar-track {
+    background: #eee;
+    border-radius: 24px;
+  }
+
+  /* Handle */
+  ::-webkit-scrollbar-thumb {
+    background: #eee;
+    border-radius: 24px;
+  }
+
+  /* Handle on hover */
+  ::-webkit-scrollbar-thumb:hover {
+    background: #eee;
+  }
+
+  /* REMOVE ARROWS FROM INPUT TYPE NUMBER */
+  /* Chrome, Safari, Edge, Opera */
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  /* Firefox */
+  input[type="number"] {
+    -moz-appearance: textfield;
+  }
+
+  input[type="checkbox"] {
+    -webkit-appearance: none !important;
+    -moz-appearance: none !important;
+    appearance: none !important;
+  }
+  input[type="radio"] {
+    -webkit-appearance: none !important;
+    -moz-appearance: none !important;
+    appearance: none !important;
+  }
+}
+
+.OnlyOneLineAndEndWithElipsis {
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+/* .Custom-Rating img {
+  max-width: none !important;
+} */
+
+.typical-gray-bg {
+  background: linear-gradient(0deg, rgba(25, 59, 103, 0.05), rgba(25, 59, 103, 0.05)), #ffffff;
+}
+
+.hideScrollbar {
+  scrollbar-width: none; 
+}
+
+/* For factor printing */
+/* @media print {
+  @page {
+    size: 1920px 1320px;
+  }
+}
+/*
+
+/* Lightbox image radius */
+.yarl__slide_image {
+  border-radius: 12px;
+}
+
+.swiper-disable-default-width .swiper-slide {
+  width: auto !important;
+}
+
+.Make_swiper_slide_width_auto .swiper-slide {
+  width: auto !important;
+}
+
+.Make_swiper_slide_width_full .swiper-slide {
+  width: 100% !important;
+}
+
+.Make_swiper_slide_width_auto_height_auto .swiper-slide {
+  width: auto !important;
+  height: auto !important;
+}
+.table-cell {
+  word-wrap: break-word;
+  white-space: nowrap;
+  padding: 12px;
+  text-align: center;
+}
+.table-cell:last-child {
+  border-top-left-radius: 12px;
+  /* border-bottom-left-radius: 12px; */
+  /* border-style: none solid solid none;
+  background-color: rebeccapurple; */
+}
+.table-cell:first-child {
+  border-top-right-radius: 12px;
+  /* border-bottom-right-radius: 12px; */
+  /* border-style: none solid solid none;
+  background-color: rebeccapurple; */
+}
+.blur-header {
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px) !important;
+}
+
+/*   Open state of the dialog  */
+dialog[open] {
+  opacity: 1;
+  transform: scaleY(1);
+}
+
+/*   Closed state of the dialog   */
+dialog {
+  opacity: 0;
+  transform: scaleY(0);
+  transition: opacity 0.7s ease-out, transform 0.7s ease-out, overlay 0.7s ease-out allow-discrete,
+    display 0.7s ease-out allow-discrete;
+  /* Equivalent to
+  transition: all 0.7s allow-discrete; */
+}
+
+/*   Before-open state  */
+/* Needs to be after the previous dialog[open] rule to take effect,
+    as the specificity is the same */
+@starting-style {
+  dialog[open] {
+    opacity: 0;
+    transform: scaleY(0);
+  }
+}
+
+/* Transition the :backdrop when the dialog modal is promoted to the top layer */
+dialog::backdrop {
+  background-color: rgb(0 0 0 / 0%);
+  transition: display 0.7s allow-discrete, overlay 0.7s allow-discrete, background-color 0.7s;
+  /* Equivalent to
+  transition: all 0.7s allow-discrete; */
+}
+
+dialog[open]::backdrop {
+  background-color: rgb(0 0 0 / 25%);
+}
+
+/* This starting-style rule cannot be nested inside the above selector
+because the nesting selector cannot represent pseudo-elements. */
+
+@starting-style {
+  dialog[open]::backdrop {
+    background-color: rgb(0 0 0 / 0%);
+  }
+}
+
+.text-nowrap {
+  text-wrap: nowrap;
+}

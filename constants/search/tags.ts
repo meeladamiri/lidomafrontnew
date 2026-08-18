@@ -1,0 +1,16 @@
+export const tags = {
+  villa: "ویلا",
+  apartment: "آپارتمان",
+  boomgardi: "بوم گردی",
+  hotelapartment: "هتل آپارتمان",
+  cottage: "کلبه",
+  guesthouse: "مهمان خانه",
+  economic: "ارزان",
+  luxury: "لوکس",
+  jacuzzi: "جکوزی",
+  pool: "استخردار",
+  beach: "ساحلی",
+  mountain: "کوهستانی",
+  forest: "جنگلی",
+  village: "روستایی",
+};

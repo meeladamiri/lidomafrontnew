@@ -1,0 +1,27 @@
+.TheSearchMap :global .leaflet-popup-content {
+  margin: 0 !important;
+  width: auto !important;
+}
+
+.TheSearchMap :global .leaflet-popup-close-button {
+  top: 24px !important;
+  right: 24px !important;
+  width: 32px !important;
+  height: 32px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: rgba(38, 51, 65, 0.5) !important;
+  border-radius: 9999px !important;
+  color: #fff !important;
+}
+
+.TheSearchMap :global .leaflet-popup-content p {
+  margin: 0;
+}
+
+@media screen and (max-width: 1023px) {
+  .TheSearchMap :global .leaflet-control-zoom {
+    display: none !important;
+  }
+}

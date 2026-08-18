@@ -1,0 +1,47 @@
+/* Removing the default appearance */
+.thumb,
+.thumb::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.thumb {
+  pointer-events: none;
+  position: absolute;
+  height: 0;
+  outline: none;
+}
+
+/* For Chrome browsers */
+.thumb::-webkit-slider-thumb {
+  background-image: url("/assets/range-slider-thumb-bg.svg");
+  background-position: center;
+  background-repeat: no-repeat;
+  background-color: #fff;
+  border: none;
+  border-radius: 50%;
+  border: 1px solid #263341;
+  cursor: pointer;
+  height: 24px;
+  width: 24px;
+  margin-top: 4px;
+  pointer-events: all;
+  position: relative;
+}
+
+/* For Firefox browsers */
+.thumb::-moz-range-thumb {
+  background-image: url("/assets/range-slider-thumb-bg.svg");
+  background-position: center;
+  background-repeat: no-repeat;
+  background-color: #fff;
+  border: none;
+  border-radius: 50%;
+  border: 1px solid #263341;
+  cursor: pointer;
+  height: 24px;
+  width: 24px;
+  margin-top: 4px;
+  pointer-events: all;
+  position: relative;
+}

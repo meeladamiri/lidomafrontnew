@@ -1,0 +1,58 @@
+.Custom-Mobile-Datepicker {
+  direction: ltr;
+}
+
+.Custom-Mobile-Datepicker :global .datepicker {
+  position: static;
+  background: white !important;
+}
+
+.Custom-Mobile-Datepicker :global .datepicker-caption-item {
+  font-size: 16px !important;
+  line-height: 28px !important;
+  color: #18273a !important;
+  font-family: "IranYekanMedium" !important;
+}
+
+.Custom-Mobile-Datepicker :global .datepicker .datepicker-scroll li {
+  color: rgba(28, 52, 84, 0.26) !important;
+  font-family: "IranYekanRegular" !important;
+  /* line-height: 21px !important */
+  font-size: 14px !important;
+}
+
+.Custom-Mobile-Datepicker :global .datepicker .datepicker-scroll li:nth-child(6) {
+  color: theme(colors.black) !important;
+}
+
+.Custom-Mobile-Datepicker :global .datepicker.android .datepicker-wheel {
+  border-top: 1px solid theme(colors.black) !important;
+  border-bottom: 1px solid theme(colors.black) !important;
+}
+
+.Custom-Mobile-Datepicker :global .datepicker .datepicker-viewport {
+  height: 124px !important;
+}
+
+.Custom-Mobile-Datepicker :global .datepicker .datepicker-viewport::after {
+  background-image: none !important;
+}
+
+.Custom-Mobile-Datepicker :global .datepicker .datepicker-caption {
+  padding: 0 !important;
+}
+
+.Custom-Mobile-Datepicker :global .datepicker .datepicker-content {
+  padding: 0 !important;
+}
+
+.Custom-Mobile-Datepicker :global .datepicker .datepicker-caption-item {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* hide Mobile-Datepicker's navbar */
+.Custom-Mobile-Datepicker :global .datepicker .datepicker-navbar {
+  display: none !important;
+}

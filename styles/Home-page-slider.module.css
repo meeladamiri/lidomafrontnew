@@ -1,0 +1,22 @@
+.Home-page-slider :global .swiper-pagination {
+  position: absolute !important;
+  z-index: 1 !important;
+  bottom: 2px !important;
+}
+
+.Home-page-slider :global .swiper-pagination-bullet.swiper-pagination-bullet-active {
+  width: 20px !important;
+  border-radius: 5px !important;
+  background: #ffffff !important;
+  opacity: 1 !important;
+}
+
+.Home-page-slider :global .swiper-pagination-bullet {
+  width: 6px !important;
+  height: 6px !important;
+  border-radius: 99999999 !important;
+  background: #616e7c !important;
+  opacity: 1 !important;
+  transition-property: width;
+  transition-duration: 200ms;
+}

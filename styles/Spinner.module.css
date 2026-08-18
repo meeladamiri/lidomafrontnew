@@ -1,0 +1,23 @@
+@keyframes spinnerKeyframe {
+  0% {
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
+  100% {
+    transform: translate3d(0, 0, 0) rotate(360deg);
+  }
+}
+.spinner::before {
+  animation: 1.5s linear infinite spinnerKeyframe;
+  animation-play-state: inherit;
+  border: solid 5px #cfd0d1;
+  border-bottom-color: #03d6bb;
+  border-radius: 50%;
+  content: "";
+  height: 32px;
+  width: 32px;
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  transform: translate3d(0, 0, 0);
+  will-change: transform;
+}

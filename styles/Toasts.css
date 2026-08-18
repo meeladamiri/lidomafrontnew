@@ -1,0 +1,5 @@
+/* snackbar classes */
+.Toastify__toast-icon {
+  width: auto !important;
+  margin-inline-end: 12px !important;
+}

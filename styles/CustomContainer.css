@@ -1,0 +1,67 @@
+.CustomContainer {
+  width: 100%;
+  display: block;
+  margin-right: auto;
+  margin-left: auto;
+  padding-right: 16px;
+  padding-left: 16px;
+}
+
+@media screen and (min-width: 768px) {
+  .CustomContainer {
+    padding-right: 24px;
+    padding-left: 24px;
+  }
+}
+
+@media screen and (min-width: 1216px) {
+  .CustomContainer {
+    max-width: 1216px;
+  }
+}
+
+.CustomContainer2 {
+  width: 100%;
+  display: block;
+  margin-right: auto;
+  margin-left: auto;
+  padding-right: 16px;
+  padding-left: 16px;
+}
+
+@media screen and (min-width: 768px) {
+  .CustomContainer2 {
+    padding-right: 24px;
+    padding-left: 24px;
+  }
+}
+
+@media screen and (min-width: 1328px) {
+  .CustomContainer2 {
+    max-width: 1328px;
+    padding-left: 0px;
+    padding-right: 0px;
+  }
+}
+
+.ContainerForSliders {
+  width: 100%;
+  display: block;
+  margin-right: auto;
+  margin-left: auto;
+  padding-right: 16px;
+  padding-left: 0px;
+}
+
+@media screen and (min-width: 768px) {
+  .ContainerForSliders {
+    padding-right: 24px;
+    padding-left: 24px;
+  }
+}
+
+@media screen and (min-width: 1216px) {
+  .ContainerForSliders {
+    max-width: 1216px;
+  }
+}

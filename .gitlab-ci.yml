@@ -1,0 +1,13 @@
+image: node:16-alpine
+
+stages:
+  - update-production
+
+deploy:
+  stage: update-production
+  only:
+    - test
+  script:
+    - npm i -g @liara/cli@3
+    - export http_proxy=http://proxy.liara.ir:6666
+    - liara deploy --app lidoma --api-token eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySUQiOiI2M2RhNGM3YTg3MmMwZjBhZGYxNzJlNmQiLCJpYXQiOjE2NzUyNzI5OTZ9.BXXDyFRRC4AZ67NI44hMn9nCIKW_O-oFD2A4e5AcDMs --detach

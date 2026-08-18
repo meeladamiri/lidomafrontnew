@@ -1,0 +1,116 @@
+@font-face {
+  font-family: "IranYekanLight";
+  src: url("/fonts/iranyekan/IRANYekanLightFaNum.ttf");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "IranYekanRegular";
+  src: url("/fonts/iranyekan/IRANYekanRegularFaNum.ttf");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "IranYekanMedium";
+  src: url("/fonts/iranyekan/IRANYekanMediumFaNum.ttf");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "IranYekanBold";
+  src: url("/fonts/iranyekan/IRANYekanBoldFaNum.ttf");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "IranYekanBold";
+  src: url("/fonts/iranyekan/IRANYekanExtraBoldFaNum.ttf");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+/* En fonts */
+@font-face {
+  font-family: "IRANYekanMediumEn";
+  src: url("/fonts/iranyekan/IRANYekanMedium.ttf");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "IRANYekanBoldEn";
+  src: url("/fonts/iranyekan/IRANYekanBold.ttf");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+
+
+@font-face {
+  font-family: "YekanBakhBlack";
+  src: url("/fonts/yekanbakh/YekanBakhFaNum-Black.ttf");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "YekanBakhBold";
+  src: url("/fonts/yekanbakh/YekanBakhFaNum-Bold.ttf");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "YekanBakhExtraBlack";
+  src: url("/fonts/yekanbakh/YekanBakhFaNum-ExtraBlack.ttf");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "YekanBakhExtraBold";
+  src: url("/fonts/yekanbakh/YekanBakhFaNum-ExtraBold.ttf");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "YekanBakhExtraLight";
+  src: url("/fonts/yekanbakh/YekanBakhFaNum-Light.ttf");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "YekanBakhRegular";
+  src: url("/fonts/yekanbakh/YekanBakhFaNum-Regular.ttf");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "YekanBakhSemiBold";
+  src: url("/fonts/yekanbakh/YekanBakhFaNum-SemiBold.ttf");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "YekanBakhThin";
+  src: url("/fonts/yekanbakh/YekanBakhFaNum-Thin.ttf");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+
+
+
+
+
+
