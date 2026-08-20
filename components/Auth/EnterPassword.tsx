@@ -11,6 +11,7 @@ import { useFormik } from "formik";
 import AuthLayout from "layouts/Auth";
 import { useRouter } from "next/router";
 import { useRef, useState } from "react";
+import { setAxiosToken } from "api";
 import { setUserToken } from "utilities/cookies";
 import exception from "utilities/exception";
 import * as Yup from "yup";
@@ -54,7 +55,7 @@ function EnterPassword({ showAsModal = false }: { showAsModal?: boolean }) {
     {
       onSuccess: (data) => {
         if (data?.status === "error") {
-          exception.message([{ type: EXCEPTIONTYPES.ERROR, title: data?.err_msg || defaultError }]);
+          exception.message([{ type: EXCEPTIONTYPES.ERROR, title: data?.message || defaultError }]);
 
           // lets delete Pending_request info from localStorage
           localStorage.removeItem("Pending_Reserve_Details");
@@ -77,91 +78,67 @@ function EnterPassword({ showAsModal = false }: { showAsModal?: boolean }) {
 
           queryClient.invalidateQueries(["getCalendarData"]);
 
-          router.push(`/my-trips/${data?.params?.order_id}`);
+          router.push(`/my-trips/${data?.data?.id}`);
         }
       },
     }
   );
 
   const loginMutate = useMutation(async ({ password }: { password: string }) => {
-    // console.log(
-    //   "at login password submit, phone in localStorage is: ",
-    //   localStorage.getItem(Auth.MIZBAN_PHONE_NUMBER)
-    // );
-    const resp = await axios.post("/api/user/check_custom_password", {
-      jsonrpc: "2.0",
-      method: "call",
-      params: {
-        action: "signin",
-        pass: password,
-        phone_number: localStorage.getItem(Auth.MIZBAN_PHONE_NUMBER),
-        test_param: "09361323233",
-      },
-      id: 616605554,
+    const resp = await axios.post("/api/auth/login/password", {
+      phone: localStorage.getItem(Auth.MIZBAN_PHONE_NUMBER),
+      password,
     });
 
-    // console.log("login enter password, res is : ", JSON.parse(resp?.data?.result)?.params);
+    const parsedResp = resp?.data;
 
-    if (JSON.parse(resp?.data?.result)?.status === "success") {
-      if (!!JSON.parse(resp?.data?.result)?.params?.isvalid) {
-        // paswword is correct  --> store token at cookie under the name of "session_id"
-        if (localStorage.getItem(Auth.MIZBAN_PHONE_NUMBER) === "09361323233") {
-          // console.log(
-          //   "AUTH_TOKEN COMING FROM /api/user/check_custom_password",
-          //   JSON.parse(resp?.data?.result)?.params?.auth_token
-          // );
-        }
-        setUserToken({ token: JSON.parse(resp?.data?.result)?.params?.auth_token });
-        if (localStorage.getItem(Auth.MIZBAN_PHONE_NUMBER) === "09361323233") {
-          // console.log(
-          //   "AUTH_TOKEN SET TO browser_cookie successfully. cookie in browser_storage is: ",
-          //   getUserToken()
-          // );
-        }
+    if (parsedResp?.status === "success") {
+      setUserToken({
+        accessToken: parsedResp?.data?.accessToken,
+        refreshToken: parsedResp?.data?.refreshToken,
+      });
+      setAxiosToken(parsedResp?.data?.accessToken);
 
-        exception.message([
-          { type: EXCEPTIONTYPES.SUCCESS, title: "ورود شما با موفقیت انجام شد." },
-        ]);
+      exception.message([
+        { type: EXCEPTIONTYPES.SUCCESS, title: "ورود شما با موفقیت انجام شد." },
+      ]);
 
-        profileData?.profileQueryUtils?.refetchCheckUserStatus?.();
+      profileData?.profileQueryUtils?.refetchCheckUserStatus?.();
 
-        // check for possible Pending_reserve_request in localStorage
-        const pendingRequest = localStorage.getItem("Pending_Reserve_Details");
+      // check for possible Pending_reserve_request in localStorage
+      const pendingRequest = localStorage.getItem("Pending_Reserve_Details");
 
-        if (!!pendingRequest) {
-          const parsedDataOfPendingRequest = JSON.parse(pendingRequest);
+      if (!!pendingRequest) {
+        const parsedDataOfPendingRequest = JSON.parse(pendingRequest);
 
-          // do the request
-          product_page_url_ref.current = parsedDataOfPendingRequest?.product_page_url;
-          submitReserveMutation.mutate({
-            product_id: parsedDataOfPendingRequest?.product_id,
-            product_type: parsedDataOfPendingRequest?.product_type,
-            start_date: parsedDataOfPendingRequest?.start_date,
-            end_date: parsedDataOfPendingRequest?.end_date,
-            guests_count: parsedDataOfPendingRequest?.guests_count,
-            guest: parsedDataOfPendingRequest?.guest,
-          });
+        // do the request
+        product_page_url_ref.current = parsedDataOfPendingRequest?.product_page_url;
+        submitReserveMutation.mutate({
+          product_id: parsedDataOfPendingRequest?.product_id,
+          product_type: parsedDataOfPendingRequest?.product_type,
+          start_date: parsedDataOfPendingRequest?.start_date,
+          end_date: parsedDataOfPendingRequest?.end_date,
+          guests_count: parsedDataOfPendingRequest?.guests_count,
+          guest: parsedDataOfPendingRequest?.guest,
+        });
+      } else {
+        if (!!parsedResp?.data?.user?.isHost) {
+          profileData.authModalsUtils.setShowEnterPasswordModal(false);
+          router.push((redirectToParam as string) || "/dashboard");
         } else {
-          if (!!JSON.parse(resp?.data?.result)?.params?.is_host) {
+          // user is guest
+          if (!!showAsModal) {
             profileData.authModalsUtils.setShowEnterPasswordModal(false);
-            router.push((redirectToParam as string) || "/dashboard");
           } else {
-            // user is guest
-            if (!!showAsModal) {
-              profileData.authModalsUtils.setShowEnterPasswordModal(false);
-            } else {
-              router.push((redirectToParam as string) || "/");
-            }
+            router.push((redirectToParam as string) || "/");
           }
         }
-      } else {
-        // password is not correct
-        exception.message([
-          { type: EXCEPTIONTYPES.ERROR, title: "رمز عبور وارد شده صحیح نمی باشد." },
-        ]);
       }
     } else {
-      exception.message([{ type: EXCEPTIONTYPES.ERROR, title: defaultError }]);
+      // wrong password / any other login error
+      exception.message([
+        { type: EXCEPTIONTYPES.ERROR, title: parsedResp?.message || "رمز عبور وارد شده صحیح نمی باشد." },
+      ]);
     }
   });
 
@@ -176,20 +153,13 @@ function EnterPassword({ showAsModal = false }: { showAsModal?: boolean }) {
   });
 
   const forgetPasswordMutation = useMutation(async () => {
-    const res = await axios.post("/api/user/signup/send_code_2", {
-      jsonrpc: "2.0",
-      method: "call",
-      params: {
-        action: "signin",
-        phone_number: localStorage.getItem(Auth.MIZBAN_PHONE_NUMBER),
-      },
-      id: 616605554,
+    const res = await axios.post("/api/auth/otp/request", {
+      phone: localStorage.getItem(Auth.MIZBAN_PHONE_NUMBER),
     });
 
-    // console.log("calling send code, res is: ", JSON.parse(res?.data?.result));
-
-    if (JSON.parse(res?.data?.result).status === "success") {
+    if (res?.data?.status === "success") {
       localStorage.setItem(Auth.IS_FROM_FORGET_PASSWORD, "true");
+      localStorage.setItem(Auth.IS_SIGN_UP, "false");
 
       const url = !!redirectToParam ? `/auth/otp?redirectTo=${redirectToParam}` : "/auth/otp";
 
@@ -203,19 +173,12 @@ function EnterPassword({ showAsModal = false }: { showAsModal?: boolean }) {
   });
 
   const continueWithOtpMutation = useMutation(async () => {
-    const res = await axios.post("/api/user/signup/send_code_2", {
-      jsonrpc: "2.0",
-      method: "call",
-      params: {
-        action: "signin",
-        phone_number: localStorage.getItem(Auth.MIZBAN_PHONE_NUMBER),
-      },
-      id: 616605554,
+    const res = await axios.post("/api/auth/otp/request", {
+      phone: localStorage.getItem(Auth.MIZBAN_PHONE_NUMBER),
     });
 
-    // console.log("calling send code, res is: ", JSON.parse(res?.data?.result));
-
-    if (JSON.parse(res?.data?.result).status === "success") {
+    if (res?.data?.status === "success") {
+      localStorage.setItem(Auth.IS_SIGN_UP, "false");
       const url = !!redirectToParam ? `/auth/otp?redirectTo=${redirectToParam}` : "/auth/otp";
 
       if (showAsModal) {

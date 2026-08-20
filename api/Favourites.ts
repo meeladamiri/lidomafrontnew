@@ -28,9 +28,43 @@ export interface IFavouriteItem {
 }
 
 const getFavourites = async () => {
-  const url = `/api/users/panel/wishlist`;
+  const url = `/api/favourites`;
 
-  return apiBuilder.setUrl(url).setCallMethod("POST").setJsonRpcMethod("call").setParams({}).call();
+  const resp = await apiBuilder.setUrl(url).setCallMethod("GET").call();
+
+  if (resp?.status !== "success") return resp;
+
+  const wishlist: IFavouriteItem[] = (resp?.data || []).map((f: any) => {
+    const residence = f.residence || {};
+    const images: string[] = (residence.images || []).map((img: any) => img.url).filter(Boolean);
+
+    return {
+      id: residence.id,
+      name: residence.name,
+      name2: residence.name2 || "",
+      average_rating: residence.averageRating ?? 0,
+      reviews_count: residence.reviewsCount ?? 0,
+      price: residence.weekPrice ?? 0,
+      max_capacity: residence.maxCapacity ?? 0,
+      city: residence.city?.name || "",
+      city_id: undefined as any,
+      province: "",
+      province_id: undefined as any,
+      neighborhood: "",
+      images,
+      main_image: images[0] || "",
+      reference: residence.reference || "",
+      rooms_count: 0,
+      is_fast: false,
+      is_full: false,
+      discount: 0,
+      display_type: undefined as any,
+    };
+  });
+
+  // Reshape to the old `{status, params:{wishlist}}` envelope so existing consumers
+  // keep working unchanged.
+  return { status: "success", params: { wishlist } };
 };
 
 const likeOrUnlikeResidence = async ({
@@ -40,19 +74,14 @@ const likeOrUnlikeResidence = async ({
   product_id: number;
   action: likeOrUnlikeResidenceActions_enum;
 }) => {
-  const url = `/api/users/wishlist/action`;
+  const url = `/api/favourites/toggle`;
 
   const params = {
-    product_id,
-    action,
+    residenceId: product_id,
+    action: action === likeOrUnlikeResidenceActions_enum.ADD ? "like" : "unlike",
   };
 
-  return apiBuilder
-    .setUrl(url)
-    .setCallMethod("POST")
-    .setJsonRpcMethod("call")
-    .setParams(params)
-    .call();
+  return apiBuilder.setUrl(url).setCallMethod("POST").setParams(params).call();
 };
 
 export { getFavourites, likeOrUnlikeResidence };

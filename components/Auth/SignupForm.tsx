@@ -1,7 +1,7 @@
 import { submitNewReserve } from "@/api/Reserves";
 import { useUserProfile } from "@/providers/Profile";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import axios from "axios";
+import client from "api";
 import { Button } from "components/General/core/Button";
 import { TextField } from "components/General/core/TextField";
 import { Auth } from "constants/enums/auth";
@@ -51,7 +51,7 @@ function SignupForm({ showAsModal = false }: { showAsModal?: boolean }) {
     {
       onSuccess: (data) => {
         if (data?.status === "error") {
-          exception.message([{ type: EXCEPTIONTYPES.ERROR, title: data?.err_msg || defaultError }]);
+          exception.message([{ type: EXCEPTIONTYPES.ERROR, title: data?.message || defaultError }]);
 
           // lets delete Pending_request info from localStorage
           localStorage.removeItem("Pending_Reserve_Details");
@@ -74,7 +74,7 @@ function SignupForm({ showAsModal = false }: { showAsModal?: boolean }) {
 
           queryClient.invalidateQueries(["getCalendarData"]);
 
-          router.push(`/my-trips/${data?.params?.order_id}`);
+          router.push(`/my-trips/${data?.data?.id}`);
         }
       },
     }
@@ -92,60 +92,57 @@ function SignupForm({ showAsModal = false }: { showAsModal?: boolean }) {
       phoneNumber: string;
       password: string | null;
     }) => {
-      const resp = await axios.post("/api/user/submit_signup_form", {
-        jsonrpc: "2.0",
-        method: "call",
-        params: {
-          first_name: firstName,
-          last_name: lastName,
-          phone_number: phoneNumber,
-          password: password,
-        },
-        id: 616605554,
+      // The user is already authenticated at this point (OTP verify logs them in and
+      // auto-creates the account) — this step just fills in name + an optional password.
+      const resp = await client.patch("/api/users/me", {
+        name: `${firstName} ${lastName}`.trim(),
       });
 
-      const parsedResp = JSON.parse(resp?.data?.result);
-      // console.log("signup resp is", parsedResp);
+      const parsedResp = resp?.data;
 
       if (parsedResp?.status === "error") {
         exception.message([
-          { type: EXCEPTIONTYPES.ERROR, title: parsedResp?.err_msg || defaultError },
+          { type: EXCEPTIONTYPES.ERROR, title: parsedResp?.message || defaultError },
         ]);
+        return;
+      }
+
+      if (password) {
+        await client.post("/api/auth/password", { password });
+      }
+
+      exception.message([
+        { type: EXCEPTIONTYPES.SUCCESS, title: "ورود شما با موفقیت انجام شد." },
+      ]);
+      // deleting related localStorage items.
+      localStorage.removeItem(Auth.IS_SIGN_UP);
+      localStorage.removeItem(Auth.MIZBAN_PHONE_NUMBER);
+
+      // check for possible Pending_reserve_request in localStorage
+      const pendingRequest = localStorage.getItem("Pending_Reserve_Details");
+
+      profileData?.profileQueryUtils?.refetchCheckUserStatus?.();
+      profileData?.profileQueryUtils?.refetchProfile?.();
+
+      if (!!pendingRequest) {
+        const parsedDataOfPendingRequest = JSON.parse(pendingRequest);
+
+        // do the request
+        product_page_url_ref.current = parsedDataOfPendingRequest?.product_page_url;
+        submitReserveMutation.mutate({
+          product_id: parsedDataOfPendingRequest?.product_id,
+          product_type: parsedDataOfPendingRequest?.product_type,
+          start_date: parsedDataOfPendingRequest?.start_date,
+          end_date: parsedDataOfPendingRequest?.end_date,
+          guests_count: parsedDataOfPendingRequest?.guests_count,
+          guest: parsedDataOfPendingRequest?.guest,
+        });
       } else {
-        // parsedResp?.status == "success"
-        exception.message([
-          { type: EXCEPTIONTYPES.SUCCESS, title: "ورود شما با موفقیت انجام شد." },
-        ]);
-        // deleting related localStorage items.
-        localStorage.removeItem(Auth.IS_SIGN_UP);
-        localStorage.removeItem(Auth.MIZBAN_PHONE_NUMBER);
-
-        // check for possible Pending_reserve_request in localStorage
-        const pendingRequest = localStorage.getItem("Pending_Reserve_Details");
-
-        profileData?.profileQueryUtils?.refetchCheckUserStatus?.();
-        profileData?.profileQueryUtils?.refetchProfile?.();
-
-        if (!!pendingRequest) {
-          const parsedDataOfPendingRequest = JSON.parse(pendingRequest);
-
-          // do the request
-          product_page_url_ref.current = parsedDataOfPendingRequest?.product_page_url;
-          submitReserveMutation.mutate({
-            product_id: parsedDataOfPendingRequest?.product_id,
-            product_type: parsedDataOfPendingRequest?.product_type,
-            start_date: parsedDataOfPendingRequest?.start_date,
-            end_date: parsedDataOfPendingRequest?.end_date,
-            guests_count: parsedDataOfPendingRequest?.guests_count,
-            guest: parsedDataOfPendingRequest?.guest,
-          });
+        // user is signing up -> so user didn't exist before. -> so user is a guest
+        if (showAsModal) {
+          profileData.authModalsUtils.setShowSignUpModal(false);
         } else {
-          // user is signing up -> so user didn't exist before. -> so user is a guest
-          if (showAsModal) {
-            profileData.authModalsUtils.setShowSignUpModal(false);
-          } else {
-            router.push((redirectToParam as string) || "/");
-          }
+          router.push((redirectToParam as string) || "/");
         }
       }
     }

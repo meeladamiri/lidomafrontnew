@@ -73,131 +73,46 @@ const HomePage: NextPage = () => {
 export const getStaticProps: GetStaticProps = async () => {
   const queryClient = new QueryClient();
 
+  // The old backend's home page was a hand-curated CMS bundle (hero slides, promo
+  // banners, "picked for you"/"popular"/"last-minute" residence rails, seasonal
+  // sliders, SEO meta) — none of that curation/CMS layer exists on the new backend.
+  // Degrade every section to empty rather than querying the old production site
+  // directly (which is what this getStaticProps did before, on every dev request).
+  const emptyHomePageData = {
+    status: "success",
+    params: {
+      slides: [],
+      banners: [],
+      suggests: [],
+      last_time_offers: [],
+      populars: [],
+      your_taste: [],
+      boomgardi_reses: [],
+      discounted_reses: [],
+      desc_boxes: [],
+      faqs: [],
+      articles: [],
+      service_boxes: [],
+    },
+  };
+
   await Promise.all([
-    queryClient.prefetchQuery(["getHomePageData"], async () => {
-      const resp = await fetch(`${BASE_URL}/api/home/get_items`, {
-        method: "post",
-        // mode: "cors",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-          // Cookie: getUserToken() + ";",
-        },
-        body: JSON.stringify({
-          jsonrpc: "2.0",
-          method: "call",
-          // params: {},
-          id: new Date().getUTCMilliseconds(),
-        }),
-      });
-      const data = await resp.json();
-      const parsedData = JSON.parse((data as any)?.result || "{}");
-      return parsedData;
-    }),
-    queryClient.prefetchQuery(["getHomePageMetaTags"], async () => {
-      const resp = await fetch(`${BASE_URL}/api/get_meta_info`, {
-        method: "post",
-        // mode: "cors",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-          // Cookie: getUserToken() + ";",
-        },
-        body: JSON.stringify({
-          jsonrpc: "2.0",
-          method: "call",
-          params: {
-            page: "home",
-          },
-          id: new Date().getUTCMilliseconds(),
-        }),
-      });
-      const data = await resp.json();
-      const parsedData = JSON.parse((data as any)?.result || "{}");
-      return parsedData;
-    }),
-    queryClient.prefetchQuery(["getShomalSliders"], async () => {
-      const resp = await fetch(`${BASE_URL}/api/home/get_custom_sliders`, {
-        method: "post",
-        // mode: "cors",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-          // Cookie: getUserToken() + ";",
-        },
-        body: JSON.stringify({
-          jsonrpc: "2.0",
-          method: "call",
-          params: {
-            cat_id: 1079,
-            limit: 15,
-            res_type: "suit",
-          },
-          id: new Date().getUTCMilliseconds(),
-        }),
-      });
-      const data = await resp.json();
-      const parsedData = JSON.parse((data as any)?.result || "{}");
-      return parsedData;
-    }),
-    queryClient.prefetchQuery(["getTehranSliders"], async () => {
-      const resp = await fetch(`${BASE_URL}/api/home/get_custom_sliders`, {
-        method: "post",
-        // mode: "cors",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-          // Cookie: getUserToken() + ";",
-        },
-        body: JSON.stringify({
-          jsonrpc: "2.0",
-          method: "call",
-          params: {
-            cat_id: 164,
-            limit: 15,
-            res_type: "suit",
-          },
-          id: new Date().getUTCMilliseconds(),
-        }),
-      });
-      const data = await resp.json();
-      const parsedData = JSON.parse((data as any)?.result || "{}");
-      return parsedData;
-    }),
-    queryClient.prefetchQuery(["getJonubSliders"], async () => {
-      const resp = await fetch(`${BASE_URL}/api/home/get_custom_sliders`, {
-        method: "post",
-        // mode: "cors",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-          // Cookie: getUserToken() + ";",
-        },
-        body: JSON.stringify({
-          jsonrpc: "2.0",
-          method: "call",
-          params: {
-            cat_id: 1510,
-            limit: 15,
-            res_type: "suit",
-          },
-          id: new Date().getUTCMilliseconds(),
-        }),
-      });
-      const data = await resp.json();
-      const parsedData = JSON.parse((data as any)?.result || "{}");
-      return parsedData;
-    }),
+    queryClient.prefetchQuery(["getHomePageData"], async () => emptyHomePageData),
+    queryClient.prefetchQuery(["getHomePageMetaTags"], async () => ({ status: "success", params: {} })),
+    queryClient.prefetchQuery(["getShomalSliders"], async () => ({ status: "success", params: {} })),
+    queryClient.prefetchQuery(["getTehranSliders"], async () => ({ status: "success", params: {} })),
+    queryClient.prefetchQuery(["getJonubSliders"], async () => ({ status: "success", params: {} })),
   ]);
 
   const metaTagsOfHomePage = (queryClient as any).queryCache.queries[1]?.state?.data;
+  const homeTitle = metaTagsOfHomePage?.params?.title || "لیدوما تریپ | اجاره ویلا، سوئیت و اقامتگاه بوم‌گردی";
 
   // NOTE: Keep index zero item for the title tage of page always.
   const metaTagsList = [
-    `${metaTagsOfHomePage?.params?.title}`,
+    homeTitle,
     {
       name: "title",
-      content: `${metaTagsOfHomePage?.params?.title}`,
+      content: homeTitle,
     },
     {
       rel: "canonical",

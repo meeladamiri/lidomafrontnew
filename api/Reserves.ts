@@ -11,6 +11,8 @@ import { RejectReasons_enum } from "constants/enums/reject_reasons";
 import { ReserveStates_enum } from "constants/enums/reserve_states";
 import { CancelReasons_enum } from "constants/enums/cancel_reasons";
 import { I_Residence_display_type } from "@/interfaces/Residences";
+import { bucketHostReservations, mapReservationDetail } from "./_reservationShapes";
+import { jalaliToIso } from "@/utilities/jalaliGregorian";
 
 export const getStateCorresponding = (state?: string, cancelledBy?: string) => {
   if (state === ReserveStates_enum.HOST_APPROVAL) {
@@ -137,10 +139,15 @@ export type reserve_cancel_values =
   | ReservesCancel_enum.LIDOMA_CANCELLED
   | ReservesCancel_enum.GUEST_CANCELLED;
 
+// Host-facing reservations list (`/reservations` dashboard route).
 const getReserves = async () => {
-  const url = `/api/users/panel/reserves_list`;
+  const url = `/api/host/reservations`;
 
-  return apiBuilder.setUrl(url).setCallMethod("POST").setJsonRpcMethod("call").setParams({}).call();
+  const resp = await apiBuilder.setUrl(url).setCallMethod("GET").call();
+
+  if (resp?.status !== "success") return resp;
+
+  return { status: "success", params: bucketHostReservations(resp?.data || []) };
 };
 
 export interface IReserveDetailsFAQ {
@@ -281,44 +288,26 @@ export interface IReserveDetails {
 }
 
 const getReserve = async (reserveId: number) => {
-  const url = `/api/get_order_details`;
+  const url = `/api/reservations/${reserveId}`;
 
-  return apiBuilder
-    .setUrl(url)
-    .setCallMethod("POST")
-    .setJsonRpcMethod("call")
-    .setParams({
-      order_id: reserveId,
-    })
-    .call();
+  const resp = await apiBuilder.setUrl(url).setCallMethod("GET").call();
+
+  if (resp?.status !== "success") return resp;
+
+  return { status: "success", params: mapReservationDetail(resp?.data || {}) };
 };
 
 function acceptTheReserve({ reserveId }: { reserveId: number }) {
-  const url = `/api/host/order_answer`;
+  const url = `/api/host/reservations/${reserveId}/accept`;
 
-  return apiBuilder
-    .setUrl(url)
-    .setCallMethod("POST")
-    .setJsonRpcMethod("call")
-    .setParams({
-      order_id: reserveId,
-      action: "accept",
-    })
-    .call();
+  return apiBuilder.setUrl(url).setCallMethod("POST").call();
 }
 
-function rejectTheReserve({ reserveId }: { reserveId: number }) {
-  const url = `/api/host/order_answer`;
-
-  return apiBuilder
-    .setUrl(url)
-    .setCallMethod("POST")
-    .setJsonRpcMethod("call")
-    .setParams({
-      order_id: reserveId,
-      action: "reject",
-    })
-    .call();
+// Old flow was two calls (reject, then a separate reason submission). New backend
+// takes the reason in the same call — `rejectTheReserve` now just remembers the id
+// and `submitRejectReserveReason` (called right after by every consumer) does the work.
+function rejectTheReserve({ reserveId }: { reserveId: number }): Promise<any> {
+  return Promise.resolve({ status: "success", params: { reserveId } });
 }
 
 export const rejectReasons: {
@@ -357,18 +346,9 @@ function submitRejectReserveReason({
   reason: RejectReasons_enum;
   desc?: string;
 }) {
-  const url = `/api/host/reject_reason`;
+  const url = `/api/host/reservations/${reserveId}/reject`;
 
-  return apiBuilder
-    .setUrl(url)
-    .setCallMethod("POST")
-    .setJsonRpcMethod("call")
-    .setParams({
-      order_id: reserveId,
-      reason, // allowed values are : no_vacancy, not_ready, price_changed, other. If 'other' selected, you can send 'desc' field too.
-      desc, // This field will send only when reason is equal to 'other'. Generally, 'desc' field is optional even when reason is 'other'.
-    })
-    .call();
+  return apiBuilder.setUrl(url).setCallMethod("POST").setParams({ reason, desc }).call();
 }
 
 export const cancelReasons: {
@@ -407,18 +387,9 @@ function cancelReserve({
   reason: CancelReasons_enum;
   desc?: string;
 }) {
-  const url = `/api/host/cancel_order`;
+  const url = `/api/host/reservations/${reserveId}/cancel`;
 
-  return apiBuilder
-    .setUrl(url)
-    .setCallMethod("POST")
-    .setJsonRpcMethod("call")
-    .setParams({
-      order_id: reserveId,
-      reason, // allowed values are : guest_delay, not_ready, already_reserved, other. If 'other' selected, you can send 'desc' field too.
-      desc, // This field will send only when reason is equal to 'other'. Generally, 'desc' field is optional even when reason is 'other'.
-    })
-    .call();
+  return apiBuilder.setUrl(url).setCallMethod("POST").setParams({ reason, desc }).call();
 }
 
 export interface IAlternativeResidence {
@@ -429,17 +400,10 @@ export interface IAlternativeResidence {
   reference: string;
 }
 
-function getAlternativeResidencesList({ reserveId }: { reserveId: number }) {
-  const url = `/api/host/alters_list`;
-
-  return apiBuilder
-    .setUrl(url)
-    .setCallMethod("POST")
-    .setJsonRpcMethod("call")
-    .setParams({
-      order_id: reserveId,
-    })
-    .call();
+// No backend equivalent yet (host "suggest alternative residences" flow) — resolve
+// gracefully instead of hitting a dead endpoint.
+function getAlternativeResidencesList({ reserveId }: { reserveId: number }): Promise<any> {
+  return Promise.resolve({ status: "success", params: { alters: [], residences_list: [] } });
 }
 
 function sendAlternativeResidencesList({
@@ -448,18 +412,11 @@ function sendAlternativeResidencesList({
 }: {
   reserveId: number;
   residencesIDs: number[];
-}) {
-  const url = `/api/host/send_alters`;
-
-  return apiBuilder
-    .setUrl(url)
-    .setCallMethod("POST")
-    .setJsonRpcMethod("call")
-    .setParams({
-      order_id: reserveId,
-      product_ids: residencesIDs,
-    })
-    .call();
+}): Promise<any> {
+  return Promise.resolve({
+    status: "error",
+    err_msg: "این قابلیت هنوز پیاده‌سازی نشده است",
+  });
 }
 
 function submitNewReserve({
@@ -476,24 +433,37 @@ function submitNewReserve({
   end_date: string; // ex: 1401/11/21
   guests_count: number;
   guest?: string;
-}) {
-  const url = `/api/submit_reserve`;
+}): Promise<any> {
+  if (product_type === ResidenceTypes_enum.ROOM) {
+    // Boomgardi room booking passes a room id with no residence id alongside it, but
+    // the new backend needs `residenceId` — this path needs a frontend change (thread
+    // the residence id through the booking widget) that's out of scope for now.
+    return Promise.resolve({
+      status: "error",
+      err_msg: "رزرو اتاق بوم‌گردی هنوز پشتیبانی نمی‌شود",
+    });
+  }
+
+  const url = `/api/reservations`;
 
   return apiBuilder
     .setUrl(url)
     .setCallMethod("POST")
-    .setJsonRpcMethod("call")
     .setParams({
-      product_id,
-      product_type,
-      start_date,
-      end_date,
-      guests_count,
-      guest,
+      residenceId: product_id,
+      startDate: jalaliToIso(start_date),
+      endDate: jalaliToIso(end_date),
+      guestsCount: guests_count,
+      guestNameOverride: guest || undefined,
     })
-    .call();
+    .call()
+    .then((resp) => {
+      if (resp?.status !== "success") return resp;
+      return { status: "success", params: { order_id: resp?.data?.id } };
+    });
 }
 
+// No backend equivalent (amend an existing reservation) — resolve gracefully.
 function submitEditReserve({
   order_id,
   start_date,
@@ -506,54 +476,29 @@ function submitEditReserve({
   end_date: string; // ex: 1401/11/21
   guests_count: number;
   guest?: string;
-}) {
-  const url = `/api/edit_reserve`;
-
-  return apiBuilder
-    .setUrl(url)
-    .setCallMethod("POST")
-    .setJsonRpcMethod("call")
-    .setParams({
-      order_id,
-      start_date,
-      end_date,
-      guests_count,
-      guest,
-    })
-    .call();
+}): Promise<any> {
+  return Promise.resolve({
+    status: "error",
+    err_msg: "ویرایش رزرو هنوز پشتیبانی نمی‌شود",
+  });
 }
 
+// Vouchers/coupons are phase-2 — no backend endpoint yet.
 function submitDiscountCode({
   order_id,
   voucher_code,
 }: {
   order_id: number;
   voucher_code: string;
-}) {
-  const url = `/api/apply_voucher`;
-
-  return apiBuilder
-    .setUrl(url)
-    .setCallMethod("POST")
-    .setJsonRpcMethod("call")
-    .setParams({
-      order_id,
-      voucher_code,
-    })
-    .call();
+}): Promise<any> {
+  return Promise.resolve({
+    status: "error",
+    err_msg: "کد تخفیف هنوز پشتیبانی نمی‌شود",
+  });
 }
 
-function unDiscountTheCodeDiscount({ order_id }: { order_id: number }) {
-  const url = `/api/remove_voucher`;
-
-  return apiBuilder
-    .setUrl(url)
-    .setCallMethod("POST")
-    .setJsonRpcMethod("call")
-    .setParams({
-      order_id,
-    })
-    .call();
+function unDiscountTheCodeDiscount({ order_id }: { order_id: number }): Promise<any> {
+  return Promise.resolve({ status: "success" });
 }
 
 export {

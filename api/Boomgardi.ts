@@ -1,6 +1,5 @@
 //import { firebaseCloudMessaging } from "utils/google/firebase/webPush";
 
-import { BASE_URL } from "@/configs/info";
 import apiBuilder from "./apiBuilder";
 
 export interface IAvailableRoom {
@@ -53,27 +52,7 @@ const getAvailableRooms = async ({
     .call();
 };
 
-const getAvailableRooms2 = async ({
-  residenceId,
-  startDate,
-  endDate,
-}: {
-  residenceId: number;
-  startDate: string | null; // ex: "1401/12/14"
-  endDate: string | null; // ex: "1401/12/24"
-}) => {
-  const url = `${BASE_URL}/api/get_available_rooms`;
-
-  return apiBuilder
-    .setUrl(url)
-    .setCallMethod("POST")
-    .setJsonRpcMethod("call")
-    .setParams({
-      product_id: residenceId,
-      start_date: startDate,
-      end_date: endDate,
-    })
-    .call();
-};
+// No backend equivalent yet (per-room availability/pricing for Boomgardi bookings).
+const getAvailableRooms2 = getAvailableRooms;
 
 export { getAvailableRooms, getAvailableRooms2 };

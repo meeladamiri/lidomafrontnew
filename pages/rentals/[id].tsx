@@ -1,6 +1,7 @@
 import BoomgardiDetailsIndex from "@/components/ObserveResidenceDetails/BoomgardiDetailsIndex";
 import SuitDetailsIndex from "@/components/ObserveResidenceDetails/SuitDetailsIndex";
 import { BASE_URL } from "@/configs/info";
+import { mapObserveResidenceData } from "@/api/observe";
 import { IRule } from "@/interfaces/observe_residence";
 import { truncateText } from "@/utilities/truncateText";
 // import { IObserveResidenceData } from "@/interfaces/observe_residence";
@@ -177,104 +178,34 @@ export const getServerSideProps: GetServerSideProps = async ({ query, res }) => 
   const queryClient = new QueryClient();
   const resId = query?.id;
 
-  await Promise.all([
-    queryClient.prefetchQuery(["getObserveResidence", resId], async () => {
-      const resp = await fetch(`${BASE_URL}/api/view_residence`, {
-        method: "post",
-        // mode: "cors",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-          // Cookie: getUserToken() + ";",
-        },
-        body: JSON.stringify({
-          jsonrpc: "2.0",
-          method: "call",
-          params: {
-            product_id: Number(resId),
-          },
-          id: new Date().getUTCMilliseconds(),
-        }),
-      });
-      const data = await resp.json();
-      const parsedData = JSON.parse((data as any)?.result || "{}");
-      // console.log("Inside Promise.all, getObserveResidence is: ", parsedData);
-      return parsedData;
-    }),
-  ]);
+  // Server-side rewrites don't apply to server-to-server fetches (those only kick in
+  // for requests the browser makes), so this hits the backend by its real URL.
+  const backendUrl = process.env.BACKEND_API_URL || "http://localhost:4000";
 
-  await Promise.all([
-    queryClient.prefetchQuery(["getPropertyPageMetaTags"], async () => {
-      // const resp = await getPropertyPageMetaTags({
-      //   product_id: Number(resId),
-      // });
-      // return resp;
-      const resp = await fetch(`${BASE_URL}/api/get_meta_info`, {
-        method: "post",
-        // mode: "cors",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-          // Cookie: getUserToken() + ";",
-        },
-        body: JSON.stringify({
-          jsonrpc: "2.0",
-          method: "call",
-          params: {
-            page: "product",
-            product_id: Number(resId),
-          },
-          id: new Date().getUTCMilliseconds(),
-        }),
-      });
-      const data = await resp.json();
-      const parsedData = JSON.parse((data as any)?.result || "{}");
-      console.log("Inside Promise.all, get_meta_tags is: ", parsedData);
-      return parsedData;
-    }),
-    // queryClient.prefetchQuery(["getCalendarData", resId], async () => {
-    //   // const resp = await getCalendarData2({
-    //   //   residenceId: Number(resId),
-    //   //   residenceType: ResidenceTypes_enum.PRODUCT,
-    //   // });
-    //   // return resp;
-    //   const resp = await fetch(`${BASE_URL}/api/get_calendar_data`, {
-    //     method: "post",
-    //     // mode: "cors",
-    //     headers: {
-    //       "Content-Type": "application/json",
-    //       Accept: "application/json",
-    //       // Cookie: getUserToken() + ";",
-    //     },
-    //     body: JSON.stringify({
-    //       jsonrpc: "2.0",
-    //       method: "call",
-    //       params: {
-    //         residence_id: Number(resId),
-    //         residence_type: ResidenceTypes_enum.PRODUCT,
-    //       },
-    //       id: new Date().getUTCMilliseconds(),
-    //     }),
-    //   });
-    //   const data = await resp.json();
-    //   const parsedData = JSON.parse((data as any)?.result || "{}");
-    //   // console.log("Inside Promise.all, getCalendarData is: ", parsedData);
-    //   return parsedData;
-    // }),
-  ]);
+  let observeData: ReturnType<typeof mapObserveResidenceData> | undefined;
 
-  const metaTagsOfRentalsPage = (queryClient as any).queryCache.queries[1]?.state?.data;
+  await queryClient.prefetchQuery(["getObserveResidence", resId], async () => {
+    const resp = await fetch(`${backendUrl}/api/residences/${resId}`);
+    const body = await resp.json();
+    observeData =
+      body?.status === "success" ? mapObserveResidenceData(body.data) : { status: "error", err_msg: "" };
+    return observeData;
+  });
 
-  console.log("renatalsmeta", metaTagsOfRentalsPage);
+  const residenceInfo = (observeData as any)?.params?.residence_info;
+
+  const title = residenceInfo?.name ? `${residenceInfo.name} | لیدوما تریپ` : "لیدوما تریپ";
+  const description = residenceInfo?.description || "";
+  const image = residenceInfo?.main_image?.[0] || "";
 
   // NOTE: Keep index zero item for the title tage of page always.
   // NOTE: Keep index one item for the canonical tage of page always.
 
   const metaTagsList = [
-    `${metaTagsOfRentalsPage?.params?.title}`,
+    title,
     {
       name: "title",
-      content: `${metaTagsOfRentalsPage?.params?.title}`,
+      content: title,
     },
     {
       rel: "canonical",
@@ -282,7 +213,7 @@ export const getServerSideProps: GetServerSideProps = async ({ query, res }) => 
     },
     {
       name: "description",
-      content: `${metaTagsOfRentalsPage?.params?.description}`,
+      content: description,
     },
     {
       property: "og:url",
@@ -298,15 +229,15 @@ export const getServerSideProps: GetServerSideProps = async ({ query, res }) => 
     },
     {
       property: "og:title",
-      content: `${metaTagsOfRentalsPage?.params?.title}`,
+      content: title,
     },
     {
       property: "og:description",
-      content: `${metaTagsOfRentalsPage?.params?.description}`,
+      content: description,
     },
     {
       property: "og:image",
-      content: `${metaTagsOfRentalsPage?.params?.image}`,
+      content: image,
     },
     {
       name: "twitter:site",
@@ -314,19 +245,19 @@ export const getServerSideProps: GetServerSideProps = async ({ query, res }) => 
     },
     {
       name: "twitter:card",
-      content: `${metaTagsOfRentalsPage?.params?.image}`,
+      content: image,
     },
     {
       name: "twitter:title",
-      content: `${metaTagsOfRentalsPage?.params?.title}`,
+      content: title,
     },
     {
       name: "twitter:description",
-      content: `${metaTagsOfRentalsPage?.params?.description}`,
+      content: description,
     },
     {
       name: "twitter:image:src",
-      content: `${metaTagsOfRentalsPage?.params?.image}`,
+      content: image,
     },
   ];
 

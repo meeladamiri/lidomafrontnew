@@ -1,5 +1,6 @@
 import Search from "@/components/Search";
 import { BASE_URL } from "@/configs/info";
+import { buildSearchBody, mapSearchResponse } from "@/api/Search/search";
 import { getRefinedParams } from "@/utilities/SearchPage/getRefinedParams";
 import { getSearchResidences_API_params } from "@/utilities/SearchPage/getSearchResidences_API_params";
 import { getSearchResidences_Query_dep_array } from "@/utilities/SearchPage/getSearchResidences_Query_dep_array";
@@ -228,6 +229,7 @@ export const getServerSideProps: GetServerSideProps = async ({ req, query, res }
   res.setHeader("Cache-Control", "public, s-maxage=300, stale-while-revalidate=600");
 
   const queryClient = new QueryClient();
+  const backendUrl = process.env.BACKEND_API_URL || "http://localhost:4000";
 
   // const start = performance.now();
 
@@ -262,7 +264,7 @@ export const getServerSideProps: GetServerSideProps = async ({ req, query, res }
           query,
         });
 
-        const refined_params = getRefinedParams({
+        const body = buildSearchBody({
           page: params.page,
           page_size: params.page_size,
           order: params.order,
@@ -274,29 +276,14 @@ export const getServerSideProps: GetServerSideProps = async ({ req, query, res }
           page_type: params.page_type,
         });
 
-        const resp = await fetch(`${BASE_URL}/api/search/new_items`, {
+        const resp = await fetch(`${backendUrl}/api/search/residences`, {
           method: "post",
-          // mode: "cors",
-          headers: {
-            "Content-Type": "application/json",
-            Accept: "application/json",
-            // Cookie: getUserToken() + ";",
-          },
-          body: JSON.stringify({
-            jsonrpc: "2.0",
-            method: "call",
-            params: refined_params,
-            id: new Date().getUTCMilliseconds(),
-          }),
+          headers: { "Content-Type": "application/json", Accept: "application/json" },
+          body: JSON.stringify(body),
         });
 
         const data = await resp.json();
-        const parsedData = JSON.parse((data as any)?.result || "{}");
-
-        // await fs.promises.writeFile(res_get_items_filepath, JSON.stringify(parsedData));
-        // console.log("GET_ITEMS DATA ADDED TO CACHE");
-
-        return parsedData;
+        return mapSearchResponse(data);
       }
     ),
   ]);
@@ -398,37 +385,9 @@ export const getServerSideProps: GetServerSideProps = async ({ req, query, res }
         query,
       }),
       async () => {
-        const params = getSearchResidences_API_params({
-          query,
-        });
-        const refined_params = {
-          cat_name: params?.filters?.cat_name,
-          page: params?.page,
-          ...(params?.features?.length !== 0 && { features: params.features }),
-        };
-        const resp = await fetch(`${BASE_URL}/api/search/new_page_data`, {
-          method: "post",
-          // mode: "cors",
-          headers: {
-            "Content-Type": "application/json",
-            Accept: "application/json",
-            // Cookie: getUserToken() + ";",
-          },
-          body: JSON.stringify({
-            jsonrpc: "2.0",
-            method: "call",
-            params: refined_params,
-            id: new Date().getUTCMilliseconds(),
-          }),
-        });
-
-        const data = await resp.json();
-        const parsedData = JSON.parse((data as any)?.result || "{}");
-
-        // await fs.promises.writeFile(page_data_filepath, JSON.stringify(parsedData));
-        // console.log("GET_PAGE_DATA DATA ADDED TO CACHE");
-
-        return parsedData;
+        // SEO/CMS page copy — no backend endpoint yet, degrade to empty rather than
+        // hitting the old production site.
+        return { status: "success", params: {} };
       }
     ),
   ]);
@@ -443,22 +402,9 @@ export const getServerSideProps: GetServerSideProps = async ({ req, query, res }
     return query?.queryKey?.[0] === "getSearchData";
   })?.state?.data?.params;
 
-  console.log("metasearch", metaTagsOfSearchPage);
-
   // NOTE: Keep index zero item for the title tage of page always.
   const metaTagsList = [
-    `${
-      metaTagsOfSearchPage?.title
-      // metaTagsOfSearchPage?.meta_title ||
-      // metaTagsOfSearchPage?.page_title ||
-      // metaTagsOfSearchPage?.meta_keywords ||
-      // metaTagsOfSearchPage?.meta_description
-      // `اجاره ویلا و سوئیت ${
-      //   !!useGetPersianCityname(query, routerAsPath)?.trim()
-      //     ? `در ${useGetPersianCityname(query, routerAsPath)}`
-      //     : ""
-      // } | لیدوماتریپ`
-    }`,
+    `${metaTagsOfSearchPage?.title || "جستجوی اقامتگاه | لیدوما تریپ"}`,
     {
       name: "title",
       content: `${metaTagsOfSearchPage?.title}`,

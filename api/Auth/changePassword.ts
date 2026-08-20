@@ -1,24 +1,18 @@
 import apiBuilder from "../apiBuilder";
 
 const changePassword = async ({
-  //   oldPassword,
   newPassword,
-  newPasswordRepeat,
 }: {
-  //   oldPassword: string;
   newPassword: string;
-  newPasswordRepeat: string;
+  newPasswordRepeat?: string;
 }) => {
-  const url = `/api/user/change_password`;
+  const url = `/api/auth/password`;
 
   return apiBuilder
     .setUrl(url)
     .setCallMethod("POST")
-    .setJsonRpcMethod("call")
     .setParams({
-      //   old_pass: oldPassword,
-      pass: newPassword,
-      pass_repeat: newPasswordRepeat,
+      password: newPassword,
     })
     .call();
 };

@@ -15,30 +15,14 @@ export const getServerSideProps: GetServerSideProps = async ({ query, res }) => 
   const queryClient = new QueryClient();
   const reference = query?.id;
 
+  // Public host profile page — no backend endpoint yet (only a minimal host summary
+  // is embedded in a residence's own detail response). Degrade to empty rather than
+  // hitting the old production site.
   await Promise.all([
-    queryClient.prefetchQuery(["getMizbanAccountInfo", reference], async () => {
-      const resp = await fetch(`${BASE_URL}/api/about_host`, {
-        method: "post",
-        // mode: "cors",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-          // Cookie: getUserToken() + ";",
-        },
-        body: JSON.stringify({
-          jsonrpc: "2.0",
-          method: "call",
-          params: {
-            reference: reference,
-          },
-          id: new Date().getUTCMilliseconds(),
-        }),
-      });
-      const data = await resp.json();
-      const parsedData = JSON.parse((data as any)?.result || "{}");
-      // console.log("Inside Promise.all, getMizbanAccountInfo is: ", parsedData);
-      return parsedData;
-    }),
+    queryClient.prefetchQuery(["getMizbanAccountInfo", reference], async () => ({
+      status: "success",
+      params: {},
+    })),
   ]);
 
   return {

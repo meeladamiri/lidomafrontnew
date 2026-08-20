@@ -31,7 +31,7 @@ export function useSearchResidences() {
     if (!!result?.data) {
       if (result?.data?.status === "error") {
         exception.message([
-          { type: EXCEPTIONTYPES.ERROR, title: result?.data?.err_msg || defaultError },
+          { type: EXCEPTIONTYPES.ERROR, title: result?.data?.message || defaultError },
         ]);
       } else {
         //

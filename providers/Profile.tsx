@@ -138,11 +138,14 @@ function UserProfileProvider({ children }: { children: JSX.Element }) {
       if (checkUserStatusData?.status === "success") {
         setState((prev) => ({
           ...prev,
-          user_type: checkUserStatusData?.params.user as UserType_enum,
+          user_type: UserType_enum.AUTH,
+          id: checkUserStatusData?.data?.id,
+          name: checkUserStatusData?.data?.name,
+          phone: checkUserStatusData?.data?.phone,
+          is_host: checkUserStatusData?.data?.isHost,
         }));
       } else {
-        // TODO: Will be uncommented
-        refetchCheckUserStatus();
+        setState((prev) => ({ ...prev, user_type: UserType_enum.PUBLIC }));
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

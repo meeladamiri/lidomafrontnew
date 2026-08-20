@@ -16,6 +16,7 @@ import AuthLayout from "layouts/Auth";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/router";
 import { useRef, useState } from "react";
+import { setAxiosToken } from "api";
 import { setUserToken } from "utilities/cookies";
 import exception from "utilities/exception";
 const ReactCodeInput = dynamic(() => import("react-code-input"), { ssr: false });
@@ -50,19 +51,9 @@ function OTP({ showAsModal = false }: { showAsModal?: boolean }) {
   });
 
   const sendAgainMutation = useMutation(async ({ phone }: { phone: string }) => {
-    const res = await axios.post("/api/user/signup/send_code_2", {
-      jsonrpc: "2.0",
-      method: "call",
-      params: {
-        action: "signin",
-        phone_number: phone,
-      },
-      id: 616605565,
-    });
+    const res = await axios.post("/api/auth/otp/request", { phone });
 
-    // console.log("calling send code, res is: ", JSON.parse(res?.data?.result));
-
-    if (JSON.parse(res?.data?.result).status === "success") {
+    if (res?.data?.status === "success") {
       exception.message([{ type: EXCEPTIONTYPES.SUCCESS, title: "کد یکبار مصرف مجددا ارسال شد." }]);
       setHasSentCode(true);
       setFinished(false);
@@ -90,7 +81,7 @@ function OTP({ showAsModal = false }: { showAsModal?: boolean }) {
     {
       onSuccess: (data) => {
         if (data?.status === "error") {
-          exception.message([{ type: EXCEPTIONTYPES.ERROR, title: data?.err_msg || defaultError }]);
+          exception.message([{ type: EXCEPTIONTYPES.ERROR, title: data?.message || defaultError }]);
 
           // lets delete Pending_request info from localStorage
           localStorage.removeItem("Pending_Reserve_Details");
@@ -113,7 +104,7 @@ function OTP({ showAsModal = false }: { showAsModal?: boolean }) {
 
           queryClient.invalidateQueries(["getCalendarData"]);
 
-          router.push(`/my-trips/${data?.params?.order_id}`);
+          router.push(`/my-trips/${data?.data?.id}`);
         }
       },
     }
@@ -127,49 +118,32 @@ function OTP({ showAsModal = false }: { showAsModal?: boolean }) {
 
   const verifyCodeMutation = useMutation(async ({ otpCode }: { otpCode: string }) => {
     // console.log("at otp submit, phone local is: ", localStorage.getItem(Auth.MIZBAN_PHONE_NUMBER));
-    const res = await axios.post("/api/user/signup/verify_code", {
-      jsonrpc: "2.0",
-      method: "call",
-      params: {
-        action: "signin_user",
-        code: otpCode,
-        phone_number: localStorage.getItem(Auth.MIZBAN_PHONE_NUMBER),
-        test_param: localStorage.getItem(Auth.MIZBAN_PHONE_NUMBER),
-      },
-      id: 616605554,
+    const res = await axios.post("/api/auth/otp/verify", {
+      code: otpCode,
+      phone: localStorage.getItem(Auth.MIZBAN_PHONE_NUMBER),
     });
 
-    const parsedResp = JSON.parse(res?.data?.result);
-    // console.log("otp res is", parsedResp);
+    const parsedResp = res?.data;
 
     if (parsedResp?.status === "error") {
       exception.message([
-        { type: EXCEPTIONTYPES.ERROR, title: parsedResp?.err_msg || defaultError },
+        { type: EXCEPTIONTYPES.ERROR, title: parsedResp?.message || defaultError },
       ]);
     } else {
       // parsedResp?.status == "success"
-      if (localStorage.getItem(Auth.MIZBAN_PHONE_NUMBER) === "09361323233") {
-        // console.log(
-        //   "AUTH_TOKEN COMING FROM /api/user/signup/verify_code",
-        //   parsedResp?.params?.auth_token
-        // );
-      }
-      setUserToken({ token: parsedResp?.params?.auth_token }); // ino check kon bebin che is_sign_up true(are) bashe ya false(are), auth_token va host_id miad?
-      if (localStorage.getItem(Auth.MIZBAN_PHONE_NUMBER) === "09361323233") {
-        // console.log(
-        //   "AUTH_TOKEN SET TO browser_cookie successfully. cookie in browser_storage is: ",
-        //   getUserToken()
-        // );
-      }
-      localStorage.setItem(Auth.HOST_ID, parsedResp?.params?.host_id);
+      setUserToken({
+        accessToken: parsedResp?.data?.accessToken,
+        refreshToken: parsedResp?.data?.refreshToken,
+      });
+      setAxiosToken(parsedResp?.data?.accessToken);
 
       profileData?.profileQueryUtils?.refetchCheckUserStatus?.();
 
       const is_from_forget_password = localStorage.getItem(Auth.IS_FROM_FORGET_PASSWORD);
 
       if (!!is_from_forget_password && is_from_forget_password === "true") {
-        // user clicked on "forget-password" link.
-        localStorage.setItem(Auth.OTP_CODE, otpCode);
+        // user clicked on "forget-password" link. They're logged in now (OTP verify
+        // doubles as login), so the next page just sets a new password directly.
         const url = !!redirectToParam
           ? `/auth/forget-password?redirectTo=${redirectToParam}`
           : "/auth/forget-password";
@@ -221,7 +195,7 @@ function OTP({ showAsModal = false }: { showAsModal?: boolean }) {
               guest: parsedDataOfPendingRequest?.guest,
             });
           } else {
-            if (!!parsedResp?.params?.is_host) {
+            if (!!parsedResp?.data?.user?.isHost) {
               profileData.authModalsUtils.setShowOTPModal(false);
               router.push((redirectToParam as string) || "/dashboard");
             } else {

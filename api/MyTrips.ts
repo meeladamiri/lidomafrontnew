@@ -1,6 +1,7 @@
 import { MyTripStates_enum } from "@/constants/enums/mytrip_states";
 import { ReservesCancel_enum } from "@/constants/enums/reserves_cancel";
 import apiBuilder from "./apiBuilder";
+import { bucketReservations } from "./_reservationShapes";
 import { TReserveStates } from "./Reserves";
 import { I_Residence_display_type } from "@/interfaces/Residences";
 
@@ -98,23 +99,19 @@ export interface IMyTrip {
 }
 
 const getMyTrips = async () => {
-  const url = `/api/users/panel/trips_list`;
+  const url = `/api/reservations/mine`;
 
-  return apiBuilder.setUrl(url).setCallMethod("POST").setJsonRpcMethod("call").setParams({}).call();
+  const resp = await apiBuilder.setUrl(url).setCallMethod("GET").call();
+
+  if (resp?.status !== "success") return resp;
+
+  return { status: "success", params: bucketReservations(resp?.data || []) };
 };
 
 const guestCancelsReserve = async ({ order_id, reason }: { order_id: number; reason: string }) => {
-  const url = `/api/guest/cancel_order`;
+  const url = `/api/reservations/${order_id}/cancel`;
 
-  return apiBuilder
-    .setUrl(url)
-    .setCallMethod("POST")
-    .setJsonRpcMethod("call")
-    .setParams({
-      order_id,
-      reason,
-    })
-    .call();
+  return apiBuilder.setUrl(url).setCallMethod("POST").setParams({ reason }).call();
 };
 
 export { getMyTrips, guestCancelsReserve };

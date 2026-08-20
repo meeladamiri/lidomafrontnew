@@ -31,69 +31,39 @@ function EnterPhoneNumber({ showAsModal = false }: { showAsModal?: boolean }) {
   });
 
   const checkUserCurrentStatus = useMutation(async ({ phone }: { phone: string }) => {
-    const resp = await axios.post("/api/user/has_custom_password", {
-      jsonrpc: "2.0",
-      method: "call",
-      params: {
-        action: "signin",
-        phone_number: phone,
-      },
-      id: 616605554,
-    });
-    // console.log("resp has_password", resp);
-    // console.log("resp has_password", JSON.parse(resp?.data?.result));
+    // New backend is OTP-first and has no "does this phone already have a password"
+    // precheck endpoint, so we always request an OTP here. Returning users who'd
+    // rather type their password can use the "ورود با رمز عبور" link below instead.
+    const res = await axios.post("/api/auth/otp/request", { phone });
+    const data = res?.data;
 
-    if (JSON.parse(resp?.data?.result)?.params?.has_pass) {
+    const url = !!redirectToParam ? `/auth/otp?redirectTo=${redirectToParam}` : "/auth/otp";
+    // exists === true means this phone already has an account (signing in),
+    // exists === false means it's brand new (needs the signup/name step after OTP).
+    localStorage.setItem("is_sign_up", data?.data?.exists ? "false" : "true");
+
+    if (showAsModal) {
+      profileData.authModalsUtils.setShowEnterPhoneNumberModal(false);
+      profileData.authModalsUtils.setShowOTPModal(true);
+    } else {
+      router.push(url);
+    }
+  });
+
+  const goToPasswordLogin = () => {
+    if (!formik.values.phoneNumber) return;
+    localStorage.setItem(Auth.MIZBAN_PHONE_NUMBER, formik.values.phoneNumber);
+
+    if (showAsModal) {
+      profileData.authModalsUtils.setShowEnterPhoneNumberModal(false);
+      profileData.authModalsUtils.setShowEnterPasswordModal(true);
+    } else {
       const url = !!redirectToParam
         ? `/auth/login-enter_password?redirectTo=${redirectToParam}`
         : "/auth/login-enter_password";
-
-      if (!!showAsModal) {
-        profileData.authModalsUtils.setShowEnterPhoneNumberModal(false);
-        // show enter pass modal
-        profileData.authModalsUtils.setShowEnterPasswordModal(true);
-      } else {
-        router.push(url);
-      }
-    } else {
-      // call send_code
-      const res = await axios.post("/api/user/signup/send_code_2", {
-        jsonrpc: "2.0",
-        method: "call",
-        params: {
-          action: "signin",
-          phone_number: phone,
-        },
-        id: 616605554,
-      });
-
-      // console.log("calling send code, res is: ", JSON.parse(res?.data?.result));
-
-      if (!!JSON.parse(res?.data?.result)?.params?.is_signup) {
-        // bayad bere be pageE otp baAdesh forme sign-up
-        const url = !!redirectToParam ? `/auth/otp?redirectTo=${redirectToParam}` : "/auth/otp";
-        localStorage.setItem("is_sign_up", "true");
-
-        if (showAsModal) {
-          profileData.authModalsUtils.setShowEnterPhoneNumberModal(false);
-          profileData.authModalsUtils.setShowOTPModal(true);
-        } else {
-          router.push(url);
-        }
-      } else {
-        // bayad bere be pageE otp baAdesh bezar bere tu (ex: /pishkhan)
-        const url = !!redirectToParam ? `/auth/otp?redirectTo=${redirectToParam}` : "/auth/otp";
-        localStorage.setItem("is_sign_up", "false");
-
-        if (showAsModal) {
-          profileData.authModalsUtils.setShowEnterPhoneNumberModal(false);
-          profileData.authModalsUtils.setShowOTPModal(true);
-        } else {
-          router.push(url);
-        }
-      }
+      router.push(url);
     }
-  });
+  };
 
   const formik = useFormik({
     initialValues,
@@ -136,6 +106,13 @@ function EnterPhoneNumber({ showAsModal = false }: { showAsModal?: boolean }) {
           <Button isFullWidth disabled={!formik.values.phoneNumber} type="submit">
             تأیید و ادامه
           </Button>
+
+          <p
+            className="text-12 leading-21 font-r text-primary-main cursor-pointer text-center mt-16"
+            onClick={goToPasswordLogin}
+          >
+            ورود با رمز عبور
+          </p>
         </form>
       </AuthLayout>
     </div>

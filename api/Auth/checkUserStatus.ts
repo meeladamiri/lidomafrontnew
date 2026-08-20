@@ -1,16 +1,9 @@
 import apiBuilder from "../apiBuilder";
 
 const checkUserStatus = async () => {
-  const url = `/api/user/get_data`;
+  const url = `/api/auth/me`;
 
-  return apiBuilder
-    .setUrl(url)
-    .setCallMethod("POST")
-    .setJsonRpcMethod("call")
-    .setParams({
-      test_param: "09361323233",
-    })
-    .call();
+  return apiBuilder.setUrl(url).setCallMethod("GET").call();
 };
 
 export { checkUserStatus };

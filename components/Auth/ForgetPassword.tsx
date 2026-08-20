@@ -1,7 +1,7 @@
 import { submitNewReserve } from "@/api/Reserves";
 import { useUserProfile } from "@/providers/Profile";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import axios from "axios";
+import client from "api";
 import { Button } from "components/General/core/Button";
 import { TextField } from "components/General/core/TextField";
 import { Auth } from "constants/enums/auth";
@@ -50,7 +50,7 @@ function ForgetPassword({ showAsModal = false }: { showAsModal?: boolean }) {
     {
       onSuccess: (data) => {
         if (data?.status === "error") {
-          exception.message([{ type: EXCEPTIONTYPES.ERROR, title: data?.err_msg || defaultError }]);
+          exception.message([{ type: EXCEPTIONTYPES.ERROR, title: data?.message || defaultError }]);
 
           // lets delete Pending_request info from localStorage
           localStorage.removeItem("Pending_Reserve_Details");
@@ -73,7 +73,7 @@ function ForgetPassword({ showAsModal = false }: { showAsModal?: boolean }) {
 
           queryClient.invalidateQueries(["getCalendarData"]);
 
-          router.push(`/my-trips/${data?.params?.order_id}`);
+          router.push(`/my-trips/${data?.data?.id}`);
         }
       },
     }
@@ -83,9 +83,7 @@ function ForgetPassword({ showAsModal = false }: { showAsModal?: boolean }) {
     initialValues,
     onSubmit: (values) => {
       resetPasswordMutation.mutate({
-        phone: localStorage.getItem(Auth.MIZBAN_PHONE_NUMBER) || "",
         password: values.pass,
-        code: localStorage.getItem(Auth.OTP_CODE) || "",
       });
     },
     validationSchema: Yup.object(yupSchema),
@@ -93,20 +91,12 @@ function ForgetPassword({ showAsModal = false }: { showAsModal?: boolean }) {
   });
 
   const resetPasswordMutation = useMutation(
-    async ({ phone, password, code }: { phone: string; password: string; code: string }) => {
-      const resp = await axios.post("/api/user/reset_password", {
-        jsonrpc: "2.0",
-        method: "call",
-        params: {
-          code: code,
-          new_pass: password,
-          phone_number: phone,
-        },
-        id: 616605554,
-      });
+    async ({ password }: { password: string }) => {
+      // Reaching this page requires having just verified an OTP for this phone, which
+      // already logs the user in — so setting a new password is just an authenticated call.
+      const resp = await client.post("/api/auth/password", { password });
 
-      // console.log("reset password, resp is: ", JSON.parse(resp?.data?.result));
-      if (JSON.parse(resp?.data?.result).status === "success") {
+      if (resp?.data?.status === "success") {
         exception.message([
           { type: EXCEPTIONTYPES.SUCCESS, title: "تغییر رمز با موفقیت انجام شد." },
         ]);

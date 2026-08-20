@@ -76,10 +76,18 @@ const nextConfig = {
   },
   productionBrowserSourceMaps: true,
   async rewrites() {
+    // Proxies the frontend's own-origin `/api/*` calls to the real backend server-side,
+    // so the browser never needs to know the backend's actual URL (no CORS, cookies stay same-site).
+    const backendUrl = process.env.BACKEND_API_URL || "http://localhost:4000";
     return [
       {
         source: "/api/:slug*",
-        destination: "https://lidomatrip.com/api/:slug*",
+        destination: `${backendUrl}/api/:slug*`,
+      },
+      {
+        // residence/user-uploaded images, served statically by the backend
+        source: "/uploads/:slug*",
+        destination: `${backendUrl}/uploads/:slug*`,
       },
     ];
   },
