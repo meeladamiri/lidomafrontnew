@@ -80,17 +80,52 @@ const getClearingRequests = async () => {
   return apiBuilder.setUrl(url).setCallMethod("POST").setJsonRpcMethod("call").setParams({}).call();
 };
 
-const getAccountInfo = async () => {
-  const url = `/api/user/account_info`;
+function mapVerificationStatus(status: string | undefined): "confirmed" | "not_confirmed" | "checking" | "" {
+  if (status === "CONFIRMED") return "confirmed";
+  if (status === "CHECKING") return "checking";
+  if (status === "NOT_CONFIRMED") return "not_confirmed";
+  return "";
+}
 
-  return apiBuilder
-    .setUrl(url)
-    .setCallMethod("POST")
-    .setJsonRpcMethod("call")
-    .setParams({
-      test_param: "09361323233",
-    })
-    .call();
+const getAccountInfo = async (): Promise<any> => {
+  const url = `/api/users/me`;
+
+  const resp = await apiBuilder.setUrl(url).setCallMethod("GET").call();
+
+  if (resp?.status !== "success") return resp;
+
+  const u = resp.data;
+
+  return {
+    status: "success",
+    params: {
+      user_info: {
+        address: u?.address ?? "",
+        avatar_url: u?.avatarUrl ?? "",
+        birth_day: u?.birthDay ?? 0,
+        birth_month: u?.birthMonth ?? 0,
+        birth_year: u?.birthYear ?? 0,
+        city: u?.city?.name ?? "",
+        description: u?.description ?? "",
+        education: u?.education ?? "",
+        email: u?.email ?? "",
+        emergency_phone: u?.emergencyPhone ?? "",
+        fax: u?.fax ?? "",
+        id: u?.id,
+        job: u?.job ?? "",
+        name: u?.name ?? "",
+        national_card_url: u?.nationalCardUrl ?? "",
+        national_code: u?.nationalCode ?? "",
+        phone: u?.phone ?? "",
+        province: u?.city?.province?.name ?? "",
+        status: mapVerificationStatus(u?.verificationStatus),
+        zip: u?.zip ?? "",
+        contact_phone: u?.contactPhone ?? "",
+        has_avatar: !!u?.avatarUrl,
+        is_host: !!u?.isHost,
+      },
+    },
+  };
 };
 
 export interface IUpdateAccountInfo {
