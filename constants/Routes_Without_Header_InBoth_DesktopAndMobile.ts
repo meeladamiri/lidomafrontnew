@@ -6,4 +6,10 @@ export const Routes_Without_Header_InBoth_DesktopAndMobile = [
   "/auth/forget-password",
   "/auth/signup",
   "/submit-review",
+  "/admin/login",
+  "/admin",
+  "/admin/reservations",
+  "/admin/residences",
+  "/admin/residences/[id]",
+  "/admin/users",
 ];

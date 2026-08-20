@@ -45,6 +45,7 @@
     "react-toastify": "^9.0.8",
     "sharp": "^0.30.7",
     "swiper": "^8.4.2",
+    "swr": "^2.2.5",
     "ulid": "^2.3.0",
     "yet-another-react-lightbox": "^3.12.2",
     "yup": "^0.32.11"

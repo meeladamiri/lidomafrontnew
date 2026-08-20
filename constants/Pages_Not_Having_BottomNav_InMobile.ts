@@ -29,4 +29,10 @@ export const Pages_Not_Having_BottomNav_InMobile = [
   "/b-room/[id]/edit",
   "/submit-review",
   "/nowruz-pricing",
+  "/admin/login",
+  "/admin",
+  "/admin/reservations",
+  "/admin/residences",
+  "/admin/residences/[id]",
+  "/admin/users",
 ];

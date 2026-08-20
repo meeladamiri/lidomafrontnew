@@ -1,0 +1,211 @@
+/* Styles for the /admin/* panel only — every selector is scoped under
+   .admin-panel so it can never bleed into the public site's CSS. */
+
+.admin-panel {
+  font-family: Tahoma, "Vazirmatn", system-ui, sans-serif;
+  background: #f4f5f7;
+  color: #1f2430;
+  direction: rtl;
+}
+
+.admin-panel * {
+  box-sizing: border-box;
+}
+
+.admin-panel a {
+  color: inherit;
+}
+
+.admin-panel .layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+.admin-panel .sidebar {
+  width: 220px;
+  background: #1f2430;
+  color: #fff;
+  padding: 20px 16px;
+  flex-shrink: 0;
+}
+
+.admin-panel .sidebar h1 {
+  font-size: 18px;
+  margin: 0 0 24px;
+}
+
+.admin-panel .sidebar nav a {
+  display: block;
+  padding: 10px 12px;
+  border-radius: 8px;
+  text-decoration: none;
+  color: #cbd0dc;
+  margin-bottom: 4px;
+  font-size: 14px;
+}
+
+.admin-panel .sidebar nav a:hover,
+.admin-panel .sidebar nav a.active {
+  background: #323848;
+  color: #fff;
+}
+
+.admin-panel .content {
+  flex: 1;
+  padding: 28px 32px;
+}
+
+.admin-panel .card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+  margin-bottom: 20px;
+}
+
+.admin-panel .stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.admin-panel .stat-tile {
+  background: #fff;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+.admin-panel .stat-tile .value {
+  font-size: 26px;
+  font-weight: 700;
+}
+
+.admin-panel .stat-tile .label {
+  font-size: 13px;
+  color: #6b7280;
+  margin-top: 4px;
+}
+
+.admin-panel table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.admin-panel th,
+.admin-panel td {
+  text-align: right;
+  padding: 10px 12px;
+  border-bottom: 1px solid #eceef2;
+}
+
+.admin-panel th {
+  color: #6b7280;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.admin-panel .badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  background: #eef0f4;
+}
+
+.admin-panel .badge.green {
+  background: #e2f7e9;
+  color: #147a3e;
+}
+.admin-panel .badge.red {
+  background: #fde8e8;
+  color: #b42318;
+}
+.admin-panel .badge.yellow {
+  background: #fff5da;
+  color: #93670a;
+}
+.admin-panel .badge.gray {
+  background: #eef0f4;
+  color: #4b5563;
+}
+
+.admin-panel .btn {
+  display: inline-block;
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: none;
+  background: #1f2430;
+  color: #fff;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.admin-panel .btn.secondary {
+  background: #eceef2;
+  color: #1f2430;
+}
+
+.admin-panel .btn.danger {
+  background: #fde8e8;
+  color: #b42318;
+}
+
+.admin-panel input,
+.admin-panel select,
+.admin-panel textarea {
+  padding: 8px 10px;
+  border: 1px solid #dcdfe6;
+  border-radius: 8px;
+  font-size: 14px;
+  width: 100%;
+}
+
+.admin-panel .login-wrap {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f4f5f7;
+}
+
+.admin-panel .login-box {
+  background: #fff;
+  padding: 32px;
+  border-radius: 16px;
+  width: 340px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+}
+
+.admin-panel .field {
+  margin-bottom: 14px;
+}
+
+.admin-panel .field label {
+  display: block;
+  font-size: 13px;
+  margin-bottom: 6px;
+  color: #4b5563;
+}
+
+.admin-panel .error-text {
+  color: #b42318;
+  font-size: 13px;
+  margin-top: 8px;
+}
+
+.admin-panel .toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  gap: 12px;
+}
+
+.admin-panel .pagination {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+}

@@ -1,4 +1,5 @@
 import "styles/globals.css";
+import "styles/admin.css";
 import { useState } from "react";
 import type { AppProps } from "next/app";
 import { Hydrate, QueryClient, QueryClientProvider } from "@tanstack/react-query";
