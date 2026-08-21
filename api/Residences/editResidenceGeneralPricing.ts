@@ -21,25 +21,22 @@ const editResidenceGeneralPricing = async ({
   extra_price,
   weekly_discount,
   monthly_discount,
-}: IEditResidenceGeneralPricing) => {
-  const url = `/api/update_prices`;
-
-  const params = {
-    product_type,
-    product_id,
-    week_price,
-    weekend_price,
-    peak_price,
-    extra_price,
-    weekly_discount,
-    monthly_discount,
-  };
+}: IEditResidenceGeneralPricing): Promise<any> => {
+  if (product_type === ResidenceTypes_enum.ROOM) {
+    return { status: "error", err_msg: "این قابلیت برای اتاق‌های بوم‌گردی هنوز پشتیبانی نمی‌شود" };
+  }
 
   return apiBuilder
-    .setUrl(url)
-    .setCallMethod("POST")
-    .setJsonRpcMethod("call")
-    .setParams(params)
+    .setUrl(`/api/host/residences/${product_id}/pricing`)
+    .setCallMethod("PATCH")
+    .setParams({
+      weekPrice: week_price,
+      weekendPrice: weekend_price,
+      peakPrice: peak_price,
+      extraPrice: extra_price,
+      weeklyDiscount: weekly_discount,
+      monthlyDiscount: monthly_discount,
+    })
     .call();
 };
 

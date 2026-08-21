@@ -1,5 +1,7 @@
 import { ResidenceTypes_enum } from "@/constants/enums/residence_types";
+import { jalaliToIso } from "@/utilities/jalaliGregorian";
 import apiBuilder from "../apiBuilder";
+
 export type UpdateCalendar_TEnable = "full" | "empty" | undefined; // is 'undefined' in case of NoChange
 
 const updateCalendar = async ({
@@ -18,42 +20,36 @@ const updateCalendar = async ({
   enable: UpdateCalendar_TEnable;
   price?: number;
   discount?: number;
-}) => {
-  // NOTE: Only one of 'product_id' or 'products' is needed to be provided.
-  //       NOT both at the same thime. NOT None at the same time.
-  //       'One of them' "MUST" be provided.
-
-  const url = `/api/update_calendar`;
-
-  const params: { [key: string]: any } = {
-    dates,
-    res_type: resType,
-  };
-
-  if (!!product_id) {
-    params["product_id"] = product_id;
-  } else if (!!products) {
-    params["products"] = products;
+}): Promise<any> => {
+  if (resType === ResidenceTypes_enum.ROOM) {
+    return { status: "error", err_msg: "این قابلیت برای اتاق‌های بوم‌گردی هنوز پشتیبانی نمی‌شود" };
   }
 
-  if (!!enable) {
-    params["enable"] = enable;
+  const ids = product_id ? [product_id] : products || [];
+  const isoDates = dates.map(jalaliToIso);
+
+  const params: Record<string, any> = { dates: isoDates };
+  if (enable === "full") params.isBlocked = true;
+  if (enable === "empty") params.isBlocked = false;
+  if (price) params.specialPrice = price;
+  if (discount) {
+    params.discountAmount = discount;
+    params.discountType = "PERCENTAGE";
   }
 
-  if (!!price) {
-    params["special_price"] = price;
-  }
+  const results = await Promise.all(
+    ids.map((id) =>
+      apiBuilder
+        .setUrl(`/api/host/residences/${id}/calendar`)
+        .setCallMethod("PATCH")
+        .setParams(params)
+        .call()
+    )
+  );
 
-  if (!!discount) {
-    params["discount_amount"] = discount;
-  }
-
-  return apiBuilder
-    .setUrl(url)
-    .setCallMethod("POST")
-    .setJsonRpcMethod("call")
-    .setParams(params)
-    .call();
+  const failed = results.find((r) => r?.status !== "success");
+  if (failed) return { status: "error", err_msg: failed?.message };
+  return { status: "success" };
 };
 
 export { updateCalendar };

@@ -1,5 +1,6 @@
 import { FastUnfastOptions_enum } from "@/constants/enums/fast_unfast_options";
 import { ResidenceTypes_enum } from "@/constants/enums/residence_types";
+import { jalaliToIso } from "@/utilities/jalaliGregorian";
 import apiBuilder from "../apiBuilder";
 
 const fastOrUnfastResidences = async ({
@@ -14,31 +15,32 @@ const fastOrUnfastResidences = async ({
   fast: FastUnfastOptions_enum;
   products?: number[]; // array of 'residenceIds'. is required when 'all' residences are selected; in this case 'product_id' will not be provided;
   res_type: ResidenceTypes_enum;
-}) => {
-  // NOTE: Only one of 'product_id' or 'products' is needed to be provided.
-  //       NOT both at the same thime. NOT None at the same time.
-  //       'One of them' "MUST" be provided.
-
-  const url = `/api/update_calendar`;
-
-  const params: { [key: string]: any } = {
-    dates,
-    fast,
-    res_type,
-  };
-
-  if (!!product_id) {
-    params["product_id"] = product_id;
-  } else if (!!products) {
-    params["products"] = products;
+}): Promise<any> => {
+  // Boomgardi room-level fast-reserve has no backend equivalent yet — the
+  // "apply to all" flow calls this once for residences and once for rooms,
+  // so this must no-op rather than error out the whole combined action.
+  if (res_type === ResidenceTypes_enum.ROOM) {
+    return { status: "success" };
   }
 
-  return apiBuilder
-    .setUrl(url)
-    .setCallMethod("POST")
-    .setJsonRpcMethod("call")
-    .setParams(params)
-    .call();
+  const ids = product_id ? [product_id] : products || [];
+  if (ids.length === 0) return { status: "success" };
+
+  const isoDates = dates.map(jalaliToIso);
+
+  const results = await Promise.all(
+    ids.map((id) =>
+      apiBuilder
+        .setUrl(`/api/host/residences/${id}/calendar`)
+        .setCallMethod("PATCH")
+        .setParams({ dates: isoDates, isFast: fast === FastUnfastOptions_enum.FAST })
+        .call()
+    )
+  );
+
+  const failed = results.find((r) => r?.status !== "success");
+  if (failed) return { status: "error", err_msg: failed?.message };
+  return { status: "success" };
 };
 
 export { fastOrUnfastResidences };

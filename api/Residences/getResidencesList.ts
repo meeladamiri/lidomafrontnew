@@ -86,7 +86,14 @@ function mapResidence(r: any): IServerResidence {
 const getResidencesList = async (): Promise<any> => {
   const resp = await apiBuilder.setUrl(`/api/host/residences`).setCallMethod("GET").call();
   if (resp?.status !== "success") return { status: "error", err_msg: resp?.message };
-  return { status: "success", params: { residences: (resp.data || []).map(mapResidence) } };
+  return {
+    status: "success",
+    // `rooms` was the old backend's Boomgardi per-room listing (room-level
+    // booking has no equivalent yet — see api/Reserves.ts submitNewReserve).
+    // Always an array (never undefined) since several consumers call
+    // `.filter()`/`.map()` on it unconditionally.
+    params: { residences: (resp.data || []).map(mapResidence), rooms: [] },
+  };
 };
 
 // Was a BASE_URL absolute-URL variant in the old code; no reason for that to

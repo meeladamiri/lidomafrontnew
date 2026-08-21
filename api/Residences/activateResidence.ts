@@ -7,20 +7,15 @@ const activateResidence = async ({
 }: {
   product_id: number;
   product_type: ResidenceTypes_enum;
-}) => {
-  const url = `/api/residence/change_state`;
-
-  const params = {
-    product_id,
-    action: "activate",
-    product_type,
-  };
+}): Promise<any> => {
+  if (product_type === ResidenceTypes_enum.ROOM) {
+    return { status: "error", err_msg: "این قابلیت برای اتاق‌های بوم‌گردی هنوز پشتیبانی نمی‌شود" };
+  }
 
   return apiBuilder
-    .setUrl(url)
-    .setCallMethod("POST")
-    .setJsonRpcMethod("call")
-    .setParams(params)
+    .setUrl(`/api/host/residences/${product_id}/state`)
+    .setCallMethod("PATCH")
+    .setParams({ action: "activate" })
     .call();
 };
 
