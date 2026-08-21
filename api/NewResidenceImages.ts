@@ -1,6 +1,16 @@
-//import { firebaseCloudMessaging } from "utils/google/firebase/webPush";
+// Old backend: everything (main image, gallery images, KYC documents) POSTed
+// through one generic `/api/new_residence/upload_photos` JSON-RPC endpoint,
+// keyed by dynamic field names. The new backend has separate typed REST
+// endpoints for images vs documents, so these wrap them back into the exact
+// response shapes Step_9/Step_10 already read.
+//
+// NOTE: unlike every other api/*.ts function in this codebase, callers of
+// these two functions read `response.data.status` / `response.data.params`
+// (one level deeper than apiBuilder's usual unwrapped `{status, params}`) —
+// that's a quirk baked into the untouched Step_9/Step_10 components, so the
+// extra `{ data: ... }` wrapper here is intentional, not a mistake.
 
-import apiBuilder from "./apiBuilder";
+import client from "./index";
 
 const uploadNewResidenceImage = async ({
   img,
@@ -12,36 +22,42 @@ const uploadNewResidenceImage = async ({
   productId: number;
   imgLabel: string;
   origin_id: number | string;
-}) => {
-  const url = `/api/new_residence/upload_photos`;
+}): Promise<any> => {
+  const isMain = imgLabel === "main";
+  const form = new FormData();
+  form.append("image", img);
+  form.append("isMain", String(isMain));
+  if (!isMain) form.append("title", imgLabel);
 
-  return apiBuilder
-    .setUrl(url)
-    .setCallMethod("POST")
-    .setJsonRpcMethod("call")
-    .setBody({ product_id: productId, [imgLabel]: img, step: 9, origin_id })
-    .setParams({})
-    .call();
+  try {
+    const resp = await client.post(`/api/host/residences/${productId}/images`, form);
+    return {
+      data: {
+        status: "success",
+        params: { image_id: resp.data?.data?.id, origin_id, product_id: productId },
+      },
+    };
+  } catch (err: any) {
+    return { data: { status: "error", err_msg: err?.response?.data?.message } };
+  }
 };
 
+// Was defined but never called anywhere in the old app — image order is
+// committed through `submitStep(9, ...)` -> `/images/order` instead. Kept as
+// a thin alias so nothing breaks if something starts importing it.
 const submitNewResidenceImagesOrder = async ({
   productId,
   imageIds,
 }: {
   productId: number;
   imageIds: number[];
-}) => {
-  const url = `/api/new_residence/submit_photos`;
-
-  return apiBuilder
-    .setUrl(url)
-    .setCallMethod("POST")
-    .setJsonRpcMethod("call")
-    .setParams({
-      product_id: productId,
-      image_ids: imageIds,
-    })
-    .call();
+}): Promise<any> => {
+  try {
+    const resp = await client.post(`/api/host/residences/${productId}/images/order`, { imageIds });
+    return { data: { status: "success", params: resp.data?.data } };
+  } catch (err: any) {
+    return { data: { status: "error", err_msg: err?.response?.data?.message } };
+  }
 };
 
 const submitNewResidenceDocs = async ({
@@ -54,28 +70,18 @@ const submitNewResidenceDocs = async ({
   document?: any;
   owner_national_card?: any;
   product_id: number;
-}) => {
-  // This is for submission of step10 docs.
-  const step = 10;
-  const url = `/api/new_residence/upload_photos`;
+}): Promise<any> => {
+  const form = new FormData();
+  if (host_national_card) form.append("hostNationalCard", host_national_card);
+  if (document) form.append("document", document);
+  if (owner_national_card) form.append("ownerNationalCard", owner_national_card);
 
-  const data: any = {
-    step,
-    product_id,
-  };
-
-  if (!!host_national_card) {
-    data["host_national_card"] = host_national_card;
+  try {
+    const resp = await client.post(`/api/host/residences/${product_id}/documents`, form);
+    return { data: { status: "success", params: { product_id: resp.data?.data?.id ?? product_id } } };
+  } catch (err: any) {
+    return { data: { status: "error", err_msg: err?.response?.data?.message } };
   }
-
-  if (!!document) {
-    data["document"] = document;
-  }
-  if (!!owner_national_card) {
-    data["owner_national_card"] = owner_national_card;
-  }
-
-  return apiBuilder.setUrl(url).setCallMethod("POST").setJsonRpcMethod("call").setBody(data).call();
 };
 
 export { uploadNewResidenceImage, submitNewResidenceImagesOrder, submitNewResidenceDocs };
