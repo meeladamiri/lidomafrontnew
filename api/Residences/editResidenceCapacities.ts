@@ -10,28 +10,27 @@ const editResidenceCapacities = async ({
   capacity: number;
   max_capacity: number;
   rooms: {
-    // id?: number; // Newly created rooms do NOT have id yet. But rooms retrieved from Server must have 'id' included in the RoomObject;
     name: string;
     single_bed: number;
     double_bed: number;
     traditional_bed: number;
     extra: string;
   }[];
-}) => {
-  const url = `/api/edit_residence/capacity`;
-
-  const params = {
-    product_id: productId,
-    capacity,
-    max_capacity,
-    rooms,
-  };
-
+}): Promise<any> => {
   return apiBuilder
-    .setUrl(url)
-    .setCallMethod("POST")
-    .setJsonRpcMethod("call")
-    .setParams(params)
+    .setUrl(`/api/host/residences/${productId}/rooms`)
+    .setCallMethod("PUT")
+    .setParams({
+      capacity,
+      maxCapacity: max_capacity,
+      rooms: rooms.map((r) => ({
+        name: r.name,
+        singleBed: r.single_bed || 0,
+        doubleBed: r.double_bed || 0,
+        traditionalBed: r.traditional_bed || 0,
+        description: r.extra || undefined,
+      })),
+    })
     .call();
 };
 

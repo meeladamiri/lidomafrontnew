@@ -1,6 +1,9 @@
-//import { firebaseCloudMessaging } from "utils/google/firebase/webPush";
+// Same backend endpoints as api/NewResidenceImages.ts (the wizard's image
+// upload) — the edit screen's Images.tsx tab just calls them under a
+// different function name. See that file for the `{ data: {...} }` wrapper
+// explanation (Images.tsx reads response.data.status, same as Step_9).
 
-import apiBuilder from "./apiBuilder";
+import client from "./index";
 
 const editResidenceImage = async ({
   img,
@@ -12,16 +15,24 @@ const editResidenceImage = async ({
   productId: number;
   imgLabel: string;
   origin_id: number | string;
-}) => {
-  const url = `/api/edit_residence/photos`;
+}): Promise<any> => {
+  const isMain = imgLabel === "main";
+  const form = new FormData();
+  form.append("image", img);
+  form.append("isMain", String(isMain));
+  if (!isMain) form.append("title", imgLabel);
 
-  return apiBuilder
-    .setUrl(url)
-    .setCallMethod("POST")
-    .setJsonRpcMethod("call")
-    .setBody({ product_id: productId, [imgLabel]: img, origin_id })
-    .setParams({})
-    .call();
+  try {
+    const resp = await client.post(`/api/host/residences/${productId}/images`, form);
+    return {
+      data: {
+        status: "success",
+        params: { image_id: resp.data?.data?.id, origin_id, product_id: productId },
+      },
+    };
+  } catch (err: any) {
+    return { data: { status: "error", err_msg: err?.response?.data?.message } };
+  }
 };
 
 const submitStepOfEditResImages = async ({
@@ -30,18 +41,13 @@ const submitStepOfEditResImages = async ({
 }: {
   productId: number;
   imageIds: number[];
-}) => {
-  const url = `/api/edit_residence/submit_photos`;
-
-  return apiBuilder
-    .setUrl(url)
-    .setCallMethod("POST")
-    .setJsonRpcMethod("call")
-    .setParams({
-      product_id: productId,
-      image_ids: imageIds,
+}): Promise<any> => {
+  return client
+    .post(`/api/host/residences/${productId}/images/order`, {
+      imageIds: imageIds.filter((id) => !!id),
     })
-    .call();
+    .then((resp) => ({ status: "success", params: resp.data?.data }))
+    .catch((err) => ({ status: "error", err_msg: err?.response?.data?.message }));
 };
 
 export { editResidenceImage, submitStepOfEditResImages };

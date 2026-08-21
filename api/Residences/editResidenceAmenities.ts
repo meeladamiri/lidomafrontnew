@@ -8,20 +8,14 @@ const editResidenceAmenities = async ({
   productId: number;
   amenities: { id: number; extra_features: { [key: string | number]: string | number } }[];
   others: string;
-}) => {
-  const url = `/api/edit_residence/amenities`;
-
-  const params = {
-    product_id: productId,
-    amenities,
-    others,
-  };
-
+}): Promise<any> => {
   return apiBuilder
-    .setUrl(url)
-    .setCallMethod("POST")
-    .setJsonRpcMethod("call")
-    .setParams(params)
+    .setUrl(`/api/host/residences/${productId}/amenities`)
+    .setCallMethod("PATCH")
+    .setParams({
+      amenities: amenities.map((a) => ({ amenityId: a.id, extraFeatures: a.extra_features })),
+      other: others,
+    })
     .call();
 };
 
