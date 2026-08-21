@@ -56,7 +56,7 @@ function CommentDetails({ commentId }: { commentId: number }) {
   useEffect(() => {
     if (!!data) {
       if (data?.status === "success") {
-        const review: ICommentInfo = data?.params?.review;
+        const review = data?.params?.review as ICommentInfo;
 
         setCommentInfo(review);
         setScoreItems([

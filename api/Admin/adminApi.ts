@@ -31,10 +31,13 @@ export class ApiError extends Error {
 
 export async function apiFetch<T = unknown>(path: string, options: RequestInit = {}): Promise<T> {
   const token = getToken();
+  const isFormData = typeof FormData !== "undefined" && options.body instanceof FormData;
   const res = await fetch(path, {
     ...options,
     headers: {
-      "Content-Type": "application/json",
+      // Omit Content-Type for FormData — the browser must set its own
+      // multipart boundary, which a manual header would clobber.
+      ...(isFormData ? {} : { "Content-Type": "application/json" }),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...options.headers,
     },

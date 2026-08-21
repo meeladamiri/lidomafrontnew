@@ -1,4 +1,5 @@
 import { useState } from "react";
+import Link from "next/link";
 import useSWR from "swr";
 import AdminLayout from "@/components/Admin/Layout";
 import { apiFetch, apiFetchPaginated } from "@/api/Admin/adminApi";
@@ -85,6 +86,9 @@ export default function AdminUsersPage() {
                     </span>
                   </td>
                   <td style={{ display: "flex", gap: 6 }}>
+                    <Link className="btn secondary" href={`/admin/users/${u.id}`}>
+                      مشاهده
+                    </Link>
                     <button className="btn secondary" onClick={() => toggleHost(u)}>
                       {u.isHost ? "لغو میزبانی" : "میزبان کردن"}
                     </button>

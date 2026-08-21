@@ -1,5 +1,3 @@
-//import { firebaseCloudMessaging } from "utils/google/firebase/webPush";
-
 import apiBuilder from "./apiBuilder";
 
 export interface IServerComment {
@@ -12,23 +10,59 @@ export interface IServerComment {
   residence_code: string;
 }
 
-const getComments = async () => {
-  const url = `/api/get_reviews`;
+function reshapeComment(r: any): IServerComment {
+  return {
+    average_rating: r.averageRating,
+    comment: r.comment,
+    customer: r.guest?.name ?? "",
+    has_answer: !!r.hostAnswer,
+    id: r.id,
+    reserve_date: r.createdAt?.slice(0, 10) ?? "",
+    residence_code: r.residence?.reference ?? "",
+  };
+}
 
-  return apiBuilder.setUrl(url).setCallMethod("POST").setJsonRpcMethod("call").setParams({}).call();
+const getComments = async () => {
+  const resp = await apiBuilder.setUrl(`/api/host/reservations/reviews`).setCallMethod("GET").call();
+
+  if (resp?.status !== "success") return { status: "error", err_msg: resp?.message };
+  return { status: "success", params: { reviews: (resp.data || []).map(reshapeComment) } };
 };
 
 const getComment = async (commentId: number | string) => {
-  const url = `/api/get_review_details`;
-
-  return apiBuilder
-    .setUrl(url)
-    .setCallMethod("POST")
-    .setJsonRpcMethod("call")
-    .setParams({
-      review_id: commentId,
-    })
+  const resp = await apiBuilder
+    .setUrl(`/api/host/reservations/reviews/${commentId}`)
+    .setCallMethod("GET")
     .call();
+
+  if (resp?.status !== "success") return { status: "error", err_msg: resp?.message };
+
+  const r = resp.data;
+  return {
+    status: "success",
+    params: {
+      review: {
+        comment: r.comment,
+        customer: r.guest?.name ?? "",
+        host_answer: r.hostAnswer ?? undefined,
+        display_type: r.residence?.type === "BOOMGARDI" ? "boomgardi" : "suit",
+        id: r.id,
+        rates: {
+          average: r.averageRating,
+          cleaning: r.cleaning,
+          delivery: r.delivery,
+          greeting: r.greeting,
+          integrity: r.integrity,
+          location: r.location,
+          quality: r.quality,
+        },
+        reserve_date: r.createdAt?.slice(0, 10) ?? "",
+        residence_code: r.residence?.reference ?? "",
+        residence_image: r.residence?.images?.[0]?.url ?? "",
+        residence_name: r.residence?.name ?? "",
+      },
+    },
+  };
 };
 
 const replyToComment = async ({
@@ -38,14 +72,14 @@ const replyToComment = async ({
   commentId: string; // ex: "5221"
   replyText: string;
 }) => {
-  const url = `/api/submit_host_response`;
-
-  return apiBuilder
-    .setUrl(url)
+  const resp = await apiBuilder
+    .setUrl(`/api/host/reservations/reviews/${commentId}/reply`)
     .setCallMethod("POST")
-    .setJsonRpcMethod("call")
-    .setParams({ response: replyText, review_id: commentId })
+    .setParams({ hostAnswer: replyText })
     .call();
+
+  if (resp?.status !== "success") return { status: "error", err_msg: resp?.message };
+  return { status: "success", params: resp.data };
 };
 
 export { getComments, getComment, replyToComment };

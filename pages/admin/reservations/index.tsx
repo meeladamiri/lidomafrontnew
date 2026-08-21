@@ -1,4 +1,5 @@
 import { useState } from "react";
+import Link from "next/link";
 import useSWR from "swr";
 import AdminLayout from "@/components/Admin/Layout";
 import { apiFetchPaginated } from "@/api/Admin/adminApi";
@@ -74,6 +75,7 @@ export default function AdminReservationsPage() {
                 <th>تاریخ</th>
                 <th>مبلغ</th>
                 <th>وضعیت</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
@@ -95,6 +97,11 @@ export default function AdminReservationsPage() {
                     <span className={`badge ${STATE_BADGE[r.state] ?? "gray"}`}>
                       {STATE_LABELS[r.state] ?? r.state}
                     </span>
+                  </td>
+                  <td>
+                    <Link className="btn secondary" href={`/admin/reservations/${r.id}`}>
+                      مشاهده
+                    </Link>
                   </td>
                 </tr>
               ))}

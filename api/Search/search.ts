@@ -3,7 +3,7 @@ import { I_SearchResidenceApi_params, IProduct_SearchResidences } from "@/interf
 
 const VALID_ORDERS = ["price_asc", "price_desc", "rating_desc", "newest"];
 
-function mapCard(card: any): IProduct_SearchResidences {
+export function mapCard(card: any): IProduct_SearchResidences {
   return {
     id: card.id,
     name: card.name,

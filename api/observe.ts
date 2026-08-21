@@ -6,6 +6,11 @@ function mapDisplayType(type: string): "suit" | "boomgardi" {
   return type === "BOOMGARDI" ? "boomgardi" : "suit";
 }
 
+function avg(reviews: any[], key: string): number {
+  if (!reviews?.length) return 0;
+  return reviews.reduce((sum: number, r: any) => sum + (r[key] ?? 0), 0) / reviews.length;
+}
+
 function mapResidenceInfo(residence: any) {
   const images: string[] = (residence.images || []).map((img: any) => img.url).filter(Boolean);
   const mainFirst = [...images].sort((a, b) => {
@@ -60,6 +65,12 @@ function mapResidenceInfo(residence: any) {
     reference: residence.reference,
     reserve_commission: residence.reserveCommission ?? 0,
     reviews_count: residence.reviewsCount ?? 0,
+    cleaning_rate: avg(residence.reviews, "cleaning"),
+    location_rate: avg(residence.reviews, "location"),
+    quality_rate: avg(residence.reviews, "quality"),
+    integrity_rate: avg(residence.reviews, "integrity"),
+    greeting_rate: avg(residence.reviews, "greeting"),
+    delivery_rate: avg(residence.reviews, "delivery"),
     residence_type: residence.type,
     total_area: residence.totalArea ?? 0,
     video_url: residence.videoUrl || undefined,
@@ -99,6 +110,16 @@ function mapRooms(rooms: any[]): any[] {
     double_bed: r.doubleBed ?? 0,
     traditional_bed: r.traditionalBed ?? 0,
     extras: "",
+  }));
+}
+
+function mapReviews(reviews: any[]): any[] {
+  return (reviews || []).map((r: any) => ({
+    average_rating: r.averageRating ?? 0,
+    comment: r.comment,
+    customer: r.guest?.name ?? "",
+    id: r.id,
+    reserve_date: r.createdAt?.slice(0, 10) ?? "",
   }));
 }
 
@@ -146,7 +167,7 @@ export function mapObserveResidenceData(data: { residence?: any; similar?: any[]
 
   // Reshape into the old `{status, params: IObserveResidenceData}` envelope so the
   // whole ObserveResidenceDetails component tree keeps working unchanged. Sections the
-  // new backend doesn't have yet (reviews, SEO schema_data, distances, tags, faqs) are
+  // new backend doesn't have yet (SEO schema_data, distances, tags, faqs) are
   // defaulted to empty arrays — several call-sites `.map()/.find()` these without an
   // optional-chain guard, so `undefined` here would crash the page; `[]` degrades safely.
   return {
@@ -157,7 +178,7 @@ export function mapObserveResidenceData(data: { residence?: any; similar?: any[]
       rooms: mapRooms(residence.rooms),
       features: mapFeatures(residence.amenities),
       rules: mapRules(residence.rules),
-      reviews: [],
+      reviews: mapReviews(residence.reviews),
       schema_data: [],
       distances: [],
       tags: [],

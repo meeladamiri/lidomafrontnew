@@ -1,5 +1,5 @@
 import Host from "@/components/Host";
-import { BASE_URL } from "@/configs/info";
+import { mapHostProfileResponse } from "@/api/Residences/getMizbanAccountInfo";
 import { QueryClient, dehydrate } from "@tanstack/react-query";
 import type { GetServerSideProps, NextPage } from "next";
 
@@ -11,19 +11,19 @@ const RentalsPage: NextPage = () => {
   );
 };
 
-export const getServerSideProps: GetServerSideProps = async ({ query, res }) => {
+export const getServerSideProps: GetServerSideProps = async ({ query }) => {
   const queryClient = new QueryClient();
   const reference = query?.id;
 
-  // Public host profile page — no backend endpoint yet (only a minimal host summary
-  // is embedded in a residence's own detail response). Degrade to empty rather than
-  // hitting the old production site.
-  await Promise.all([
-    queryClient.prefetchQuery(["getMizbanAccountInfo", reference], async () => ({
-      status: "success",
-      params: {},
-    })),
-  ]);
+  // Server-side rewrites don't apply to server-to-server fetches, so this hits
+  // the backend by its real URL (same pattern as pages/rentals/[id].tsx).
+  const backendUrl = process.env.BACKEND_API_URL || "http://localhost:4000";
+
+  await queryClient.prefetchQuery(["getMizbanAccountInfo", reference], async () => {
+    const resp = await fetch(`${backendUrl}/api/residences/hosts/${reference}`);
+    const body = await resp.json();
+    return mapHostProfileResponse(body);
+  });
 
   return {
     props: {

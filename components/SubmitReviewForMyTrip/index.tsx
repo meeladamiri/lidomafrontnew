@@ -144,7 +144,7 @@ function SubmitReviewForMyTrip() {
   useEffect(() => {
     if (!!data) {
       if (data?.status === "success") {
-        const review_data: IServer_SubmittedReview = data?.params;
+        const review_data = data?.params as IServer_SubmittedReview;
 
         setOrderInfo(review_data?.order_details);
 

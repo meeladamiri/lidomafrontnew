@@ -17,7 +17,7 @@ const Host = () => {
     return getMizbanAccountInfo({ reference: query?.id as string });
   });
 
-  const mizbanData: I_MizbanAccountInfo_Data = data?.params;
+  const mizbanData = data?.params as I_MizbanAccountInfo_Data;
 
   return (
     <div className="pt-[72px] md:pt-[148px] md:pb-[112px] CustomContainer md:grid md:grid-cols-3 md:gap-x-40">

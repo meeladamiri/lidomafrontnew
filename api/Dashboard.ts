@@ -87,6 +87,34 @@ function mapVerificationStatus(status: string | undefined): "confirmed" | "not_c
   return "";
 }
 
+function reshapeUserInfo(u: any) {
+  return {
+    address: u?.address ?? "",
+    avatar_url: u?.avatarUrl ?? "",
+    birth_day: u?.birthDay ?? 0,
+    birth_month: u?.birthMonth ?? 0,
+    birth_year: u?.birthYear ?? 0,
+    city: u?.city?.name ?? "",
+    description: u?.description ?? "",
+    education: u?.education ?? "",
+    email: u?.email ?? "",
+    emergency_phone: u?.emergencyPhone ?? "",
+    fax: u?.fax ?? "",
+    id: u?.id,
+    job: u?.job ?? "",
+    name: u?.name ?? "",
+    national_card_url: u?.nationalCardUrl ?? "",
+    national_code: u?.nationalCode ?? "",
+    phone: u?.phone ?? "",
+    province: u?.city?.province?.name ?? "",
+    status: mapVerificationStatus(u?.verificationStatus),
+    zip: u?.zip ?? "",
+    contact_phone: u?.contactPhone ?? "",
+    has_avatar: !!u?.avatarUrl,
+    is_host: !!u?.isHost,
+  };
+}
+
 const getAccountInfo = async (): Promise<any> => {
   const url = `/api/users/me`;
 
@@ -94,39 +122,23 @@ const getAccountInfo = async (): Promise<any> => {
 
   if (resp?.status !== "success") return resp;
 
-  const u = resp.data;
-
   return {
     status: "success",
-    params: {
-      user_info: {
-        address: u?.address ?? "",
-        avatar_url: u?.avatarUrl ?? "",
-        birth_day: u?.birthDay ?? 0,
-        birth_month: u?.birthMonth ?? 0,
-        birth_year: u?.birthYear ?? 0,
-        city: u?.city?.name ?? "",
-        description: u?.description ?? "",
-        education: u?.education ?? "",
-        email: u?.email ?? "",
-        emergency_phone: u?.emergencyPhone ?? "",
-        fax: u?.fax ?? "",
-        id: u?.id,
-        job: u?.job ?? "",
-        name: u?.name ?? "",
-        national_card_url: u?.nationalCardUrl ?? "",
-        national_code: u?.nationalCode ?? "",
-        phone: u?.phone ?? "",
-        province: u?.city?.province?.name ?? "",
-        status: mapVerificationStatus(u?.verificationStatus),
-        zip: u?.zip ?? "",
-        contact_phone: u?.contactPhone ?? "",
-        has_avatar: !!u?.avatarUrl,
-        is_host: !!u?.isHost,
-      },
-    },
+    params: { user_info: reshapeUserInfo(resp.data) },
   };
 };
+
+async function resolveCityId(cityName: string | undefined): Promise<number | undefined> {
+  if (!cityName) return undefined;
+  const resp = await apiBuilder
+    .setUrl(`/api/search/cities`)
+    .setCallMethod("GET")
+    .setParams({ q: cityName })
+    .call();
+  if (resp?.status !== "success") return undefined;
+  const match = (resp.data?.cities || []).find((c: any) => c.name === cityName) || resp.data?.cities?.[0];
+  return match?.id;
+}
 
 export interface IUpdateAccountInfo {
   name: string;
@@ -148,14 +160,35 @@ export interface IUpdateAccountInfo {
 }
 
 const updateAccountInfo = async (data: IUpdateAccountInfo) => {
-  const url = `/api/update_account`;
+  const cityId = await resolveCityId(data.city);
 
-  return apiBuilder
-    .setUrl(url)
-    .setCallMethod("POST")
-    .setJsonRpcMethod("call")
-    .setParams(data)
+  const resp = await apiBuilder
+    .setUrl(`/api/users/me`)
+    .setCallMethod("PATCH")
+    .setParams({
+      name: data.name || undefined,
+      email: data.email || undefined,
+      nationalCode: data.national_code || undefined,
+      address: data.address || undefined,
+      cityId,
+      zip: data.zip || undefined,
+      fax: data.fax || undefined,
+      job: data.job || undefined,
+      education: data.education || undefined,
+      birthDay: data.birth_day || undefined,
+      birthMonth: data.birth_month || undefined,
+      birthYear: data.birth_year || undefined,
+      emergencyPhone: data.emergency_phone || undefined,
+      description: data.description || undefined,
+    })
     .call();
+
+  if (resp?.status !== "success") return { status: "error", err_msg: resp?.message };
+
+  return {
+    status: "success",
+    params: { user_info: reshapeUserInfo(resp.data) },
+  };
 };
 
 export {

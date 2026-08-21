@@ -51,17 +51,17 @@ const deleteMizbanAvatar = async () => {
 };
 
 const uploadMizbanAvatar = async ({ image }: { image: any }) => {
-  const url = `/api/user/update_avatar`;
+  const resp = await apiBuilder
+    .setUrl(`/api/users/me/avatar`)
+    .setCallMethod("POST")
+    .setBody({ avatar: dataURItoBlob(image) })
+    .call();
 
-  return (
-    apiBuilder
-      .setUrl(url)
-      .setCallMethod("POST")
-      .setJsonRpcMethod("call")
-      // .setParams()
-      .setBody({ profile_pic: dataURItoBlob(image) })
-      .call()
-  );
+  if (resp?.status !== "success") return { status: "error", err_msg: resp?.message };
+
+  // callers check `data.data.status`, matching the shape this endpoint has
+  // always returned here — see ProfilePictureBottomSheet's onSuccess handler.
+  return { data: { status: "success" } };
 };
 
 const uploadMizbanCartMelli = async ({ image }: { image: any }) => {
