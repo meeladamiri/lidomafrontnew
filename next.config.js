@@ -35,7 +35,13 @@ const nextConfig = {
   },
   swcMinify: isProd,
   images: {
-    domains: ["cdn.lidomatrip.com", "test.lidomatrip.com", "lidomatrip.com", "next.lidomatrip.com"],
+    domains: [
+      "cdn.lidomatrip.com",
+      "test.lidomatrip.com",
+      "lidomatrip.com",
+      "next.lidomatrip.com",
+      "lidoma-uploads.storage.iran.liara.site",
+    ],
     // minimumCacheTTL: 30 * 24 * 60 * 60, // 30 days // for cached optimized images
     // Optimising SVGs has security downside. --> just testing to see the results
     dangerouslyAllowSVG: true,
