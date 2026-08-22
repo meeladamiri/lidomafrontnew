@@ -385,8 +385,22 @@ export const getServerSideProps: GetServerSideProps = async ({ req, query, res }
         query,
       }),
       async () => {
-        // SEO/CMS page copy — no backend endpoint yet, degrade to empty rather than
-        // hitting the old production site.
+        // Same reshape as api/Search/searchData.ts — must stay in sync (this
+        // runs server-side, so it hits the backend by absolute URL). A stub
+        // here previously returned empty params, which got dehydrated as
+        // "fresh" data and blanked related searches / guide text / FAQ on
+        // every initial page load.
+        const params = getSearchResidences_API_params({ query });
+        const cat = params?.filters?.cat_name;
+        try {
+          const resp = await fetch(
+            `${backendUrl}/api/search/page-data?slug=${encodeURIComponent(cat || "s")}`
+          );
+          const data = await resp.json();
+          if (data?.status === "success") return { status: "success", params: data.data };
+        } catch {
+          /* backend unreachable — degrade to empty */
+        }
         return { status: "success", params: {} };
       }
     ),
