@@ -21,6 +21,7 @@ import { useSearchData } from "Hooks/SearchPages/useSearchData";
 import { renderSearchPagination } from "@/utilities/renderSearchPagination";
 import RelatedSearches from "../General/RelatedSearches";
 import AboutInSearch from "./AboutInSearch";
+import SearchPageFAQ from "./SearchPageFAQ";
 const Pagination = dynamic(() => import("../General/Pagination/Pagination"), {
   ssr: true,
 });
@@ -281,17 +282,27 @@ function Search() {
             <section className="bg-gray-F0F0F0 border-gray-E5E5E6 pt-20 mt-24 pb-[100px] md:pb-40">
               <RelatedSearches tags={searchPageData?.params?.related_tags} />
 
-              {!!searchPageData?.params?.description &&
+              {/* The long per-city guide text (Odoo `content`); falls back to
+                  the meta description when a city has no guide content. */}
+              {!!(searchPageData?.params?.content || searchPageData?.params?.description) &&
                 (data?.params as ISearchResidences_ServerResp)?.products?.length !== 0 && (
                   <>
                     {/* <LazyLoad height={320} once offset={150}> */}
                     <AboutInSearch
                       title={searchPageData?.params?.content_title || ""}
-                      description={searchPageData?.params?.description}
+                      description={
+                        searchPageData?.params?.content || searchPageData?.params?.description
+                      }
                     />
                     {/* </LazyLoad> */}
                   </>
                 )}
+
+              {!!searchPageData?.params?.faqs?.length && (
+                <div className="CustomContainer2 mt-24">
+                  <SearchPageFAQ faqs={searchPageData?.params?.faqs} />
+                </div>
+              )}
             </section>
           )}
       </div>

@@ -1,7 +1,17 @@
 import apiBuilder from "../apiBuilder";
 import { I_SearchResidenceApi_params, IProduct_SearchResidences } from "@/interfaces/Search/SearchResp";
+import moment from "moment-jalaali";
 
 const VALID_ORDERS = ["price_asc", "price_desc", "rating_desc", "newest"];
+
+// Date filters live in the URL as Jalali ("1405/06/10"); the backend only
+// accepts Gregorian ISO (YYYY-MM-DD) — anything else fails validation and
+// kills the whole search request.
+function jalaliToISO(j: string | undefined): string | undefined {
+  if (!j) return undefined;
+  const m = moment(j, "jYYYY/jMM/jDD");
+  return m.isValid() ? m.format("YYYY-MM-DD") : undefined;
+}
 
 export function mapCard(card: any): IProduct_SearchResidences {
   return {
@@ -54,14 +64,17 @@ export function buildSearchBody({ page = 1, page_size = 20, order, filters, feat
   };
 
   // Category tags (?villa=1, ?boomgardi=1, ...) arrive as `features`.
-  // "boomgardi" maps to the residence-type filter the backend already has;
-  // the rest need the amenities catalog (not yet migrated from Odoo) before
-  // they can narrow results — until then they're accepted but inert.
+  // "boomgardi"/"suit" map to the residence-type filter the backend already
+  // has; the rest need the amenities catalog (not yet migrated from Odoo)
+  // before they can narrow results — until then they're accepted but inert.
   if (features?.includes("boomgardi")) body.type = "BOOMGARDI";
+  else if (features?.includes("suit")) body.type = "SUIT";
 
   if (filters?.cat_name && filters.cat_name !== "s") body.cityName = filters.cat_name;
-  if (filters?.start) body.startDate = filters.start;
-  if (filters?.end) body.endDate = filters.end;
+  const startISO = jalaliToISO(filters?.start);
+  const endISO = jalaliToISO(filters?.end);
+  if (startISO) body.startDate = startISO;
+  if (endISO) body.endDate = endISO;
   if (filters?.min_price !== undefined) body.minPrice = filters.min_price;
   if (filters?.max_price !== undefined) body.maxPrice = filters.max_price;
   if (filters?.guests_count !== undefined) body.guestsCount = filters.guests_count;

@@ -3,7 +3,6 @@ import { usePagination, DOTS } from "./usePagination";
 import classes from "styles/pagination.module.css";
 import { useRouter } from "next/router";
 import Link from "next/link";
-import { BASE_URL } from "@/configs/info";
 
 interface I_Pagination {
   onPageChange: (page: number) => void;
@@ -73,7 +72,7 @@ const Pagination = (props: I_Pagination) => {
             onClick={() => onPageChange(pageNumber as number)}
           >
             <Link
-              href={`${BASE_URL}/search${
+              href={`/search${
                 query?.id ? `/${query?.id}` : ""
               }${new URLSearchParams(filteredQueryString).toString()}${
                 filteredQueryString.length > 0 ? "&" : "?"

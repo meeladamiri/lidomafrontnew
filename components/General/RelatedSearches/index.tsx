@@ -1,6 +1,5 @@
 import { ITag } from "@/interfaces/observe_residence";
 import Link from "next/link";
-import { BASE_URL } from "@/configs/info";
 
 function RelatedSearches({
   tags,
@@ -19,7 +18,7 @@ function RelatedSearches({
           <Link
             key={t?.tag}
             passHref
-            href={`${BASE_URL}${t?.cat_title ? `/search/${t?.cat_title}` : ""}${
+            href={`${t?.cat_title ? `/search/${t?.cat_title}` : "/search"}${
               t?.tag ? `?${t?.tag}=1` : ""
             }`}
             prefetch={false}

@@ -1,4 +1,3 @@
-import { BASE_URL } from "@/configs/info";
 import Link from "next/link";
 
 function BreadCrumb({
@@ -21,19 +20,19 @@ function BreadCrumb({
   return (
     <>
       <li>
-        <Link passHref href={BASE_URL} prefetch={false}>
+        <Link passHref href="/" prefetch={false}>
           لیدوماتریپ
         </Link>
       </li>
       /
       <li>
-        <Link passHref href={`${BASE_URL}/search/${proviceEn}`} prefetch={false}>
+        <Link passHref href={`/search/${proviceEn}`} prefetch={false}>
           {proviceName}
         </Link>
       </li>
       /
       <li>
-        <Link passHref href={`${BASE_URL}/search/${cityEn}`} prefetch={false}>
+        <Link passHref href={`/search/${cityEn}`} prefetch={false}>
           {cityName}
         </Link>
       </li>

@@ -29,7 +29,10 @@ const withPWA = require("next-pwa")({
 
 const nextConfig = {
   output: "standalone",
-  reactStrictMode: true, // For Testing 'dnd', set reactStrictMode to false;
+  // StrictMode's dev-only double-mount leaves Swiper's Virtual module with
+  // zero rendered slides (search-card image sliders show up empty in dev).
+  // Production builds never double-mount, so this only changes dev behavior.
+  reactStrictMode: false,
   compiler: {
     removeConsole: false,
   },
