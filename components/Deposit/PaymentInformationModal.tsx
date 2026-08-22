@@ -105,19 +105,19 @@ function PaymentInformationModal({
             <div className="flex items-center gap-x-8 my-16">
               <InfoTag
                 tagName="سهم سیستمی میزبان : "
-                tagValue={order.host_portion.toLocaleString()}
+                tagValue={order.host_portion.toLocaleString("en-US")}
                 rounded={true}
               />
               <InfoTag
                 tagName="بیعانه : "
-                tagValue={order.deposit_amount?.toLocaleString()}
+                tagValue={order.deposit_amount?.toLocaleString("en-US")}
                 rounded={true}
               />
               <InfoTag
                 onClick={() => setShowUpdateRemainderModal(true)}
                 editable={true}
                 tagName="مانده واریز : "
-                tagValue={order.clear_remainer.toLocaleString()}
+                tagValue={order.clear_remainer.toLocaleString("en-US")}
                 rounded={true}
               />
             </div>
@@ -259,7 +259,7 @@ function PaymentInformationModal({
             {order?.host_debit && (
               <NameValueCart
                 name="بدهی میزبان"
-                value={order?.host_debit.toLocaleString()}
+                value={order?.host_debit.toLocaleString("en-US")}
                 wrapperClassname="!bg-red-light"
                 valueClassname="text-red-main"
                 copyable={false}

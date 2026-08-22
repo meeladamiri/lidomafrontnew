@@ -256,7 +256,7 @@ export function CalendarItemBox({
         <>
           {!isFilled && !!discountP && (
             <p className="text-8 leading-10 font-l text-[rgba(28,48,74,0.5)] line-through">
-              {actualPrice?.toLocaleString()}
+              {actualPrice?.toLocaleString("en-US")}
             </p>
           )}
 
@@ -292,8 +292,8 @@ export function CalendarItemBox({
               {!!discountP
                 ? Number(
                     (actualPrice - actualPrice * (discountP / 100)).toFixed(0)
-                  ).toLocaleString()
-                : actualPrice?.toLocaleString()}
+                  ).toLocaleString("en-US")
+                : actualPrice?.toLocaleString("en-US")}
             </p>
           )}
 

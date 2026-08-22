@@ -186,12 +186,12 @@ const CustomTextField = forwardRef(function CustomTextField(
             value={
               !!formik
                 ? inputmode === "numeric" || applyCommaSeperation
-                  ? Number(formik?.values?.[name])?.toLocaleString()
+                  ? Number(formik?.values?.[name])?.toLocaleString("en-US")
                   : formik?.values?.[name]
                 : inputmode === "numeric" || applyCommaSeperation
                 ? // For not-showing the value when value is 0 or 'Number(customValue)' results into 0;
                   !!customValue
-                  ? Number(customValue)?.toLocaleString()
+                  ? Number(customValue)?.toLocaleString("en-US")
                   : ""
                 : customValue
             }

@@ -120,8 +120,8 @@ function BatchSettleModal({
         </div>
         <div className="flex items-center gap-x-12">
           <InfoTag tagName={`${tableSelectedItems.length} رزرو`} rounded />
-          <InfoTag tagName={`${totalClearRemainder.toLocaleString()} تومان`} rounded />
-          <InfoTag tagName={`${(totalClearRemainder * 10).toLocaleString()} ریال`} rounded />
+          <InfoTag tagName={`${totalClearRemainder.toLocaleString("en-US")} تومان`} rounded />
+          <InfoTag tagName={`${(totalClearRemainder * 10).toLocaleString("en-US")} ریال`} rounded />
         </div>
       </div>
       <div className="flex items-center justify-end gap-x-8 mt-24">

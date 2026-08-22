@@ -199,7 +199,7 @@ function Wallet() {
                 <div className="text-16 leading-28 text-zilgara flex items-center justify-between mb-12">
                   <p className="">موجودی قابل برداشت</p>
                   <p className="flex items-center gap-x-4">
-                    <span>{Number(walletData?.credit_balance || 0).toLocaleString()}</span>
+                    <span>{Number(walletData?.credit_balance || 0).toLocaleString("en-US")}</span>
                     <span>تومان</span>
                   </p>
                 </div>
@@ -207,7 +207,7 @@ function Wallet() {
                 <div className="text-14 leading-24 font-l text-zilgara flex items-center justify-between mb-12">
                   <p className="">موجودی بلاک شده</p>
                   <p className="flex items-center gap-x-4">
-                    <span>{Number(walletData?.blocked_balance || 0).toLocaleString()}</span>
+                    <span>{Number(walletData?.blocked_balance || 0).toLocaleString("en-US")}</span>
                     <span>تومان</span>
                   </p>
                 </div>
@@ -215,7 +215,7 @@ function Wallet() {
                 <div className="text-14 leading-24 font-l text-zilgara flex items-center justify-between">
                   <p className="">اعتبار هدیه</p>
                   <p className="flex items-center gap-x-4">
-                    <span>{Number(walletData?.gift_balance || 0).toLocaleString()}</span>
+                    <span>{Number(walletData?.gift_balance || 0).toLocaleString("en-US")}</span>
                     <span>تومان</span>
                   </p>
                 </div>

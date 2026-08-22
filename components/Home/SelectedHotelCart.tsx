@@ -108,11 +108,11 @@ export {};
 //           <p>هر شب از:</p>
 //           {!!discountP && (
 //             <p className="text-12 leading-21 text-gray-77828F font-l line-through">
-//               {price.toLocaleString()} تومان
+//               {price.toLocaleString("en-US")} تومان
 //             </p>
 //           )}
 
-//           <p>{(!!discountP ? price - price * (discountP / 100) : price)?.toLocaleString()} تومان</p>
+//           <p>{(!!discountP ? price - price * (discountP / 100) : price)?.toLocaleString("en-US")} تومان</p>
 
 //           {!!discountP && (
 //             <div className="mr-8">

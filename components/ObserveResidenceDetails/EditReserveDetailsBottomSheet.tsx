@@ -348,13 +348,13 @@ function EditReserveDetailsBottomSheet({
                       {
                         label: "تخفیف رزرو هفتگی : ",
                         fullValue: !!manuallyCalculatedWeeklyDiscountAmount
-                          ? `${manuallyCalculatedWeeklyDiscountAmount?.toLocaleString()} تومان`
+                          ? `${manuallyCalculatedWeeklyDiscountAmount?.toLocaleString("en-US")} تومان`
                           : "",
                       },
                       {
                         label: "تخفیف رزرو ماهانه : ",
                         fullValue: manuallyCalculatedMonthlyDiscountAmount
-                          ? `${manuallyCalculatedMonthlyDiscountAmount?.toLocaleString()} تومان`
+                          ? `${manuallyCalculatedMonthlyDiscountAmount?.toLocaleString("en-US")} تومان`
                           : "",
                       },
                       // {

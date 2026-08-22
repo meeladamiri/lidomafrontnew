@@ -60,7 +60,7 @@ function PaymentInfo({
             <span className="pl-28 border-l border-gray-CACFD3 flex items-center">
               <p className="text-gray-616E7C text-12 font-m leading-16 pl-8">مبلغ واریز شده:</p>
               <p className="text-black text-14 font-m leading-20">
-                {payment?.amount.toLocaleString()}
+                {payment?.amount.toLocaleString("en-US")}
               </p>
             </span>
             <span className="pr-28 flex items-center">
@@ -131,7 +131,7 @@ function PaymentInfo({
             <span className="pl-28 border-l border-gray-CACFD3 flex items-center">
               <p className="text-gray-616E7C text-12 font-m leading-16 pl-8">تغییر مبلغ:</p>
               <p className="text-black text-14 font-m leading-20">
-                {remainderUpdate?.amount.toLocaleString()}
+                {remainderUpdate?.amount.toLocaleString("en-US")}
               </p>
             </span>
             <span className="pr-28 flex items-center">

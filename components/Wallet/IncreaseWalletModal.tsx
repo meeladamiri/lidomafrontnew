@@ -136,7 +136,7 @@ function IncreaseWalletModal({
         <div className="px-16">
           <div className="flex items-center justify-between text-12 leading-21 text-white drop-shadow-[0px_2px_4px_rgba(0,0,0,0.2)]">
             <p className="">موجودی کیف پول :</p>
-            <p className="font-b">{balance?.toLocaleString()} تومان</p>
+            <p className="font-b">{balance?.toLocaleString("en-US")} تومان</p>
           </div>
         </div>
       </div>
@@ -158,7 +158,7 @@ function IncreaseWalletModal({
                 // ${chargeAmount === chargeItem ? "border-black" : "border-gray-C4CAD3"}
                 onClick={() => setChargeAmount((prev) => (Number(prev) + chargeItem).toString())}
               >
-                <span>{chargeItem.toLocaleString()}</span>
+                <span>{chargeItem.toLocaleString("en-US")}</span>
                 <span className="font-l">تومان</span>
               </div>
             );

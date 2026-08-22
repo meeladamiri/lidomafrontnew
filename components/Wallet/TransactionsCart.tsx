@@ -24,7 +24,7 @@ function TransactionsCart({
         `}
       >
         <div className="flex items-center justify-between mb-12">
-          <p className="text-16 leading-28 text-black font-m">{price?.toLocaleString()} تومان</p>
+          <p className="text-16 leading-28 text-black font-m">{price?.toLocaleString("en-US")} تومان</p>
 
           <p
             className={`px-12 py-4 text-10 leading-17 text-white rounded-50 ${

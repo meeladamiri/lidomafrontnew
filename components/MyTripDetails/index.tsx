@@ -325,19 +325,19 @@ function MyTripDetails() {
           {
             label: "تخفیف مدت رزرو : ",
             fullValue: !!reservePeriodDiscountData?.period_discount
-              ? `${reservePeriodDiscountData?.period_discount?.toLocaleString()} تومان`
+              ? `${reservePeriodDiscountData?.period_discount?.toLocaleString("en-US")} تومان`
               : "",
           },
           {
             label: "تخفیف سایت : ",
             fullValue: !!websiteDiscountData?.website_discount
-              ? `${websiteDiscountData?.website_discount?.toLocaleString()}  تومان`
+              ? `${websiteDiscountData?.website_discount?.toLocaleString("en-US")}  تومان`
               : "",
           },
           {
             label: "کد تخفیف : ",
             fullValue: !!couponDiscountData?.coupon_discount
-              ? `${couponDiscountData?.coupon_discount?.toLocaleString()}  تومان`
+              ? `${couponDiscountData?.coupon_discount?.toLocaleString("en-US")}  تومان`
               : "",
           },
         ]);
@@ -1174,8 +1174,8 @@ function MyTripDetails() {
                     </span>
                     <span className="text-14 leading-24 text-black font-m">
                       {
-                        // checkoutTotal?.toLocaleString()
-                        (reserveInfo?.total_amount || 0)?.toLocaleString()
+                        // checkoutTotal?.toLocaleString("en-US")
+                        (reserveInfo?.total_amount || 0)?.toLocaleString("en-US")
                       }{" "}
                       تومان
                     </span>

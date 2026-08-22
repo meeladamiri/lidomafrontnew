@@ -17,11 +17,11 @@ export interface ITableRowCell<T> {
 //     } else if (key === "confirmation_date") {
 //       return momentToJalaliWithTime2(moment(obj[key]));
 //     } else if (key === "deposit_amount") {
-//       return obj[key].toLocaleString();
+//       return obj[key].toLocaleString("en-US");
 //     } else if (key === "remainder_amount") {
-//       return obj[key].toLocaleString();
+//       return obj[key].toLocaleString("en-US");
 //     } else if (key === "host_debit_amount") {
-//       return obj[key].toLocaleString();
+//       return obj[key].toLocaleString("en-US");
 //     }
 //     else if (key === "order_status") {
 //       if (obj[key] === "cancel") {
@@ -60,7 +60,7 @@ function  TableRowCell<T>({
             case "dateTime":
               return momentToJalaliWithTime2(moment(obj[key] as string));
             case "price":
-              return (obj[key] as number).toLocaleString();
+              return (obj[key] as number).toLocaleString("en-US");
           }
         } else {
           return cellRenderer(obj[key]);

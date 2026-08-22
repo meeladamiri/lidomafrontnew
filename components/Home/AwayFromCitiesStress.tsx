@@ -11,7 +11,7 @@ function AwayFromCitiesStress() {
         <div className="w-[220px] shrink-0" key={i}>
           <AwayFromCitiesStressItem
             name={item.name}
-            desc={`هرشب از : ${item.min_price.toLocaleString()} تومان`}
+            desc={`هرشب از : ${item.min_price.toLocaleString("en-US")} تومان`}
             linkToGo={item.link}
             image={item.image}
           />

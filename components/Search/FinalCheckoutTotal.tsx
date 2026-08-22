@@ -41,7 +41,7 @@ function FinalCheckoutTotal({ calculatedCheckoutDataParams, basePrice }: IFinalC
             <span>{numberOfNights}</span> شب:
           </span>
           <span className="text-13 text-black font-m">
-            {finalCalculatedCheckoutTotal?.toLocaleString()} تومان
+            {finalCalculatedCheckoutTotal?.toLocaleString("en-US")} تومان
           </span>
         </div>
 

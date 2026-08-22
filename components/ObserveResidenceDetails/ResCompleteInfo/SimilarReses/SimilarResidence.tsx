@@ -44,7 +44,7 @@ function SimilarResidence({
 
       <p className="text-13 leading-16 text-black font-r mt-12">
         <span className="text-gray-565659 text-11 leading-14 font-r">هر شب از : </span>
-        {price.toLocaleString()} تومان
+        {price.toLocaleString("en-US")} تومان
       </p>
     </Link>
   );

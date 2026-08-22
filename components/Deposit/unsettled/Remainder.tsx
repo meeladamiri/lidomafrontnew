@@ -89,7 +89,7 @@ function Remainder({
     <>
       <NameValueCart
         name="مانده واریز"
-        value={order?.clear_remainer?.toLocaleString()}
+        value={order?.clear_remainer?.toLocaleString("en-US")}
         valueClassname="text-green-main"
       />
       <div>

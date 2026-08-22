@@ -28,7 +28,7 @@ function BankTransactionBottomSheet({
           {/* first line */}
           <div className="flex items-center justify-between mb-12">
             <p className="text-14 sm:text-16 leading-16 sm:leading-28 text-black font-m">
-              {(15500000).toLocaleString()} تومان
+              {(15500000).toLocaleString("en-US")} تومان
             </p>
             <div
               className={`

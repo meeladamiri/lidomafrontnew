@@ -215,19 +215,19 @@ function FactorIndex() {
           {
             label: "تخفیف مدت رزرو : ",
             fullValue: !!reservePeriodDiscountData?.period_discount
-              ? `${reservePeriodDiscountData?.period_discount?.toLocaleString()} تومان`
+              ? `${reservePeriodDiscountData?.period_discount?.toLocaleString("en-US")} تومان`
               : "",
           },
           {
             label: "تخفیف سایت : ",
             fullValue: !!websiteDiscountData?.website_discount
-              ? `${websiteDiscountData?.website_discount?.toLocaleString()}  تومان`
+              ? `${websiteDiscountData?.website_discount?.toLocaleString("en-US")}  تومان`
               : "",
           },
           {
             label: "کد تخفیف : ",
             fullValue: !!couponDiscountData?.coupon_discount
-              ? `${couponDiscountData?.coupon_discount?.toLocaleString()}  تومان`
+              ? `${couponDiscountData?.coupon_discount?.toLocaleString("en-US")}  تومان`
               : "",
           },
         ]);

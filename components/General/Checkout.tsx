@@ -98,9 +98,9 @@ function Checkout({
                         {item.valueOfKey} {item.key}
                       </span>
                       <i className="icon-Close text-12 text-black" />
-                      <span>{item.per.toLocaleString()} تومان</span>
+                      <span>{item.per.toLocaleString("en-US")} تومان</span>
                       <span>=</span>
-                      <span>{item.total.toLocaleString()} تومان</span>
+                      <span>{item.total.toLocaleString("en-US")} تومان</span>
                     </>
                   )}
                 </div>
@@ -121,12 +121,12 @@ function Checkout({
             <div className="flex flex-col">
               {!!totalDiscountAmount && (
                 <p className="text-12 leading-21 font-l text-gray-600 line-through text-left">
-                  {(total + totalDiscountAmount)?.toLocaleString()} تومان
+                  {(total + totalDiscountAmount)?.toLocaleString("en-US")} تومان
                 </p>
               )}
 
               <span className="text-13 leading-16 font-r text-black flex items-center gap-x-4">
-                <p className="text-16 leading-22 font-m text-black">{total.toLocaleString()}</p>
+                <p className="text-16 leading-22 font-m text-black">{total.toLocaleString("en-US")}</p>
                 تومان
               </span>
             </div>
@@ -138,7 +138,7 @@ function Checkout({
               <span className="text-12 text-black leading-14 font-r">کارمزد سایت</span>
               <span className="text-11 leading-14 font-r text-black flex items-center gap-x-4">
                 <span className="13 leading-16 text-black font-r">
-                  {websiteShare.toLocaleString()}
+                  {websiteShare.toLocaleString("en-US")}
                 </span>
                 تومان
                 <i className="icon-Negative text-red-main text-14"></i>
@@ -161,7 +161,7 @@ function Checkout({
               </div>
               <span className="text-11 leading-14 font-r text-black flex items-center gap-x-4">
                 <span className="13 leading-16 text-black font-r">
-                  {vatAmount.toLocaleString()}
+                  {vatAmount.toLocaleString("en-US")}
                 </span>
                 تومان
                 <i className="icon-Negative text-red-main text-14"></i>
@@ -173,7 +173,7 @@ function Checkout({
           <div className="bg-gray-C4CAD3 rounded-8 flex justify-between items-center px-14 py-7 mt-16">
             <span className="text-15 font-r leading-20 text-black">مبلغ قابل پرداخت به میزبان</span>
             <span className="text-13 leading-16 font-r text-black flex items-center gap-x-4">
-              <p className="text-16 leading-22 font-m text-black">{hostShare.toLocaleString()}</p>
+              <p className="text-16 leading-22 font-m text-black">{hostShare.toLocaleString("en-US")}</p>
               تومان
             </span>
           </div>

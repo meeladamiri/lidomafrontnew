@@ -71,7 +71,7 @@ function SuggestedResidenceCart({
 
       <div className="p-12 border-1 border-solid border-[#1C345442] border-t-none rounded-br-12 rounded-bl-12">
         <p className="mb-16 text-16 leading-28 font-m text-black">
-          قیمت هر شب از : {price.toLocaleString()} تومان
+          قیمت هر شب از : {price.toLocaleString("en-US")} تومان
         </p>
 
         {!!isSelected ? (

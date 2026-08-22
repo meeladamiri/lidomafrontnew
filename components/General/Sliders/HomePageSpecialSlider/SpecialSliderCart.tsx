@@ -118,7 +118,7 @@ function SpecialSliderCart({
           <p className="text-12 leading-21 text-black font-l mr-4">هر شب از :</p>
 
           <p className="text-12 leading-21 text-black font-l">
-            {min_price?.toLocaleString()} تومان
+            {min_price?.toLocaleString("en-US")} تومان
           </p>
 
           {!!discountP && (

@@ -37,7 +37,7 @@ function ResCapacity() {
                 نرخ هر نفر اضافه به ازای هر شب:
               </p>
               <span className="text-13 leading-16 text-gray-2D2D2F font-r">
-                {data?.params?.residence_info?.price_details?.extra_price?.toLocaleString()} تومان
+                {data?.params?.residence_info?.price_details?.extra_price?.toLocaleString("en-US")} تومان
               </span>
             </div>
           )}

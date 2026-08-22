@@ -49,7 +49,7 @@ export default function TasfieBottomSheet({
       <div className="px-24 py-10 rounded-8 border-1 mb-32 border-solid border-gray-C4CAD3 flex items-center justify-center gap-x-8">
         <p className="text-12 leading-21 text-zilgara">موجودی کیف پول شما : </p>
         <p className="text-16 leading-28 text-zilgara font-m">
-          {Number(credit_balance)?.toLocaleString()} تومان
+          {Number(credit_balance)?.toLocaleString("en-US")} تومان
         </p>
       </div>
 

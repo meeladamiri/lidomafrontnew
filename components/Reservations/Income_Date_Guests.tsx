@@ -14,7 +14,7 @@ function Income_Date_Guests({
   return (
     <div>
       <p className="text-16 leading-28 text-black font-m mb-12">
-        مبلغ دریافتی شما : {hostIncome?.toLocaleString()} تومان
+        مبلغ دریافتی شما : {hostIncome?.toLocaleString("en-US")} تومان
       </p>
 
       <div className="flex items-center justify-between mb-16 flex-wrap">

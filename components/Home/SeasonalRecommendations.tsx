@@ -36,7 +36,7 @@ function SeasonalRecommendation({
           <span className="text-12 leading-16 text-black font-l">{content}</span>
           {/* <span className="text-12 leading-16 text-black font-l">میانگین هر شب :</span> */}
           {/* <span className="text-12 leading-20 text-black font-r">
-            {average?.toLocaleString()} تومان
+            {average?.toLocaleString("en-US")} تومان
           </span> */}
         </p>
       </div>

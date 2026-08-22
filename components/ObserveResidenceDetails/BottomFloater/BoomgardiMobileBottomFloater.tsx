@@ -136,7 +136,7 @@ function BoomgardiMobileBottomFloater() {
               <div className="flex items-center flex-row-reverse gap-x-8 mb-6">
                 <PercentBox value={discount} />
                 <p className="text-12 leading-16 text-gray-959FA7 font-l line-through">
-                  {original_price?.toLocaleString()} تومان
+                  {original_price?.toLocaleString("en-US")} تومان
                 </p>
               </div>
             )}
@@ -147,7 +147,7 @@ function BoomgardiMobileBottomFloater() {
                 {(!discount
                   ? original_price
                   : original_price - original_price * (discount / 100)
-                )?.toLocaleString()}{" "}
+                )?.toLocaleString("en-US")}{" "}
                 تومان
               </span>
             </p>

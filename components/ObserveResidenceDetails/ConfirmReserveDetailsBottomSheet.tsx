@@ -247,13 +247,13 @@ function ConfirmReserveDetailsBottomSheet({
                 {
                   label: "تخفیف رزرو هفتگی : ",
                   fullValue: !!weeklyDiscountAmount
-                    ? `${weeklyDiscountAmount?.toLocaleString()} تومان`
+                    ? `${weeklyDiscountAmount?.toLocaleString("en-US")} تومان`
                     : "",
                 },
                 {
                   label: "تخفیف رزرو ماهانه : ",
                   fullValue: monthlyDiscountAmount
-                    ? `${monthlyDiscountAmount?.toLocaleString()} تومان`
+                    ? `${monthlyDiscountAmount?.toLocaleString("en-US")} تومان`
                     : "",
                 },
                 // {

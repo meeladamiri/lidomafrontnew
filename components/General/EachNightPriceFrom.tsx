@@ -20,12 +20,12 @@ function EachNightPriceFromWithDiscount({
       <p className="text-12 text-gray-6C6A7D leading-14 font-r">هر شب از :</p>
       {!!discountP && (
         <div className="text-12 leading-21 text-gray-77828F font-l line-through ml-4 flex items-center gap-x-4">
-          <p>{price?.toLocaleString()}</p>
+          <p>{price?.toLocaleString("en-US")}</p>
           <p>تومان</p>
         </div>
       )}
       <div className="flex items-center gap-x-4">
-        <p>{(!!discountP ? price - price * (discountP / 100) : price)?.toLocaleString()}</p>
+        <p>{(!!discountP ? price - price * (discountP / 100) : price)?.toLocaleString("en-US")}</p>
         <p>تومان</p>
       </div>
       {!!discountP && (

@@ -50,7 +50,7 @@ function CancelledReserveBottomSheet({
 
         <div className="col-span-5 pl-4">
           <p className="mb-12 text-10 sm:text-12 text-[rgba(28,46,69,0.6)]">مبلغ رزرو</p>
-          <p className="text-12 sm:text-14 font-m text-black">{price.toLocaleString()} تومان</p>
+          <p className="text-12 sm:text-14 font-m text-black">{price.toLocaleString("en-US")} تومان</p>
         </div>
       </div>
 

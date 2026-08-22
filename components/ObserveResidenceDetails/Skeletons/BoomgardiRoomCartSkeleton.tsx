@@ -134,7 +134,7 @@ function BoomgardiRoomCartSkeleton() {
           <div className="flex items-center gap-x-4">
             <p className="text-12 leading-21 text-black font-r">هر شب از :</p>
             <p className="text-14 leading-24 text-black font-m">
-              {prices?.min_price?.toLocaleString()} تومان
+              {prices?.min_price?.toLocaleString("en-US")} تومان
             </p>
           </div>
 

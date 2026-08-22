@@ -356,14 +356,14 @@ function ResidencesStatistics() {
                 <div className="flex items-center justify-between pb-12 border-b-1 border-solid border-[rgba(28,52,84,0.26)]">
                   <p className="text-16 font-r text-black">درآمد کل اقامتگاه</p>
                   <p className="text-16 font-m text-black">
-                    {data?.total_income?.toLocaleString()} تومان
+                    {data?.total_income?.toLocaleString("en-US")} تومان
                   </p>
                 </div>
 
                 <div className="flex items-center justify-between pt-12">
                   <p className="text-16 font-r text-black">میانگین درآمد در ماه</p>
                   <p className="text-16 font-m text-black">
-                    {data?.average_income?.toLocaleString()} تومان
+                    {data?.average_income?.toLocaleString("en-US")} تومان
                   </p>
                 </div>
               </div>

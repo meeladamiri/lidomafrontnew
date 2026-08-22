@@ -210,13 +210,13 @@ const FactorDesign = React.forwardRef<HTMLDivElement, { data: IFactorData }>((pr
                     <div className="flex items-center justify-between mb-8">
                       <p className="text-10 leading-18 font-r text-black">مجموع صورتحساب :</p>
                       <p className="text-12 leading-21 font-m text-black">
-                        {data.checkoutTotal?.toLocaleString()} تومان
+                        {data.checkoutTotal?.toLocaleString("en-US")} تومان
                       </p>
                     </div>
                     <div className="flex items-center justify-between mb-8">
                       <p className="text-10 leading-18 font-r text-black">جمع مبلغ پرداخت شده :</p>
                       <p className="text-12 leading-21 font-m text-black">
-                        {data.paidAmount?.toLocaleString()} تومان
+                        {data.paidAmount?.toLocaleString("en-US")} تومان
                       </p>
                     </div>
                     <div className="flex items-center justify-between mb-8">
@@ -224,7 +224,7 @@ const FactorDesign = React.forwardRef<HTMLDivElement, { data: IFactorData }>((pr
                         مبلغ مانده جهت تحویل به میزبان :
                       </p>
                       <p className="text-12 leading-21 font-m text-black">
-                        {data.remainingAmount?.toLocaleString()} تومان
+                        {data.remainingAmount?.toLocaleString("en-US")} تومان
                       </p>
                     </div>
                   </div>

@@ -14,7 +14,7 @@ function Price_Date_Guests({
   return (
     <div>
       <p className="text-16 leading-28 text-black font-m mb-12">
-        مبلغ رزرو : {price?.toLocaleString()} تومان
+        مبلغ رزرو : {price?.toLocaleString("en-US")} تومان
       </p>
 
       <div className="flex items-center justify-between mb-16 flex-wrap">
