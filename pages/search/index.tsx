@@ -248,9 +248,12 @@ export const getServerSideProps: GetServerSideProps = async ({ req, query, res }
         // runs server-side, so it hits the backend by absolute URL).
         const params = getSearchResidences_API_params({ query });
         const cat = params?.filters?.cat_name;
+        const tagsParam = params?.features?.length
+          ? `&tags=${encodeURIComponent(params.features.join(","))}`
+          : "";
         try {
           const resp = await fetch(
-            `${backendUrl}/api/search/page-data?slug=${encodeURIComponent(cat || "s")}`
+            `${backendUrl}/api/search/page-data?slug=${encodeURIComponent(cat || "s")}${tagsParam}`
           );
           const data = await resp.json();
           if (data?.status === "success") return { status: "success", params: data.data };
@@ -269,11 +272,10 @@ export const getServerSideProps: GetServerSideProps = async ({ req, query, res }
   // console.log(`Call took ${end - start} milliseconds`);
 
   const metaTagsOfSearchPage: {
-    meta_description: string;
-    meta_title: string;
-    meta_keywords: string;
-    page_title: string;
-    canonical_url: string; // ex: "/search/tehran";
+    title: string | null;
+    description: string | null;
+    page_title: string | null;
+    canonical: string | null; // ex: "https://lidomatrip.com/search/tehran"
   } = (queryClient as any)?.queryCache?.queries.find((query: any) => {
     return query?.queryKey?.[0] === "getSearchData";
   })?.state?.data?.params;
@@ -281,23 +283,22 @@ export const getServerSideProps: GetServerSideProps = async ({ req, query, res }
   // NOTE: Keep index zero item for the title tage of page always.
   const metaTagsList = [
     `${
-      metaTagsOfSearchPage?.meta_title ||
+      metaTagsOfSearchPage?.title ||
       metaTagsOfSearchPage?.page_title ||
-      metaTagsOfSearchPage?.meta_keywords ||
-      metaTagsOfSearchPage?.meta_description ||
+      metaTagsOfSearchPage?.description ||
       "جستجوی اقامتگاه | لیدوما تریپ"
     }`,
+    // MainLayout renders index 1 as the canonical <link> — it must sit here.
+    metaTagsOfSearchPage?.canonical
+      ? { rel: "canonical", href: `${metaTagsOfSearchPage?.canonical}` }
+      : {},
     {
       name: "title",
-      content: `${metaTagsOfSearchPage?.meta_title}`,
-    },
-    {
-      name: "keywords",
-      content: `${metaTagsOfSearchPage?.meta_keywords}`,
+      content: `${metaTagsOfSearchPage?.title}`,
     },
     {
       name: "description",
-      content: `${metaTagsOfSearchPage?.meta_description}`,
+      content: `${metaTagsOfSearchPage?.description}`,
     },
     {
       name: "twitter:site",

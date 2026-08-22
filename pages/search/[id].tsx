@@ -392,9 +392,12 @@ export const getServerSideProps: GetServerSideProps = async ({ req, query, res }
         // every initial page load.
         const params = getSearchResidences_API_params({ query });
         const cat = params?.filters?.cat_name;
+        const tagsParam = params?.features?.length
+          ? `&tags=${encodeURIComponent(params.features.join(","))}`
+          : "";
         try {
           const resp = await fetch(
-            `${backendUrl}/api/search/page-data?slug=${encodeURIComponent(cat || "s")}`
+            `${backendUrl}/api/search/page-data?slug=${encodeURIComponent(cat || "s")}${tagsParam}`
           );
           const data = await resp.json();
           if (data?.status === "success") return { status: "success", params: data.data };
@@ -419,13 +422,14 @@ export const getServerSideProps: GetServerSideProps = async ({ req, query, res }
   // NOTE: Keep index zero item for the title tage of page always.
   const metaTagsList = [
     `${metaTagsOfSearchPage?.title || "جستجوی اقامتگاه | لیدوما تریپ"}`,
+    // MainLayout renders index 1 as the canonical <link> — it must sit here,
+    // not further down the list (it silently rendered a broken tag before).
+    metaTagsOfSearchPage?.canonical
+      ? { rel: "canonical", href: `${metaTagsOfSearchPage?.canonical}` }
+      : {},
     {
       name: "title",
       content: `${metaTagsOfSearchPage?.title}`,
-    },
-    {
-      rel: "canonical",
-      href: `${metaTagsOfSearchPage?.canonical}`,
     },
     {
       name: "description",
