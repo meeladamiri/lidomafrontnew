@@ -63,12 +63,15 @@ export function buildSearchBody({ page = 1, page_size = 20, order, filters, feat
     pageSize: page_size,
   };
 
-  // Category tags (?villa=1, ?boomgardi=1, ...) arrive as `features`.
-  // "boomgardi"/"suit" map to the residence-type filter the backend already
-  // has; the rest need the amenities catalog (not yet migrated from Odoo)
-  // before they can narrow results — until then they're accepted but inert.
+  // Category tags (?villa=1, ?pool=1, ...) arrive as `features`.
+  // "boomgardi"/"suit" map to the residence-type column; the rest are
+  // amenity-backed filters the backend resolves via Amenity.key (villa/
+  // cottage/... -> type, forest/beach/... -> area, pool/jacuzzi -> binary,
+  // luxury/economic -> price band, fast -> isFast).
   if (features?.includes("boomgardi")) body.type = "BOOMGARDI";
   else if (features?.includes("suit")) body.type = "SUIT";
+  const amenityFeatures = features?.filter((f) => f !== "boomgardi" && f !== "suit");
+  if (amenityFeatures?.length) body.features = amenityFeatures;
 
   if (filters?.cat_name && filters.cat_name !== "s") body.cityName = filters.cat_name;
   const startISO = jalaliToISO(filters?.start);

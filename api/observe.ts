@@ -97,7 +97,9 @@ function mapFeatures(amenities: any[]): any[] {
     icon_url: ra.amenity?.iconUrl || "",
     id: ra.amenity?.id,
     name: ra.amenity?.name || "",
-    value: ra.extraFeatures ? JSON.stringify(ra.extraFeatures) : "بله",
+    // extraFeatures = {value: "دارد" | "جنگلی" | "کولر گازی، ..."} (from the
+    // Odoo attribute migration) — show the value itself.
+    value: ra.extraFeatures?.value ?? "دارد",
   }));
 }
 
