@@ -17,7 +17,7 @@ function HostPreview() {
           }}
         >
           <Image
-            src={host_image}
+            src={host_image || "/assets/default-profile.svg"}
             alt={host_name}
             className="rounded-full"
             fill

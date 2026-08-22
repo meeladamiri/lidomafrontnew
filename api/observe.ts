@@ -6,6 +6,14 @@ function mapDisplayType(type: string): "suit" | "boomgardi" {
   return type === "BOOMGARDI" ? "boomgardi" : "suit";
 }
 
+// `residence_type` gets interpolated directly into Persian UI strings
+// ("امکانات __", "ظرفیت __", "__ به میزبانی: ") across several components —
+// unlike `display_type` (mapDisplayType above), it was never meant to carry
+// the raw enum value.
+function mapResidenceTypeLabel(type: string): string {
+  return type === "BOOMGARDI" ? "بوم‌گردی" : "سوئیت";
+}
+
 function avg(reviews: any[], key: string): number {
   if (!reviews?.length) return 0;
   return reviews.reduce((sum: number, r: any) => sum + (r[key] ?? 0), 0) / reviews.length;
@@ -71,13 +79,13 @@ function mapResidenceInfo(residence: any) {
     integrity_rate: avg(residence.reviews, "integrity"),
     greeting_rate: avg(residence.reviews, "greeting"),
     delivery_rate: avg(residence.reviews, "delivery"),
-    residence_type: residence.type,
+    residence_type: mapResidenceTypeLabel(residence.type),
     total_area: residence.totalArea ?? 0,
     video_url: residence.videoUrl || undefined,
     price_details: {
       discount: 0,
       discounted_price: residence.weekPrice ?? 0,
-      extra_price: residence.extraPrice ?? 0,
+      extra_price: residence.extraGuestsPrice ?? 0,
       original_price: residence.weekPrice ?? 0,
     },
   };

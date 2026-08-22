@@ -46,6 +46,15 @@ function BreadCrumb({
           </li>
         </>
       )}
+      {!!resPureNameAlone && (
+        <>
+          /
+          <li>
+            {" / "}
+            {resPureNameAlone}
+          </li>
+        </>
+      )}
     </>
   );
 }

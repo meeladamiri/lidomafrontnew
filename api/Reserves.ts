@@ -458,8 +458,10 @@ function submitNewReserve({
     })
     .call()
     .then((resp) => {
-      if (resp?.status !== "success") return resp;
-      return { status: "success", params: { order_id: resp?.data?.id } };
+      if (resp?.status !== "success") return { status: "error", err_msg: resp?.message };
+      // createReservation() returns `{ reservation, pricing }` — the id is
+      // nested, not top-level.
+      return { status: "success", params: { order_id: resp?.data?.reservation?.id } };
     });
 }
 

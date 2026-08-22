@@ -13,7 +13,10 @@ function Infography() {
   const { data } = useGetObserveResidence();
 
   const title = data?.params?.residence_info.name;
-  const resPureNameAlone = data?.params?.residence_info.name2;
+  // name2 is an optional alt/short name (mainly used for boomgardi listings)
+  // — almost never set, so fall back to the real name rather than leaving
+  // the breadcrumb's last item empty.
+  const resPureNameAlone = data?.params?.residence_info.name2 || title;
   const average_rating = data?.params?.residence_info.average_rating;
   const reviews_count = data?.params?.residence_info.reviews_count;
   const reference = data?.params?.residence_info.reference;
