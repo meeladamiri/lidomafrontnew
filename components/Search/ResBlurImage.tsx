@@ -21,7 +21,10 @@ function ResBlurImage({ img, name, isOffscreen, i }: I_ResBlurImage) {
       style={{
         objectFit: "cover",
       }}
-      unoptimized
+      // NOT unoptimized: Liara object storage 404s any request whose
+      // User-Agent contains "Mozilla" (bot/hotlink protection), so the
+      // browser can never fetch these directly — they must go through
+      // Next's image optimizer, which fetches server-side.
       placeholder="blur"
       blurDataURL={image_blurHash}
       className={`h-[240px] md:h-[280px]`}
