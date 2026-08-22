@@ -13,6 +13,22 @@ export default class MyDocument extends Document<IProps> {
     return (
       <Html dir="rtl" lang="fa_IR" id="html">
         <Head>
+          {/* Dev-only debugging aids:
+              1) __earlyErrs collects every early error/rejection (incl. failed
+                 resource loads) before any Next chunk runs — hydration failures
+                 in this codebase are otherwise silent.
+              2) requestAnimationFrame fallback: Next's dev client gates
+                 hydration behind a rAF (displayContent), which never fires in a
+                 background/occluded tab — automated-browser verification hangs
+                 without this. Timeout path only fires when real rAF doesn't. */}
+          {process.env.NODE_ENV === "development" && (
+            <script
+              dangerouslySetInnerHTML={{
+                __html: `window.__earlyErrs=[];window.addEventListener('error',function(e){var t=e.target||{};window.__earlyErrs.push(e.message?(e.message+' @ '+((e.filename||'').split('/').pop())+':'+e.lineno):('RESOURCE-FAIL '+(t.tagName||'?')+' '+(t.src||t.href||'?')))},true);window.addEventListener('unhandledrejection',function(e){window.__earlyErrs.push('REJECTION: '+String(e.reason&&(e.reason.stack||e.reason.message)||e.reason).slice(0,400))});
+var _raf=window.requestAnimationFrame&&window.requestAnimationFrame.bind(window);window.requestAnimationFrame=function(cb){var done=false;function run(ts){if(done)return;done=true;cb(ts)}var t=setTimeout(function(){run(performance.now())},120);if(_raf)_raf(function(ts){clearTimeout(t);run(ts)});return t};`,
+              }}
+            />
+          )}
           <script
             dangerouslySetInnerHTML={{
               __html: `(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':

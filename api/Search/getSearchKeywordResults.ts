@@ -25,17 +25,41 @@ export interface ISearchKeywordResultsData {
   residences: IResidence[];
 }
 
+// Old backend: POST /api/search_keyword (Odoo JSON-RPC). New backend:
+// GET /api/search/cities?q=... which returns matching cities, provinces, and
+// published residences — reshaped into the old `{status, params:{categories,
+// residences}}` envelope the destination-search dropdown expects.
 const getSearchKeywordResults = async ({ name }: { name: string }) => {
-  const url = `/api/search_keyword`;
-
-  return apiBuilder
-    .setUrl(url)
-    .setCallMethod("POST")
-    .setJsonRpcMethod("call")
-    .setParams({
-      name,
-    })
+  const resp = await apiBuilder
+    .setUrl(`/api/search/cities?q=${encodeURIComponent(name)}`)
+    .setCallMethod("GET")
     .call();
+
+  if (resp?.status !== "success") return { status: "error", err_msg: resp?.message };
+
+  const categories: ICategory[] = [
+    ...(resp?.data?.cities || []),
+    ...(resp?.data?.provinces || []),
+  ].map((c: any, idx: number) => ({
+    id: c.id,
+    name: c.name,
+    title_en: c.titleEn || "",
+    count: c.count ?? 0,
+    parent_id: 0,
+    parent_name: "",
+    score: idx,
+    type: c.type,
+  }));
+
+  const residences: IResidence[] = (resp?.data?.residences || []).map((r: any, idx: number) => ({
+    id: r.id,
+    name: r.name,
+    reference: r.reference,
+    display_type: r.displayType,
+    score: idx,
+  }));
+
+  return { status: "success", params: { categories, residences } };
 };
 
 export { getSearchKeywordResults };
