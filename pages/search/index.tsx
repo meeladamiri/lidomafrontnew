@@ -306,11 +306,11 @@ export const getServerSideProps: GetServerSideProps = async ({ req, query, res }
     },
     {
       name: "twitter:title",
-      content: `${metaTagsOfSearchPage?.meta_title}`,
+      content: `${metaTagsOfSearchPage?.title}`,
     },
     {
       name: "twitter:description",
-      content: `${metaTagsOfSearchPage?.meta_description}`,
+      content: `${metaTagsOfSearchPage?.description}`,
     },
     {
       name: "twitter:image",
@@ -318,11 +318,11 @@ export const getServerSideProps: GetServerSideProps = async ({ req, query, res }
     },
     {
       property: "og:title",
-      content: `${metaTagsOfSearchPage?.meta_title}`,
+      content: `${metaTagsOfSearchPage?.title}`,
     },
     {
       property: "og:description",
-      content: `${metaTagsOfSearchPage?.meta_description}`,
+      content: `${metaTagsOfSearchPage?.description}`,
     },
     {
       property: "og:image",
