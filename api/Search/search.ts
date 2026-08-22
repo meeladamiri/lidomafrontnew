@@ -47,11 +47,17 @@ export function mapCard(card: any): IProduct_SearchResidences {
 // have no equivalent on the new one — flatten to what `/api/search/residences` accepts.
 // Exported so `pages/search/index.tsx`'s `getServerSideProps` (which must hit the
 // backend by absolute URL, not through the browser-only rewrite) can build the same body.
-export function buildSearchBody({ page = 1, page_size = 20, order, filters }: I_SearchResidenceApi_params) {
+export function buildSearchBody({ page = 1, page_size = 20, order, filters, features }: I_SearchResidenceApi_params) {
   const body: Record<string, any> = {
     page,
     pageSize: page_size,
   };
+
+  // Category tags (?villa=1, ?boomgardi=1, ...) arrive as `features`.
+  // "boomgardi" maps to the residence-type filter the backend already has;
+  // the rest need the amenities catalog (not yet migrated from Odoo) before
+  // they can narrow results — until then they're accepted but inert.
+  if (features?.includes("boomgardi")) body.type = "BOOMGARDI";
 
   if (filters?.cat_name && filters.cat_name !== "s") body.cityName = filters.cat_name;
   if (filters?.start) body.startDate = filters.start;

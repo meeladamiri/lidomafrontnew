@@ -8,46 +8,50 @@ import beach from "../../public/assets/home/Beach.svg";
 import forest from "../../public/assets/home/Forest.svg";
 import MainCategoryItemInDesktop from "./MainCategoryItemInDesktop";
 
+// Category "tags" are now query attributes on the search list page
+// (/search?<tag>=1) — the same format the legacy /tags/... SEO URLs 301 to.
+// Tag keys match the legacy website_tags.x_title values the search page and
+// backend understand (villa / pool / hotelapartment / ...).
 const desktopData = [
   {
     image: villa,
     categoryName: "ویلا",
-    link: "/tags/villa/%D8%A7%D8%AC%D8%A7%D8%B1%D9%87-%D9%88%DB%8C%D9%84%D8%A7-%D8%AF%D8%B1-%D8%B4%D9%85%D8%A7%D9%84",
+    link: "/search?villa=1",
   },
   {
     image: suite,
     categoryName: "سوئیت",
-    link: "/search/city/تهران-164",
+    link: "/search/tehran",
   },
   {
     image: boomgardi,
     categoryName: "بوم گردی",
-    link: `/boomgardi/اجاره-اقامتگاه-بومگردی`,
+    link: "/search?boomgardi=1",
   },
   {
     image: apartment,
     categoryName: "هتل آپارتمان",
-    link: "/tags/hotel-apartment/%D8%B1%D8%B2%D8%B1%D9%88-%D9%87%D8%AA%D9%84-%D8%A2%D9%BE%D8%A7%D8%B1%D8%AA%D9%85%D8%A7%D9%86",
+    link: "/search?hotelapartment=1",
   },
   {
     image: cottage,
     categoryName: "کلبه",
-    link: "/tags/cottage/%D8%A7%D8%AC%D8%A7%D8%B1%D9%87-%DA%A9%D9%84%D8%A8%D9%87",
+    link: "/search?cottage=1",
   },
   {
     image: pool,
     categoryName: "استخردار",
-    link: "/tags/pool/%D8%A7%D8%AC%D8%A7%D8%B1%D9%87-%D9%88%DB%8C%D9%84%D8%A7-%D8%A7%D8%B3%D8%AA%D8%AE%D8%B1%D8%AF%D8%A7%D8%B1",
+    link: "/search?pool=1",
   },
   {
     image: beach,
     categoryName: "ساحلی",
-    link: "/tags/beach/%D8%A7%D8%AC%D8%A7%D8%B1%D9%87-%D9%88%DB%8C%D9%84%D8%A7-%D8%B3%D8%A7%D8%AD%D9%84%DB%8C",
+    link: "/search?beach=1",
   },
   {
     image: forest,
     categoryName: "جنگلی",
-    link: "/tags/jungle-villa/%D8%A7%D8%AC%D8%A7%D8%B1%D9%87-%D9%88%DB%8C%D9%84%D8%A7-%D8%AC%D9%86%DA%AF%D9%84%DB%8C",
+    link: "/search?forest=1",
   },
 ];
 

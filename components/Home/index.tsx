@@ -21,7 +21,6 @@ import downloadApp from "../../public/assets/home/DownloadApp.png";
 import Footer from "@/layouts/Footer";
 import HomePageBannerSkeleton from "./Skeletons/HomePageBannerSkeleton";
 import ManuallySwippableSliderComp from "./ManuallySwippableSliderComp";
-import { BASE_URL } from "@/configs/info";
 
 const WhereYouWannaGo = dynamic(() => import("./WhereYouWannaGo"), {
   ssr: true,
@@ -124,7 +123,7 @@ function Home() {
         title="ویلاهای شمال"
         loaderCondition={shomalSlidersIsLoading}
         data_list={(shomalSlidersData?.params as ICustomSliders)?.residences}
-        linkTo={`${BASE_URL}/search/shomal?villa=1`}
+        linkTo="/search/shomal?villa=1"
       />
 
       {/* <LazyLoad height={204} once offset={100}> */}
@@ -138,7 +137,7 @@ function Home() {
         title="اقامتگاه های تهران"
         loaderCondition={tehranSlidersIsLoading}
         data_list={(tehranSlidersData?.params as ICustomSliders)?.residences}
-        linkTo={`${BASE_URL}/search/tehran`}
+        linkTo="/search/tehran"
       />
       <section className="mb-24 md:mb-40 ContainerForSliders">
         {/* <LazyLoad height={270} once offset={100}> */}

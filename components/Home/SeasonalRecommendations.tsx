@@ -4,7 +4,6 @@ import PageTitle from "components/General/PageTitle";
 // Import Swiper React components
 import { Swiper, SwiperSlide } from "swiper/react";
 import Link from "next/link";
-import { BASE_URL } from "@/configs/info";
 
 function SeasonalRecommendation({
   // average,
@@ -25,7 +24,7 @@ function SeasonalRecommendation({
     <Link
       passHref
       prefetch={false}
-      href={`${BASE_URL}/search/${titleEn}`}
+      href={`/search/${titleEn}`}
       className="flex items-center gap-x-12 w-full text-black"
     >
       <div className="w-56 h-56 relative">
