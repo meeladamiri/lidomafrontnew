@@ -1,3 +1,4 @@
+import { residenceTypeSlug } from "@/utilities/residenceType";
 // Old backend: `/api/users/panel/residences_list` (JSON-RPC, Odoo). New
 // backend: `GET /api/host/residences` — reshaped here into the old
 // IServerResidence[] shape Step_0 (wizard resume list) and several other
@@ -47,7 +48,7 @@ export interface IServerResidence {
 const WIZARD_STEP_COUNT = 14;
 
 function mapDisplayType(type: string | undefined): I_Residence_display_type {
-  return type === "BOOMGARDI" ? ("boomgardi" as I_Residence_display_type) : ("suit" as I_Residence_display_type);
+  return residenceTypeSlug(type) as I_Residence_display_type;
 }
 
 function mapState(state: string): ResidenceStates_enum {

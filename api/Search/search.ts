@@ -69,8 +69,11 @@ export function buildSearchBody({ page = 1, page_size = 20, order, filters, feat
   // cottage/... -> type, forest/beach/... -> area, pool/jacuzzi -> binary,
   // luxury/economic -> price band, fast -> isFast).
   if (features?.includes("boomgardi")) body.type = "BOOMGARDI";
+  else if (features?.includes("hotel")) body.type = "HOTEL";
   else if (features?.includes("suit")) body.type = "SUIT";
-  const amenityFeatures = features?.filter((f) => f !== "boomgardi" && f !== "suit");
+  const amenityFeatures = features?.filter(
+    (f) => f !== "boomgardi" && f !== "suit" && f !== "hotel"
+  );
   if (amenityFeatures?.length) body.features = amenityFeatures;
 
   if (filters?.cat_name && filters.cat_name !== "s") body.cityName = filters.cat_name;

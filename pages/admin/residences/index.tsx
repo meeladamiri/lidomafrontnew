@@ -34,7 +34,7 @@ interface ResidenceRow {
   publicId: number;
   reference: string | null;
   name: string;
-  type: "SUIT" | "BOOMGARDI";
+  type: "SUIT" | "BOOMGARDI" | "HOTEL";
   state: string;
   published: boolean;
   address: string | null;
@@ -50,14 +50,27 @@ interface ResidenceRow {
   images: { url: string }[];
 }
 
-type Tab = "all" | "suit" | "boomgardi" | "pending";
+type Tab = "all" | "suit" | "boomgardi" | "hotel" | "pending";
 
 const TABS: { key: Tab; label: string }[] = [
   { key: "all", label: "همه اقامتگاه‌ها" },
   { key: "suit", label: "ویلا و سوئیت" },
   { key: "boomgardi", label: "بوم‌گردی‌ها" },
+  { key: "hotel", label: "هتل‌ها" },
   { key: "pending", label: "در انتظار تایید" },
 ];
+
+// "نوع ملک" — the residence category (Odoo x_display_type)
+const TYPE_LABEL: Record<string, string> = {
+  SUIT: "ویلا و سوئیت",
+  BOOMGARDI: "بوم‌گردی",
+  HOTEL: "هتل",
+};
+const TYPE_TONE: Record<string, "blue" | "green" | "purple"> = {
+  SUIT: "blue",
+  BOOMGARDI: "green",
+  HOTEL: "purple",
+};
 
 const STATE: Record<string, { label: string; tone: "green" | "yellow" | "red" | "gray" }> = {
   PUBLISHED: { label: "فعال", tone: "green" },
@@ -320,6 +333,7 @@ export default function AdminResidencesPage() {
                   </th>
                   <th className="px-16 py-12 font-m">نام اقامتگاه</th>
                   <th className="px-16 py-12 font-m">کد</th>
+                  <th className="px-16 py-12 font-m">نوع ملک</th>
                   <th className="px-16 py-12 font-m">تاریخ ایجاد</th>
                   <th className="px-16 py-12 font-m">قیمت</th>
                   <th className="px-16 py-12 font-m">میزبان</th>
@@ -350,6 +364,9 @@ export default function AdminResidencesPage() {
                     </td>
                     <td className="px-16 py-12 text-13 text-gray-6C6A7D whitespace-nowrap">
                       {faNum(r.publicId)}
+                    </td>
+                    <td className="px-16 py-12">
+                      <Badge tone={TYPE_TONE[r.type]}>{TYPE_LABEL[r.type]}</Badge>
                     </td>
                     <td className="px-16 py-12 text-13 text-gray-6C6A7D whitespace-nowrap">
                       {faDate(r.createdAt)}

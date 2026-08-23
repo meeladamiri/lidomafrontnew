@@ -1,4 +1,5 @@
 import apiBuilder from "./apiBuilder";
+import { residenceTypeSlug, residenceTypeLabel } from "@/utilities/residenceType";
 
 export interface IServerComment {
   average_rating: number;
@@ -45,7 +46,7 @@ const getComment = async (commentId: number | string) => {
         comment: r.comment,
         customer: r.guest?.name ?? "",
         host_answer: r.hostAnswer ?? undefined,
-        display_type: r.residence?.type === "BOOMGARDI" ? "boomgardi" : "suit",
+        display_type: residenceTypeSlug(r.residence?.type),
         id: r.id,
         rates: {
           average: r.averageRating,

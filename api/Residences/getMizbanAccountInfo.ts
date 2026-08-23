@@ -1,4 +1,5 @@
 import { IProduct_SearchResidences } from "@/interfaces/Search/SearchResp";
+import { residenceTypeSlug, residenceTypeLabel } from "@/utilities/residenceType";
 import apiBuilder from "../apiBuilder";
 import { I_Residence_display_type } from "@/interfaces/Residences";
 import { mapCard } from "../Search/search";
@@ -56,7 +57,7 @@ export function mapHostProfileResponse(resp: any) {
       host_answer: r.hostAnswer ?? undefined,
       reserve_date: r.createdAt?.slice(0, 10) ?? "",
       residence: {
-        display_type: r.residence?.type === "BOOMGARDI" ? "boomgardi" : "suit",
+        display_type: residenceTypeSlug(r.residence?.type),
         id: r.residence?.id,
         image_url: r.residence?.images?.[0]?.url ?? "",
         name: r.residence?.name ?? "",

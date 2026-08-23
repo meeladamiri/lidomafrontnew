@@ -1,9 +1,10 @@
 //import { firebaseCloudMessaging } from "utils/google/firebase/webPush";
 
 import apiBuilder from "./apiBuilder";
+import { residenceTypeSlug, residenceTypeLabel } from "@/utilities/residenceType";
 
-function mapDisplayType(type: string): "suit" | "boomgardi" {
-  return type === "BOOMGARDI" ? "boomgardi" : "suit";
+function mapDisplayType(type: string): "suit" | "boomgardi" | "hotel" {
+  return residenceTypeSlug(type);
 }
 
 // `residence_type` gets interpolated directly into Persian UI strings
@@ -11,7 +12,7 @@ function mapDisplayType(type: string): "suit" | "boomgardi" {
 // unlike `display_type` (mapDisplayType above), it was never meant to carry
 // the raw enum value.
 function mapResidenceTypeLabel(type: string): string {
-  return type === "BOOMGARDI" ? "بوم‌گردی" : "سوئیت";
+  return residenceTypeLabel(type);
 }
 
 function avg(reviews: any[], key: string): number {
