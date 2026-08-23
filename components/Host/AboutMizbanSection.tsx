@@ -11,7 +11,8 @@ const AboutMizbanSection = ({
     <div className={`${containerClassname}`}>
       <PageTitle title={"درباره میزبان :"} asH1={false} containerClassname="mb-8 text-#031526" />
 
-      <p className="text-13 leading-22 text-[#031526]">{desc}</p>
+      {/* free text written by the host — keep their line breaks (see ResDescription) */}
+      <p className="text-13 leading-22 text-[#031526] whitespace-pre-line">{desc}</p>
     </div>
   );
 };

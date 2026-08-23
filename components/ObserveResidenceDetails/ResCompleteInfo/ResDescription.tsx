@@ -18,7 +18,13 @@ function ResDescription({
           <h2 className="text-16 leading-24 text-black font-m mb-24">{`توضیحات ${residenceType}`}</h2>
         </header>
 
-        <p className="text-14 leading-20 text-black font-l break-words">{description}</p>
+        {/* Descriptions are stored as plain text with real newlines (no HTML
+            markup at all), which the browser would otherwise collapse into one
+            run-on paragraph — `whitespace-pre-line` keeps the host's line
+            breaks without ever injecting markup. */}
+        <p className="text-14 leading-24 text-black font-l break-words whitespace-pre-line">
+          {description}
+        </p>
 
         <div className="mt-20 flex flex-col gap-16">
           {!!isFast && <IsFastComp />}

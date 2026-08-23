@@ -136,7 +136,10 @@ function Row({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="flex items-start gap-x-8 py-10 border-b border-gray-F0F0F0 last:border-0">
       <span className="text-13 leading-20 text-gray-6C6A7D shrink-0">{label} :</span>
-      <span className="text-13 leading-20 text-black break-words">{value || "—"}</span>
+      {/* free-text values (description, address) keep their line breaks */}
+      <span className="text-13 leading-20 text-black break-words whitespace-pre-line">
+        {value || "—"}
+      </span>
     </div>
   );
 }
