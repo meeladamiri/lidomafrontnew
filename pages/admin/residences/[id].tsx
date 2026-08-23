@@ -23,6 +23,9 @@ import {
   faNum,
 } from "@/components/Admin/ui";
 import CapacityTab from "@/components/Admin/Residence/CapacityTab";
+import AmenitiesTab from "@/components/Admin/Residence/AmenitiesTab";
+import PricingTab from "@/components/Admin/Residence/PricingTab";
+import RulesTab from "@/components/Admin/Residence/RulesTab";
 
 // leaflet touches window on import
 const LocationPicker = dynamic(() => import("@/components/Admin/LocationPicker"), { ssr: false });
@@ -80,8 +83,23 @@ interface ResidenceDetail {
     traditionalBed: number;
     description: string | null;
   }[];
-  amenities: { amenity: { id: number; name: string; category: string | null } }[];
+  amenities: {
+    amenity: { id: number; name: string; category: string | null };
+    extraFeatures: { value?: string; extra?: Record<string, string> } | null;
+  }[];
   rules: { rule: { id: number; name: string }; value: unknown }[];
+  otherAmenities: string | null;
+  extraGuestsPrice: number | null;
+  extraGuestsPeakPrice: number | null;
+  weeklyDiscount: number | null;
+  monthlyDiscount: number | null;
+  checkinFrom: string | null;
+  checkinTo: string | null;
+  checkout: string | null;
+  minReservableDays: number | null;
+  rulesDesc: string | null;
+  cancellationPolicy: string | null;
+  extraRules: Record<string, unknown> | null;
 }
 
 const TYPE_LABEL: Record<string, string> = {
@@ -196,7 +214,50 @@ export default function AdminResidenceDetailPage() {
         />
       )}
 
-      {data && tab !== "basic" && tab !== "capacity" && (
+      {data && tab === "amenities" && (
+        <AmenitiesTab
+          residenceId={data.id}
+          amenities={data.amenities}
+          otherAmenities={data.otherAmenities}
+          onSaved={mutate}
+        />
+      )}
+
+      {data && tab === "pricing" && (
+        <PricingTab
+          residenceId={data.id}
+          pricing={{
+            weekPrice: data.weekPrice,
+            weekendPrice: data.weekendPrice,
+            peakPrice: data.peakPrice,
+            extraGuestsPrice: data.extraGuestsPrice,
+            extraGuestsPeakPrice: data.extraGuestsPeakPrice,
+            weeklyDiscount: data.weeklyDiscount,
+            monthlyDiscount: data.monthlyDiscount,
+          }}
+          onSaved={mutate}
+        />
+      )}
+
+      {data && tab === "rules" && (
+        <RulesTab
+          residenceId={data.id}
+          rules={data.rules}
+          values={{
+            checkinFrom: data.checkinFrom,
+            checkinTo: data.checkinTo,
+            checkout: data.checkout,
+            minReservableDays: data.minReservableDays,
+            capacity: data.capacity,
+            rulesDesc: data.rulesDesc,
+            cancellationPolicy: data.cancellationPolicy,
+            extraRules: data.extraRules,
+          }}
+          onSaved={mutate}
+        />
+      )}
+
+      {data && !["basic", "capacity", "amenities", "pricing", "rules"].includes(tab) && (
         <Card>
           <EmptyState text="این بخش هنوز پیاده‌سازی نشده" />
         </Card>
