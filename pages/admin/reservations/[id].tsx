@@ -1,4 +1,5 @@
 import { useRouter } from "next/router";
+import { adminImageUrl } from "@/components/Admin/ui";
 import Link from "next/link";
 import useSWR from "swr";
 import AdminLayout from "@/components/Admin/Layout";
@@ -97,7 +98,7 @@ const TYPE_LABELS: Record<string, string> = { BOOMGARDI: "بوم‌گردی", SU
 function Avatar({ url, name }: { url: string | null; name: string | null }) {
   return url ? (
     // eslint-disable-next-line @next/next/no-img-element
-    <img src={url} alt="" width={40} height={40} style={{ borderRadius: "50%", objectFit: "cover" }} />
+    <img src={adminImageUrl(url, 96)} alt="" width={40} height={40} style={{ borderRadius: "50%", objectFit: "cover" }} />
   ) : (
     <div
       style={{
@@ -226,7 +227,7 @@ export default function AdminReservationDetailPage() {
                 {data.residence.images[0]?.url && (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
-                    src={data.residence.images[0].url}
+                    src={adminImageUrl(data.residence.images[0].url, 320)}
                     alt=""
                     style={{ width: 120, height: 90, objectFit: "cover", borderRadius: 8, flexShrink: 0 }}
                   />
@@ -269,7 +270,7 @@ export default function AdminReservationDetailPage() {
                         {r.room.image && (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img
-                            src={r.room.image}
+                            src={adminImageUrl(r.room.image, 96)}
                             alt=""
                             style={{ width: 32, height: 32, objectFit: "cover", borderRadius: 4 }}
                           />

@@ -2,6 +2,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import useSWR from "swr";
+import dynamic from "next/dynamic";
 import AdminLayout from "@/components/Admin/Layout";
 import { apiFetch } from "@/api/Admin/adminApi";
 import {
@@ -16,10 +17,15 @@ import {
   Skeleton,
   Stars,
   Toggle,
+  adminImageUrl,
   faDate,
   faMoney,
   faNum,
 } from "@/components/Admin/ui";
+import CapacityTab from "@/components/Admin/Residence/CapacityTab";
+
+// leaflet touches window on import
+const LocationPicker = dynamic(() => import("@/components/Admin/LocationPicker"), { ssr: false });
 
 interface ResidenceDetail {
   id: number;
@@ -66,7 +72,14 @@ interface ResidenceDetail {
   images: { id: number; url: string; isMain: boolean; title: string | null }[];
   distances: { id: number; placeName: string; distance: string | null; eta: string | null }[];
   extraCities: { id: number; city: { id: number; name: string } }[];
-  rooms: { id: number; name: string }[];
+  rooms: {
+    id: number;
+    name: string;
+    singleBed: number;
+    doubleBed: number;
+    traditionalBed: number;
+    description: string | null;
+  }[];
   amenities: { amenity: { id: number; name: string; category: string | null } }[];
   rules: { rule: { id: number; name: string }; value: unknown }[];
 }
@@ -86,8 +99,20 @@ const STATE: Record<string, { label: string; tone: "green" | "yellow" | "red" | 
   DELETED: { label: "حذف شده", tone: "gray" },
 };
 
-const optimized = (url: string, w = 640) =>
-  `/_next/image?url=${encodeURIComponent(url)}&w=${w}&q=70`;
+const TABS = [
+  { key: "basic", label: "اطلاعات پایه" },
+  { key: "capacity", label: "ظرفیت" },
+  { key: "amenities", label: "امکانات" },
+  { key: "rules", label: "قوانین و مقررات" },
+  { key: "pricing", label: "نرخ اقامتگاه" },
+  { key: "reservations", label: "رزروها" },
+  { key: "calendar", label: "تقویم اقامتگاه" },
+  { key: "stats", label: "آمار اقامتگاه" },
+  { key: "reviews", label: "نظرات" },
+  { key: "documents", label: "مدرک مالکیت" },
+] as const;
+
+type TabKey = (typeof TABS)[number]["key"];
 
 function Row({ label, value }: { label: string; value: React.ReactNode }) {
   return (
@@ -104,6 +129,7 @@ export default function AdminResidenceDetailPage() {
   const [showEdit, setShowEdit] = useState(false);
   const [showAddress, setShowAddress] = useState(false);
   const [confirmDeactivate, setConfirmDeactivate] = useState(false);
+  const [tab, setTab] = useState<TabKey>("basic");
 
   const { data, isLoading, mutate } = useSWR<ResidenceDetail>(
     id ? `/api/admin/residences/${id}` : null,
@@ -131,7 +157,26 @@ export default function AdminResidenceDetailPage() {
       breadcrumb={
         <>
           <Link href="/admin">داشبورد</Link> / <Link href="/admin/residences">اقامتگاه‌ها</Link>
+          {!!data && <> / کد اقامتگاه {faNum(data.publicId)}</>}
         </>
+      }
+      toolbar={
+        <Card className="px-8 py-6 flex items-center gap-x-4 overflow-x-auto">
+          {TABS.map((t) => (
+            <button
+              key={t.key}
+              onClick={() => setTab(t.key)}
+              aria-pressed={tab === t.key}
+              className={`px-14 py-8 rounded-10 text-13 leading-20 font-m whitespace-nowrap transition ${
+                tab === t.key
+                  ? "bg-primary-main text-white"
+                  : "text-gray-6C6A7D hover:bg-gray-F0F0F0"
+              }`}
+            >
+              {t.label}
+            </button>
+          ))}
+        </Card>
       }
     >
       {isLoading && (
@@ -141,7 +186,23 @@ export default function AdminResidenceDetailPage() {
         </div>
       )}
 
-      {data && (
+      {data && tab === "capacity" && (
+        <CapacityTab
+          residenceId={data.id}
+          capacity={data.capacity}
+          maxCapacity={data.maxCapacity}
+          rooms={data.rooms}
+          onSaved={mutate}
+        />
+      )}
+
+      {data && tab !== "basic" && tab !== "capacity" && (
+        <Card>
+          <EmptyState text="این بخش هنوز پیاده‌سازی نشده" />
+        </Card>
+      )}
+
+      {data && tab === "basic" && (
         <div className="flex gap-x-16 items-start">
           {/* action rail */}
           <Card className="p-12 w-[200px] shrink-0 flex flex-col gap-y-8 sticky top-[76px]">
@@ -183,7 +244,7 @@ export default function AdminResidenceDetailPage() {
                     <div key={img.id} className="relative shrink-0">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
-                        src={optimized(img.url, 420)}
+                        src={adminImageUrl(img.url, 420)}
                         alt={img.title ?? data.name}
                         className="h-[130px] w-[200px] object-cover rounded-10"
                         loading="lazy"
@@ -251,7 +312,7 @@ export default function AdminResidenceDetailPage() {
                     {data.host.avatarUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
-                        src={optimized(data.host.avatarUrl, 64)}
+                        src={adminImageUrl(data.host.avatarUrl, 64)}
                         alt=""
                         className="w-full h-full object-cover"
                       />
@@ -335,19 +396,31 @@ export default function AdminResidenceDetailPage() {
               <Row label="آدرس در فرانت" value={data.address} />
               <Row label="آدرس در فاکتور" value={data.invoiceAddress} />
 
-              {data.latitude != null && data.longitude != null && (
-                <a
-                  className="block mt-12 rounded-12 overflow-hidden border border-gray-E5E5E6"
-                  href={`https://www.google.com/maps?q=${data.latitude},${data.longitude}`}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  <span className="block bg-gray-F5F5F7 px-14 py-12 text-13 text-primary-dark">
-                    <i className="icon-Location text-16 ml-6" />
-                    مشاهده موقعیت روی نقشه ({data.latitude.toFixed(5)}, {data.longitude.toFixed(5)})
+              {/* Pin is editable in place — click or drag saves immediately. */}
+              <div className="mt-12">
+                <LocationPicker
+                  lat={data.latitude}
+                  lng={data.longitude}
+                  onChange={(lat, lng) => patch({ latitude: lat, longitude: lng })}
+                />
+                <div className="flex items-center justify-between mt-8 text-12 text-gray-6C6A7D">
+                  <span>
+                    {data.latitude != null && data.longitude != null
+                      ? `${data.latitude.toFixed(6)} , ${data.longitude.toFixed(6)}`
+                      : "موقعیتی ثبت نشده"}
                   </span>
-                </a>
-              )}
+                  {data.latitude != null && data.longitude != null && (
+                    <a
+                      href={`https://www.google.com/maps?q=${data.latitude},${data.longitude}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-primary-dark font-m"
+                    >
+                      باز کردن در گوگل مپ ↗
+                    </a>
+                  )}
+                </div>
+              </div>
 
               {data.distances.length > 0 && (
                 <div className="mt-16">

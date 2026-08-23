@@ -566,6 +566,15 @@ export function Stars({ value, count }: { value: number; count?: number }) {
   );
 }
 
+// Liara object storage 404s any request whose User-Agent contains "Mozilla",
+// so a browser <img src> pointed straight at it never loads. Every admin
+// image goes through Next's optimizer, which fetches server-side.
+export function adminImageUrl(url: string | null | undefined, w = 640) {
+  if (!url) return "";
+  if (!url.startsWith("http")) return url;
+  return `/_next/image?url=${encodeURIComponent(url)}&w=${w}&q=70`;
+}
+
 export const faNum = (n: number | null | undefined) => (n ?? 0).toLocaleString("fa-IR");
 export const faMoney = (n: number | null | undefined) => `${(n ?? 0).toLocaleString("fa-IR")} تومان`;
 

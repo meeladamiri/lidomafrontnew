@@ -23,6 +23,7 @@ import {
   ToolbarPager,
   ToolbarSearch,
   ViewSwitch,
+  adminImageUrl,
   faDate,
   faMoney,
   faNum,
@@ -85,11 +86,6 @@ const STATE: Record<string, { label: string; tone: "green" | "yellow" | "red" | 
   DEACTIVATED: { label: "غیرفعال", tone: "red" },
   DELETED: { label: "حذف شده", tone: "gray" },
 };
-
-// The list image comes from object storage, which 404s browser user-agents —
-// always go through Next's optimizer (see components/Search/ResBlurImage).
-const optimized = (url: string, w = 640) =>
-  `/_next/image?url=${encodeURIComponent(url)}&w=${w}&q=70`;
 
 export default function AdminResidencesPage() {
   const [page, setPage] = useState(1);
@@ -448,7 +444,7 @@ export default function AdminResidencesPage() {
                     {!!r.images[0] && (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
-                        src={optimized(r.images[0].url)}
+                        src={adminImageUrl(r.images[0].url)}
                         alt={r.name}
                         className="w-full h-full object-cover"
                         loading="lazy"
