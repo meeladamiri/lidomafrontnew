@@ -9,7 +9,6 @@ import { Button } from "@/components/General/core/Button";
 // import AboutMizbanModal from "./AboutMizbanModal";
 import MizbanInfo from "./MizbanInfo";
 import { useRouter } from "next/router";
-import { BASE_URL } from "@/configs/info";
 // import { getResIdFromURL } from "@/utilities/PropertyPage/getResIdFromURL";
 
 function HostInfo() {
@@ -72,7 +71,7 @@ function HostInfo() {
           variant="outlined"
           color="grey"
           className="mt-24 md:w-[240px]"
-          onClick={() => router.push(`${BASE_URL}/host/${resp?.residence_info?.host?.reference}`)}
+          onClick={() => router.push(`/host/${resp?.residence_info?.host?.reference}`)}
           leftIcon={<i className="icon-FlashLeft text-20" />}
         >
           مشاهده پروفایل میزبان

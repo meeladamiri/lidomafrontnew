@@ -38,38 +38,28 @@ function ResFacilities() {
   const [showResidenceAllFacilitiesModal, setShowResidenceAllFacilitiesModal] =
     useState<boolean>(false);
 
-  const [eligibleFacilitiesToBeListed, setEligibleFacilitiesToBeListed] = useState<
-    (IFeature & {
-      extra_features: { [key: string | "توضیحات"]: string };
-    })[]
-  >([]);
-
-  useEffect(() => {
-    if (!!data) {
-      if (data.status === "success") {
-        const eligibleFacilities: IFeature[] = data?.params?.features.filter(
-          (feature: IFeature) =>
-            (feature.category === "امکانات" || feature.category === "امکانات بوم گردی") &&
-            feature.value === "دارد"
-        );
-
-        const eligibleFacilitiesWithTheirPossibleExtraFeaures: (IFeature & {
-          extra_features: { [key: string | "توضیحات"]: string };
-        })[] = eligibleFacilities.map((facilitiy) => ({
-          ...facilitiy,
-          extra_features:
-            !!data?.params?.residence_info?.extra_features &&
-            !!data?.params?.residence_info?.extra_features?.[facilitiy.id] &&
-            typeof data?.params?.residence_info?.extra_features?.[facilitiy.id] === "object" &&
-            Object.keys(data?.params?.residence_info?.extra_features?.[facilitiy.id]).length > 0
-              ? data?.params?.residence_info?.extra_features?.[facilitiy.id]
-              : {},
-        }));
-
-        setEligibleFacilitiesToBeListed(eligibleFacilitiesWithTheirPossibleExtraFeaures);
-      }
-    }
-  }, [data]);
+  // Derived directly (not useEffect+state) so the facilities list is part of
+  // the server-rendered HTML — it's SEO-relevant content.
+  const eligibleFacilitiesToBeListed: (IFeature & {
+    extra_features: { [key: string | "توضیحات"]: string };
+  })[] =
+    data?.status === "success"
+      ? (data?.params?.features || [])
+          .filter(
+            (feature: IFeature) =>
+              (feature.category === "امکانات" || feature.category === "امکانات بوم گردی") &&
+              feature.value === "دارد"
+          )
+          .map((facilitiy: IFeature) => ({
+            ...facilitiy,
+            extra_features:
+              !!data?.params?.residence_info?.extra_features?.[facilitiy.id] &&
+              typeof data?.params?.residence_info?.extra_features?.[facilitiy.id] === "object" &&
+              Object.keys(data?.params?.residence_info?.extra_features?.[facilitiy.id]).length > 0
+                ? data?.params?.residence_info?.extra_features?.[facilitiy.id]
+                : {},
+          }))
+      : [];
 
   return (
     <>

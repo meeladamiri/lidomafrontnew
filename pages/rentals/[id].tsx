@@ -98,18 +98,14 @@ const RentalsPage: NextPage = () => {
     description: truncateText(data?.params?.residence_info?.description, 160),
     numberOfBathroomsTotal: 1,
     numberOfRooms: data?.params?.rooms?.length,
+    // match by fragment — the migrated rule names differ slightly from the
+    // old backend's exact strings ("مجاز باشد" vs "مجاز می باشد")
     petsAllowed:
-      data?.params?.rules.find(
-        (el: IRule) =>
-          el.category === "مقررات اقامتگاه" && el.name === "ورود حیوان خانگی مجاز می باشد."
-      )?.value === "بله"
+      data?.params?.rules.find((el: IRule) => el.name?.includes("حیوان خانگی"))?.value === "بله"
         ? true
         : false,
     smokingAllowed:
-      data?.params?.rules.find(
-        (el: IRule) =>
-          el.category === "مقررات اقامتگاه" && el.name === "استعمال دخانیات مجاز می باشد"
-      )?.value === "بله"
+      data?.params?.rules.find((el: IRule) => el.name?.includes("دخانیات"))?.value === "بله"
         ? true
         : false,
     address: {

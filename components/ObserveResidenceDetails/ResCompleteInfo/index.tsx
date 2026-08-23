@@ -68,19 +68,19 @@ function ResCompleteInfo() {
       <LazyLoad height={453} once offset={150}>
         <ResGeoLocation />
       </LazyLoad>
-      <LazyLoad height={64} once offset={150}>
-        <section>
-          <header>
-            <h2 className="pb-24">
-              {`قوانین و مقررات ${data?.params?.residence_info?.residence_type}`}
-            </h2>
-          </header>
-          <div className="grid grid-cols-12 gap-x-28">
-            <ResRules />
-            <ResCancelRules />
-          </div>
-        </section>
-      </LazyLoad>
+      {/* SEO: rules are crawlable text — must be in the SSR HTML, not behind
+          a client-only LazyLoad placeholder */}
+      <section>
+        <header>
+          <h2 className="pb-24">
+            {`قوانین و مقررات ${data?.params?.residence_info?.residence_type}`}
+          </h2>
+        </header>
+        <div className="grid grid-cols-12 gap-x-28">
+          <ResRules />
+          <ResCancelRules />
+        </div>
+      </section>
       {/* <LazyLoad height={155} once offset={150}> */}
       {/* {!!resp?.rules?.find(
           (el: any) => el.category === "مقررات لغو رزرو" && el.name === "مقررات لغو رزرو"
@@ -88,12 +88,9 @@ function ResCompleteInfo() {
       {/* } */}
       {/* </LazyLoad> */}
       <Divider className="mb-24" />
-      <LazyLoad height={213} once offset={145}>
-        <HostInfo />
-      </LazyLoad>
-      <LazyLoad height={385} once offset={130}>
-        {resp?.reviews?.length !== 0 && <ResReviews />}
-      </LazyLoad>
+      {/* SEO: host info + reviews are crawlable content — keep in SSR HTML */}
+      <HostInfo />
+      {resp?.reviews?.length !== 0 && <ResReviews />}
       {/* Boomgardi Specific starts here */}
       {resp?.residence_info?.display_type === "suit" ? null : resp?.residence_info?.display_type ===
         "boomgardi" ? (

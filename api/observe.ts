@@ -19,7 +19,7 @@ function avg(reviews: any[], key: string): number {
   return reviews.reduce((sum: number, r: any) => sum + (r[key] ?? 0), 0) / reviews.length;
 }
 
-function mapResidenceInfo(residence: any) {
+function mapResidenceInfo(residence: any, publicId?: number) {
   const images: string[] = (residence.images || []).map((img: any) => img.url).filter(Boolean);
   const mainFirst = [...images].sort((a, b) => {
     const imgA = (residence.images || []).find((i: any) => i.url === a);
@@ -63,7 +63,9 @@ function mapResidenceInfo(residence: any) {
       name: residence.host?.name || "",
       reference: residence.host?.id != null ? String(residence.host.id) : "",
     },
-    id: residence.id,
+    // legacy-URL contract: migrated residences are addressed by their Odoo id
+    // everywhere (URL, reserve payloads, کد آگهی) — the backend resolves both.
+    id: publicId ?? residence.id,
     is_fast: !!residence.isFast,
     is_full: !!residence.isFull,
     is_offer: !!residence.isOffer,
@@ -76,8 +78,10 @@ function mapResidenceInfo(residence: any) {
     name2: residence.name2 || "",
     province_id: residence.city?.province?.id,
     province: residence.city?.province?.name || "",
-    province_title: residence.city?.province?.name || "",
-    reference: residence.reference,
+    // slug for /search/<slug> links + breadcrumb schema URLs
+    province_title: residence.city?.province?.titleEn || residence.city?.province?.name || "",
+    // "کد آگهی" — the old site shows the public (Odoo) id, not "ODOO-..."
+    reference: publicId ?? residence.reference,
     reserve_commission: residence.reserveCommission ?? 0,
     reviews_count: residence.reviewsCount ?? 0,
     cleaning_rate: avg(residence.reviews, "cleaning"),
@@ -181,7 +185,7 @@ function mapSimilar(similar: any[]): any[] {
       province_id: undefined,
       reference: undefined,
       reviews_count: 0,
-      rooms_count: 0,
+      rooms_count: s.roomsCount ?? 0,
       name2: "",
       capacity: 0,
     };
@@ -192,9 +196,9 @@ function mapSimilar(similar: any[]): any[] {
 // `getServerSideProps` (which fetches the backend directly by absolute URL since
 // relative `/api/...` rewrites only resolve in the browser, not server-side).
 export function mapObserveResidenceData(
-  data: { residence?: any; similar?: any[]; tags?: any[] } | undefined
+  data: { residence?: any; similar?: any[]; tags?: any[]; publicId?: number } | undefined
 ) {
-  const { residence, similar, tags } = data || {};
+  const { residence, similar, tags, publicId } = data || {};
 
   if (!residence) {
     return { status: "error", err_msg: "اقامتگاه یافت نشد" };
@@ -208,13 +212,17 @@ export function mapObserveResidenceData(
   return {
     status: "success",
     params: {
-      residence_info: mapResidenceInfo(residence),
+      residence_info: mapResidenceInfo(residence, publicId),
       images: (residence.images || []).map((img: any) => ({ id: img.id, name: img.title, url: img.url })),
       rooms: mapRooms(residence.rooms),
       features: mapFeatures(residence.amenities, residence),
       rules: mapRules(residence.rules),
       reviews: mapReviews(residence.reviews),
-      schema_data: [],
+      // feeds the Accommodation schema's amenityFeature list — one
+      // {name: true} per possessed amenity, as the old backend produced.
+      schema_data: (residence.amenities || [])
+        .filter((ra: any) => ra.amenity?.category === "امکانات")
+        .map((ra: any) => ({ [ra.amenity.name]: true })),
       distances: [],
       // "جستجوهای مرتبط" — computed by the backend from this residence's own
       // amenities (type/area/pool/...) + its city, like the old site.

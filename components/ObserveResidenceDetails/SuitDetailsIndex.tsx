@@ -63,16 +63,15 @@ function SuitDetailsIndex() {
             </footer>
           )}
         </article>
+        {/* SEO: similar residences + related-search links are internal-link
+            equity — keep them in the SSR HTML (images inside are next/image
+            and lazy-load natively) */}
         <aside className="CustomContainer">
-          <LazyLoad height={360} once offset={120}>
-            {!!data?.params?.similar_res?.length && <SimilarReses />}
-          </LazyLoad>
-          <LazyLoad height={236} once offset={120}>
-            <RelatedSearches
-              tags={data?.params?.tags}
-              relatedSearchWrapperClassname="text-[#015046] text-14 leading-18 font-m !bg-[#03D6BB14]"
-            />
-          </LazyLoad>
+          {!!data?.params?.similar_res?.length && <SimilarReses />}
+          <RelatedSearches
+            tags={data?.params?.tags}
+            relatedSearchWrapperClassname="text-[#015046] text-14 leading-18 font-m !bg-[#03D6BB14]"
+          />
         </aside>
       </SuitPropertyPageDataProvider>
 

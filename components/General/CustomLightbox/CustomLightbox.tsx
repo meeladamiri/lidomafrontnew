@@ -44,7 +44,12 @@ function CustomLightbox({
       slides={
         !!images
           ? images.map((img) => ({
-              src: img?.url,
+              // Route remote (object-storage) urls through Next's image
+              // optimizer — Liara storage 404s browser user-agents, so a raw
+              // <img src> to it never loads (see ResBlurImage).
+              src: img?.url?.startsWith("http")
+                ? `/_next/image?url=${encodeURIComponent(img.url)}&w=1920&q=80`
+                : img?.url,
               alt: img?.name,
             }))
           : !!staticImages

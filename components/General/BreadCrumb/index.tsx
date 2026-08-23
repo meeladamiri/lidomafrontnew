@@ -36,22 +36,16 @@ function BreadCrumb({
           {cityName}
         </Link>
       </li>
+      {/* one separator per segment — the previous markup emitted "/" twice,
+          showing "شیراز / / نام اقامتگاه" */}
       {!!neighborhood && (
         <>
-          /
-          <li>
-            {" / "}
-            {neighborhood}
-          </li>
+          /<li>{neighborhood}</li>
         </>
       )}
       {!!resPureNameAlone && (
         <>
-          /
-          <li>
-            {" / "}
-            {resPureNameAlone}
-          </li>
+          /<li>{resPureNameAlone}</li>
         </>
       )}
     </>
