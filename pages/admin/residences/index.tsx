@@ -66,6 +66,11 @@ const TYPE_LABEL: Record<string, string> = {
   BOOMGARDI: "بوم‌گردی",
   HOTEL: "هتل",
 };
+const TYPE_ICON: Record<string, string> = {
+  SUIT: "icon-Suite",
+  BOOMGARDI: "icon-Boomgardi",
+  HOTEL: "icon-Hotel",
+};
 const TYPE_TONE: Record<string, "blue" | "green" | "purple"> = {
   SUIT: "blue",
   BOOMGARDI: "green",
@@ -156,8 +161,26 @@ export default function AdminResidencesPage() {
     URL.revokeObjectURL(url);
   }
 
+  async function setType(ids: number[], type: string) {
+    await apiFetch("/api/admin/residences/bulk/type", {
+      method: "POST",
+      body: JSON.stringify({ ids, type }),
+    });
+    refreshAll();
+  }
+
   function rowMenuItems(r: ResidenceRow) {
+    // "نوع ملک" entries — only the types this residence is not already set to
+    const typeItems = (["SUIT", "BOOMGARDI", "HOTEL"] as const)
+      .filter((t) => t !== r.type)
+      .map((t) => ({
+        icon: TYPE_ICON[t],
+        label: `تغییر به ${TYPE_LABEL[t]}`,
+        onClick: () => setType([r.id], t),
+      }));
+
     return [
+      ...typeItems,
       {
         icon: "icon-Download",
         label: "خروجی فایل",
@@ -504,6 +527,21 @@ export default function AdminResidencesPage() {
             icon: "icon-Block",
             label: "غیرفعال‌سازی",
             onClick: () => bulk("state", { state: "DEACTIVATED" }),
+          },
+          {
+            icon: TYPE_ICON.SUIT,
+            label: "تغییر نوع به ویلا و سوئیت",
+            onClick: () => setType(selected, "SUIT"),
+          },
+          {
+            icon: TYPE_ICON.BOOMGARDI,
+            label: "تغییر نوع به بوم‌گردی",
+            onClick: () => setType(selected, "BOOMGARDI"),
+          },
+          {
+            icon: TYPE_ICON.HOTEL,
+            label: "تغییر نوع به هتل",
+            onClick: () => setType(selected, "HOTEL"),
           },
         ]}
       />
