@@ -419,6 +419,153 @@ export function TabPills<T extends string>({
   );
 }
 
+/** Floating action bar shown while rows are multi-selected. */
+export function SelectionBar({
+  count,
+  onClear,
+  actions,
+}: {
+  count: number;
+  onClear: () => void;
+  actions: { icon: string; label: string; onClick: () => void; danger?: boolean }[];
+}) {
+  if (count === 0) return null;
+  return (
+    <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-40 bg-white rounded-14 shadow-[0_8px_32px_rgba(24,39,58,0.18)] border border-gray-E5E5E6 px-12 py-10 flex items-center gap-x-8">
+      <button
+        onClick={onClear}
+        aria-label="لغو انتخاب"
+        title="لغو انتخاب"
+        className="w-32 h-32 rounded-10 flex items-center justify-center text-gray-6C6A7D hover:bg-gray-F0F0F0 transition"
+      >
+        <i className="icon-Close text-16" />
+      </button>
+      <span className="w-px h-20 bg-gray-E5E5E6" />
+      {actions.map((a) => (
+        <button
+          key={a.label}
+          onClick={a.onClick}
+          title={a.label}
+          aria-label={a.label}
+          className={`w-32 h-32 rounded-10 flex items-center justify-center transition ${
+            a.danger
+              ? "text-[#E53935] hover:bg-[#FFEBEB]"
+              : "text-gray-6C6A7D hover:bg-gray-F0F0F0"
+          }`}
+        >
+          <i className={`${a.icon} text-16`} />
+        </button>
+      ))}
+      <span className="w-px h-20 bg-gray-E5E5E6" />
+      <span className="inline-flex items-center gap-x-6 text-13 leading-20 text-black whitespace-nowrap pl-4">
+        <span className="w-22 h-22 rounded-full bg-primary-main text-white text-11 flex items-center justify-center">
+          {faNum(count)}
+        </span>
+        مورد انتخاب شده
+      </span>
+    </div>
+  );
+}
+
+/** Per-row "⋮" dropdown. */
+export function RowMenu({
+  items,
+}: {
+  items: { icon: string; label: string; onClick: () => void; danger?: boolean }[];
+}) {
+  const [open, setOpen] = React.useState(false);
+
+  React.useEffect(() => {
+    if (!open) return;
+    const close = () => setOpen(false);
+    document.addEventListener("click", close);
+    return () => document.removeEventListener("click", close);
+  }, [open]);
+
+  return (
+    <div className="relative">
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          setOpen((o) => !o);
+        }}
+        aria-label="عملیات"
+        aria-expanded={open}
+        className="w-28 h-28 rounded-8 flex items-center justify-center text-gray-6C6A7D hover:bg-gray-F0F0F0 transition"
+      >
+        <i className="icon-Details text-16" />
+      </button>
+      {open && (
+        <div
+          onClick={(e) => e.stopPropagation()}
+          className="absolute left-0 top-full mt-4 z-30 w-[190px] bg-white rounded-12 border border-gray-E5E5E6 shadow-[0_8px_24px_rgba(24,39,58,0.14)] py-6"
+        >
+          {items.map((it) => (
+            <button
+              key={it.label}
+              onClick={() => {
+                setOpen(false);
+                it.onClick();
+              }}
+              className={`w-full px-14 py-8 flex items-center gap-x-10 text-13 leading-20 text-right transition ${
+                it.danger ? "text-[#E53935] hover:bg-[#FFEBEB]" : "text-black hover:bg-gray-F5F5F7"
+              }`}
+            >
+              <i className={`${it.icon} text-16 shrink-0`} />
+              {it.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function Checkbox({
+  checked,
+  indeterminate,
+  onChange,
+  label,
+}: {
+  checked: boolean;
+  indeterminate?: boolean;
+  onChange: (next: boolean) => void;
+  label?: string;
+}) {
+  const ref = React.useRef<HTMLInputElement>(null);
+  React.useEffect(() => {
+    if (ref.current) ref.current.indeterminate = !!indeterminate && !checked;
+  }, [indeterminate, checked]);
+
+  return (
+    <input
+      ref={ref}
+      type="checkbox"
+      checked={checked}
+      aria-label={label}
+      onChange={(e) => onChange(e.target.checked)}
+      onClick={(e) => e.stopPropagation()}
+      className="w-16 h-16 rounded-4 accent-primary-main cursor-pointer align-middle"
+    />
+  );
+}
+
+/** Read-only 5-star rating with an optional review count. */
+export function Stars({ value, count }: { value: number; count?: number }) {
+  const full = Math.round(value);
+  return (
+    <span className="inline-flex items-center gap-x-2 text-13" title={`${value.toFixed(1)} از ۵`}>
+      {Array.from({ length: 5 }).map((_, i) => (
+        <i
+          key={i}
+          className={`${i < full ? "icon-StarFill text-[#FFB800]" : "icon-Star text-gray-D2D2D7"} text-13`}
+        />
+      ))}
+      {count !== undefined && <span className="text-gray-6C6A7D mr-4">({faNum(count)})</span>}
+    </span>
+  );
+}
+
 export const faNum = (n: number | null | undefined) => (n ?? 0).toLocaleString("fa-IR");
 export const faMoney = (n: number | null | undefined) => `${(n ?? 0).toLocaleString("fa-IR")} تومان`;
 
