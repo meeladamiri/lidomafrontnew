@@ -24,6 +24,7 @@ export interface I_MizbanAccountInfo_Data {
     description?: string;
     image_url: string; // ex: "https://cdn.lidomatrip.com/web/image/res.partner/18186/image_small";
     name: string;
+    city?: string; // the host's "home" city (most frequent among their residences) — SEO copy
   };
   residences: IProduct_SearchResidences[];
   reviews: I_MizbanAccountInfo_Data_review[];
@@ -45,6 +46,7 @@ export function mapHostProfileResponse(resp: any) {
       description: host?.description || undefined,
       image_url: host?.avatarUrl || "",
       name: host?.name || "",
+      city: host?.cityName || undefined,
     },
     residences: (resp.data?.residences || []).map(mapCard),
     reviews: (resp.data?.reviews || []).map((r: any) => ({
