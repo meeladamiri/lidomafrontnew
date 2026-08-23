@@ -39,8 +39,15 @@ function mapResidenceInfo(residence: any) {
     city_title: residence.city?.titleEn || residence.city?.name || "",
     description: residence.description || "",
     display_type: mapDisplayType(residence.type),
-    extra_features: undefined,
-    extra_rules: undefined,
+    // Per-facility "توضیحات بیشتر" answers, keyed by amenity id — ResFacilities
+    // reads extra_features[feature.id] to fill its details bottom-sheet.
+    extra_features: Object.fromEntries(
+      (residence.amenities || [])
+        .filter((ra: any) => ra.extraFeatures?.extra && Object.keys(ra.extraFeatures.extra).length)
+        .map((ra: any) => [ra.amenity?.id, ra.extraFeatures.extra])
+    ),
+    // Host's free-text rules JSON — ResRules JSON.parses this and shows `desc`.
+    extra_rules: residence.extraRules ? JSON.stringify(residence.extraRules) : undefined,
     foundation_area: residence.foundationArea ?? 0,
     host_share_future_nights: residence.hostShareFutureNights ?? 0,
     before_start_time: residence.beforeStartTime ?? 0,
@@ -91,16 +98,32 @@ function mapResidenceInfo(residence: any) {
   };
 }
 
-function mapFeatures(amenities: any[]): any[] {
-  return (amenities || []).map((ra: any) => ({
+function mapFeatures(amenities: any[], residence?: any): any[] {
+  const catalogFeatures = (amenities || []).map((ra: any) => ({
     category: ra.amenity?.category || "",
     icon_url: ra.amenity?.iconUrl || "",
     id: ra.amenity?.id,
     name: ra.amenity?.name || "",
-    // extraFeatures = {value: "دارد" | "جنگلی" | "کولر گازی، ..."} (from the
-    // Odoo attribute migration) — show the value itself.
+    // extraFeatures = {value: "دارد" | "جنگلی" | ..., extra: {...}} (from the
+    // Odoo attribute migration) — show the value itself; `extra` (the
+    // per-facility "توضیحات بیشتر" answers) surfaces via
+    // residence_info.extra_features (see mapResidenceInfo).
     value: ra.extraFeatures?.value ?? "دارد",
   }));
+
+  // Boomgardi residences also carry free-text feature names (legacy
+  // x_features) rendered under the "امکانات بوم گردی" category.
+  const boomFeatures = ((residence?.boomgardiFeatures as string[]) || []).map(
+    (name: string, i: number) => ({
+      category: "امکانات بوم گردی",
+      icon_url: "",
+      id: -(i + 1), // synthetic — not a catalog amenity
+      name,
+      value: "دارد",
+    })
+  );
+
+  return [...catalogFeatures, ...boomFeatures];
 }
 
 function mapRules(rules: any[]): any[] {
@@ -168,8 +191,10 @@ function mapSimilar(similar: any[]): any[] {
 // Shared by the client-side call below AND `pages/rentals/[id].tsx`'s
 // `getServerSideProps` (which fetches the backend directly by absolute URL since
 // relative `/api/...` rewrites only resolve in the browser, not server-side).
-export function mapObserveResidenceData(data: { residence?: any; similar?: any[] } | undefined) {
-  const { residence, similar } = data || {};
+export function mapObserveResidenceData(
+  data: { residence?: any; similar?: any[]; tags?: any[] } | undefined
+) {
+  const { residence, similar, tags } = data || {};
 
   if (!residence) {
     return { status: "error", err_msg: "اقامتگاه یافت نشد" };
@@ -177,21 +202,23 @@ export function mapObserveResidenceData(data: { residence?: any; similar?: any[]
 
   // Reshape into the old `{status, params: IObserveResidenceData}` envelope so the
   // whole ObserveResidenceDetails component tree keeps working unchanged. Sections the
-  // new backend doesn't have yet (SEO schema_data, distances, tags, faqs) are
-  // defaulted to empty arrays — several call-sites `.map()/.find()` these without an
-  // optional-chain guard, so `undefined` here would crash the page; `[]` degrades safely.
+  // new backend doesn't have yet (SEO schema_data, distances, faqs) are defaulted to
+  // empty arrays — several call-sites `.map()/.find()` these without an optional-chain
+  // guard, so `undefined` here would crash the page; `[]` degrades safely.
   return {
     status: "success",
     params: {
       residence_info: mapResidenceInfo(residence),
       images: (residence.images || []).map((img: any) => ({ id: img.id, name: img.title, url: img.url })),
       rooms: mapRooms(residence.rooms),
-      features: mapFeatures(residence.amenities),
+      features: mapFeatures(residence.amenities, residence),
       rules: mapRules(residence.rules),
       reviews: mapReviews(residence.reviews),
       schema_data: [],
       distances: [],
-      tags: [],
+      // "جستجوهای مرتبط" — computed by the backend from this residence's own
+      // amenities (type/area/pool/...) + its city, like the old site.
+      tags: tags || [],
       faqs: [],
       similar_res: mapSimilar(similar || []),
     },
