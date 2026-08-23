@@ -127,13 +127,13 @@ export default function AdminUserDetailPage() {
         data && (
           <>
             <Button variant="secondary" onClick={() => setShowEdit(true)}>
-              ویرایش اطلاعات
+              <i className="icon-Edit text-16" /> ویرایش اطلاعات
             </Button>
             <Button variant="secondary" onClick={() => setShowPassword(true)}>
-              تنظیم رمز عبور
+              <i className="icon-Key text-16" /> تنظیم رمز عبور
             </Button>
             <Button variant="secondary" onClick={() => setShowYellow(true)}>
-              ثبت کارت زرد
+              <i className="icon-Warning text-16" /> ثبت کارت زرد
             </Button>
             <Button
               variant={data.isActive ? "danger" : "primary"}
@@ -206,20 +206,20 @@ export default function AdminUserDetailPage() {
               label="رزروهای موفق (مهمان)"
               value={faNum(data.stats.successfulAsGuest)}
               hint={`از ${faNum(data.stats.reservationsAsGuest)} درخواست`}
-              icon="🧳"
+              icon={<i className="icon-Trips text-18" />}
             />
             <StatTile
               tone="orange"
               label="پرداختی به سایت"
               value={faMoney(data.stats.totalSpent)}
-              icon="💳"
+              icon={<i className="icon-CardBank text-18" />}
             />
             <StatTile
               tone="green"
               label="رزروهای موفق (میزبان)"
               value={faNum(data.stats.successfulAsHost)}
               hint={`از ${faNum(data.stats.reservationsAsHost)} درخواست`}
-              icon="🏡"
+              icon={<i className="icon-Homes text-18" />}
             />
             <StatTile
               tone="purple"
@@ -230,7 +230,7 @@ export default function AdminUserDetailPage() {
                   ? `آخرین فعالیت ${faDate(data.stats.lastActivityAt)}`
                   : undefined
               }
-              icon="📈"
+              icon={<i className="icon-Amaar text-18" />}
             />
           </section>
 

@@ -136,28 +136,28 @@ export default function AdminDashboardPage() {
               label="کاربران"
               value={faNum(data.usersCount)}
               hint={`${faNum(data.newUsersThisMonth)} کاربر جدید این ماه`}
-              icon="👥"
+              icon={<i className="icon-groupPeople text-18" />}
             />
             <StatTile
               tone="purple"
               label="میزبان‌ها"
               value={faNum(data.hostsCount)}
               hint={`${faNum(data.residencesByState.PUBLISHED ?? 0)} اقامتگاه منتشرشده`}
-              icon="🏡"
+              icon={<i className="icon-Homes text-18" />}
             />
             <StatTile
               tone="orange"
               label="رزروهای این ماه"
               value={faNum(data.reservationsThisMonth)}
               hint={<ChangeHint pct={data.reservationsChangePct} />}
-              icon="📅"
+              icon={<i className="icon-Calendar text-18" />}
             />
             <StatTile
               tone="green"
               label="درآمد این ماه"
               value={faMoney(data.revenueThisMonth)}
               hint={`مجموع کل: ${faMoney(data.totalRevenue)}`}
-              icon="💰"
+              icon={<i className="icon-Cash text-18" />}
             />
           </section>
 

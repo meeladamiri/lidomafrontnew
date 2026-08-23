@@ -226,6 +226,199 @@ export function Toggle({
   );
 }
 
+// ---------- page toolbar ----------
+// The shared control strip every list screen carries: search, filters,
+// grouping, refresh, range-style pagination, and the view switcher.
+
+export type ViewMode = "list" | "cards" | "chart";
+
+export function Toolbar({ children }: { children: React.ReactNode }) {
+  return (
+    <Card className="px-16 py-12 flex items-center justify-between gap-x-16 gap-y-12 flex-wrap">
+      {children}
+    </Card>
+  );
+}
+
+export function ToolbarSearch({
+  value,
+  onChange,
+  placeholder = "جستجو",
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+}) {
+  return (
+    <div className="relative flex-1 min-w-[220px] max-w-[420px]">
+      <i className="icon-Search absolute right-12 top-1/2 -translate-y-1/2 text-16 text-gray-9B9BAA pointer-events-none" />
+      <input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="w-full pr-36 pl-14 py-10 rounded-10 bg-gray-F5F5F7 text-14 leading-22 outline-none focus:bg-white focus:ring-1 focus:ring-primary-main transition"
+      />
+    </div>
+  );
+}
+
+export function ToolbarButton({
+  icon,
+  label,
+  active,
+  onClick,
+}: {
+  icon: string;
+  label: string;
+  active?: boolean;
+  onClick?: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      title={label}
+      aria-pressed={active}
+      className={`inline-flex items-center gap-x-6 px-12 py-8 rounded-10 text-14 leading-20 transition ${
+        active ? "bg-primary-light text-primary-dark" : "text-gray-6C6A7D hover:bg-gray-F0F0F0"
+      }`}
+    >
+      <i className={`${icon} text-16`} />
+      {label}
+    </button>
+  );
+}
+
+export function ToolbarIconButton({
+  icon,
+  label,
+  onClick,
+  disabled,
+}: {
+  icon: string;
+  label: string;
+  onClick?: () => void;
+  disabled?: boolean;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      title={label}
+      aria-label={label}
+      className="w-32 h-32 rounded-10 flex items-center justify-center text-gray-6C6A7D hover:bg-gray-F0F0F0 disabled:opacity-40 disabled:hover:bg-transparent transition"
+    >
+      <i className={`${icon} text-16`} />
+    </button>
+  );
+}
+
+/** "۱-۲۰ / ۱٬۵۲۴" range pager with prev/next, matching the design. */
+export function ToolbarPager({
+  page,
+  pageSize,
+  total,
+  pageCount,
+  onPage,
+}: {
+  page: number;
+  pageSize: number;
+  total: number;
+  pageCount: number;
+  onPage: (p: number) => void;
+}) {
+  const from = total === 0 ? 0 : (page - 1) * pageSize + 1;
+  const to = Math.min(page * pageSize, total);
+
+  return (
+    <div className="flex items-center gap-x-4">
+      <ToolbarIconButton
+        icon="icon-FlashRight"
+        label="صفحه قبل"
+        disabled={page <= 1}
+        onClick={() => onPage(page - 1)}
+      />
+      <span className="text-13 leading-20 text-gray-6C6A7D whitespace-nowrap px-4">
+        {faNum(from)}-{faNum(to)} / {faNum(total)}
+      </span>
+      <ToolbarIconButton
+        icon="icon-FlashLeft"
+        label="صفحه بعد"
+        disabled={page >= pageCount}
+        onClick={() => onPage(page + 1)}
+      />
+    </div>
+  );
+}
+
+export function ViewSwitch({
+  value,
+  onChange,
+  modes = ["list", "cards"],
+}: {
+  value: ViewMode;
+  onChange: (v: ViewMode) => void;
+  modes?: ViewMode[];
+}) {
+  const CONFIG: Record<ViewMode, { icon: string; label: string }> = {
+    list: { icon: "icon-Rows-Sorting", label: "نمایش لیست" },
+    cards: { icon: "icon-CardMenu", label: "نمایش کارتی" },
+    chart: { icon: "icon-Amaar", label: "نمایش نموداری" },
+  };
+
+  return (
+    <div className="flex items-center gap-x-2 bg-gray-F5F5F7 rounded-10 p-3">
+      {modes.map((m) => (
+        <button
+          key={m}
+          onClick={() => onChange(m)}
+          title={CONFIG[m].label}
+          aria-pressed={value === m}
+          className={`w-32 h-28 rounded-8 flex items-center justify-center transition ${
+            value === m ? "bg-primary-main text-white" : "text-gray-6C6A7D hover:bg-white"
+          }`}
+        >
+          <i className={`${CONFIG[m].icon} text-16`} />
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/** Pill tabs with counts, used above list tables. */
+export function TabPills<T extends string>({
+  tabs,
+  value,
+  counts,
+  onChange,
+}: {
+  tabs: { key: T; label: string }[];
+  value: T;
+  counts?: Partial<Record<T, number>>;
+  onChange: (t: T) => void;
+}) {
+  return (
+    <div className="flex items-center gap-x-6 flex-wrap gap-y-6">
+      {tabs.map((t) => (
+        <button
+          key={t.key}
+          onClick={() => onChange(t.key)}
+          aria-pressed={value === t.key}
+          className={`px-12 py-6 rounded-10 text-13 leading-20 font-m transition ${
+            value === t.key
+              ? "bg-primary-main text-white"
+              : "text-gray-6C6A7D hover:bg-gray-F0F0F0"
+          }`}
+        >
+          {t.label}
+          {counts?.[t.key] !== undefined && (
+            <span className="mr-4 opacity-75">({faNum(counts[t.key])})</span>
+          )}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export const faNum = (n: number | null | undefined) => (n ?? 0).toLocaleString("fa-IR");
 export const faMoney = (n: number | null | undefined) => `${(n ?? 0).toLocaleString("fa-IR")} تومان`;
 

@@ -13,9 +13,17 @@ import {
   Modal,
   Select,
   Skeleton,
+  TabPills,
   Toggle,
+  Toolbar,
+  ToolbarButton,
+  ToolbarIconButton,
+  ToolbarPager,
+  ToolbarSearch,
+  ViewSwitch,
   faDate,
   faNum,
+  type ViewMode,
 } from "@/components/Admin/ui";
 
 interface UserRow {
@@ -70,8 +78,9 @@ export default function AdminUsersPage() {
   const [sort, setSort] = useState("newest");
   const [verification, setVerification] = useState("");
   const [activeFilter, setActiveFilter] = useState("");
-  const [view, setView] = useState<"list" | "cards">("list");
+  const [view, setView] = useState<ViewMode>("list");
   const [showCreate, setShowCreate] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
 
   const query = new URLSearchParams({
     page: String(page),
@@ -106,96 +115,102 @@ export default function AdminUsersPage() {
     <AdminLayout
       title="مدیریت کاربران"
       breadcrumb={<Link href="/admin">داشبورد</Link>}
-      actions={<Button onClick={() => setShowCreate(true)}>+ ایجاد کاربر جدید</Button>}
+      actions={
+        <>
+          <Button onClick={() => setShowCreate(true)}>
+            <i className="icon-Plus text-16" /> ایجاد کاربر جدید
+          </Button>
+          <TabPills tabs={TABS} value={tab} counts={counts} onChange={switchTab} />
+        </>
+      }
+      toolbar={
+        <Toolbar>
+          <div className="flex items-center gap-x-8 flex-1 min-w-[240px]">
+            <ToolbarSearch
+              value={q}
+              onChange={(v) => {
+                setQ(v);
+                setPage(1);
+              }}
+              placeholder="نام، موبایل، ایمیل یا کد ملی..."
+            />
+            <ToolbarButton
+              icon="icon-Filters"
+              label="فیلترها"
+              active={showFilters || !!verification || !!activeFilter}
+              onClick={() => setShowFilters((s) => !s)}
+            />
+            <ToolbarButton icon="icon-Rows-Sorting" label="گروه بندی" />
+          </div>
+
+          <div className="flex items-center gap-x-8">
+            <ToolbarIconButton icon="icon-Refresh" label="بارگذاری مجدد" onClick={() => mutate()} />
+            {data && (
+              <ToolbarPager
+                page={page}
+                pageSize={20}
+                total={data.meta.total}
+                pageCount={data.meta.pageCount}
+                onPage={setPage}
+              />
+            )}
+            <ViewSwitch value={view} onChange={setView} />
+          </div>
+        </Toolbar>
+      }
     >
       <div className="flex flex-col gap-y-16">
-        {/* tabs */}
-        <div className="flex items-center gap-x-8 flex-wrap gap-y-8">
-          {TABS.map((t) => (
-            <button
-              key={t.key}
-              onClick={() => switchTab(t.key)}
-              aria-pressed={tab === t.key}
-              className={`px-14 py-8 rounded-10 text-14 leading-20 font-m transition ${
-                tab === t.key
-                  ? "bg-primary-main text-white"
-                  : "bg-white text-gray-6C6A7D border border-gray-E5E5E6 hover:bg-gray-F0F0F0"
-              }`}
-            >
-              {t.label}
-              {counts && (
-                <span className="mr-6 opacity-80">({faNum(counts[t.key] ?? 0)})</span>
-              )}
-            </button>
-          ))}
-        </div>
-
-        {/* toolbar */}
-        <Card className="p-16 flex items-end gap-x-12 gap-y-12 flex-wrap">
-          <Field label="جستجو" className="flex-1 min-w-[220px]">
-            <Input
-              placeholder="نام، موبایل، ایمیل یا کد ملی..."
-              value={q}
-              onChange={(e) => {
-                setQ(e.target.value);
-                setPage(1);
-              }}
-            />
-          </Field>
-          <Field label="احراز هویت">
-            <Select
-              value={verification}
-              onChange={(e) => {
-                setVerification(e.target.value);
-                setPage(1);
-              }}
-            >
-              <option value="">همه</option>
-              <option value="CONFIRMED">تایید شده</option>
-              <option value="CHECKING">در حال بررسی</option>
-              <option value="NOT_CONFIRMED">تایید نشده</option>
-            </Select>
-          </Field>
-          <Field label="وضعیت">
-            <Select
-              value={activeFilter}
-              onChange={(e) => {
-                setActiveFilter(e.target.value);
-                setPage(1);
-              }}
-            >
-              <option value="">همه</option>
-              <option value="true">فعال</option>
-              <option value="false">غیرفعال</option>
-            </Select>
-          </Field>
-          <Field label="مرتب‌سازی">
-            <Select value={sort} onChange={(e) => setSort(e.target.value)}>
-              <option value="newest">جدیدترین</option>
-              <option value="oldest">قدیمی‌ترین</option>
-              <option value="reservations">بیشترین رزرو</option>
-              <option value="name">نام</option>
-            </Select>
-          </Field>
-          <div className="flex items-center gap-x-4 bg-gray-F0F0F0 rounded-10 p-4">
-            <button
-              onClick={() => setView("list")}
-              aria-pressed={view === "list"}
-              title="نمایش لیست"
-              className={`px-12 py-6 rounded-8 text-14 ${view === "list" ? "bg-white" : ""}`}
-            >
-              ☰
-            </button>
-            <button
-              onClick={() => setView("cards")}
-              aria-pressed={view === "cards"}
-              title="نمایش کارتی"
-              className={`px-12 py-6 rounded-8 text-14 ${view === "cards" ? "bg-white" : ""}`}
-            >
-              ▦
-            </button>
-          </div>
-        </Card>
+        {showFilters && (
+          <Card className="p-16 flex items-end gap-x-12 gap-y-12 flex-wrap">
+            <Field label="احراز هویت">
+              <Select
+                value={verification}
+                onChange={(e) => {
+                  setVerification(e.target.value);
+                  setPage(1);
+                }}
+              >
+                <option value="">همه</option>
+                <option value="CONFIRMED">تایید شده</option>
+                <option value="CHECKING">در حال بررسی</option>
+                <option value="NOT_CONFIRMED">تایید نشده</option>
+              </Select>
+            </Field>
+            <Field label="وضعیت">
+              <Select
+                value={activeFilter}
+                onChange={(e) => {
+                  setActiveFilter(e.target.value);
+                  setPage(1);
+                }}
+              >
+                <option value="">همه</option>
+                <option value="true">فعال</option>
+                <option value="false">غیرفعال</option>
+              </Select>
+            </Field>
+            <Field label="مرتب‌سازی">
+              <Select value={sort} onChange={(e) => setSort(e.target.value)}>
+                <option value="newest">جدیدترین</option>
+                <option value="oldest">قدیمی‌ترین</option>
+                <option value="reservations">بیشترین رزرو</option>
+                <option value="name">نام</option>
+              </Select>
+            </Field>
+            {(verification || activeFilter) && (
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  setVerification("");
+                  setActiveFilter("");
+                  setPage(1);
+                }}
+              >
+                حذف فیلترها
+              </Button>
+            )}
+          </Card>
+        )}
 
         {isLoading && (
           <div className="grid gap-12">
@@ -298,23 +313,7 @@ export default function AdminUsersPage() {
           </div>
         )}
 
-        {data && data.meta.pageCount > 1 && (
-          <div className="flex items-center justify-center gap-x-12">
-            <Button variant="secondary" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
-              قبلی
-            </Button>
-            <span className="text-14 text-gray-6C6A7D">
-              صفحه {faNum(page)} از {faNum(data.meta.pageCount)} ({faNum(data.meta.total)} کاربر)
-            </span>
-            <Button
-              variant="secondary"
-              disabled={page >= data.meta.pageCount}
-              onClick={() => setPage((p) => p + 1)}
-            >
-              بعدی
-            </Button>
-          </div>
-        )}
+        {/* pagination lives in the toolbar (ToolbarPager) */}
       </div>
 
       <CreateUserModal
