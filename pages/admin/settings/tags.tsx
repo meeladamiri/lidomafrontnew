@@ -120,6 +120,12 @@ export default function AdminTagsPage() {
           <span className="px-14 py-8 rounded-10 text-13 leading-20 font-m whitespace-nowrap bg-primary-main text-white">
             تگ‌های سئو
           </span>
+          <Link
+            href="/admin/settings/sitemap"
+            className="px-14 py-8 rounded-10 text-13 leading-20 font-m whitespace-nowrap text-gray-6C6A7D hover:bg-gray-F0F0F0"
+          >
+            sitemap و robots
+          </Link>
         </Card>
       }
     >

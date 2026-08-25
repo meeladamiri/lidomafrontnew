@@ -98,6 +98,20 @@ const nextConfig = {
         source: "/uploads/:slug*",
         destination: `${backendUrl}/uploads/:slug*`,
       },
+      // Crawlers expect these at the site root. The backend generates them from
+      // the sitemap settings, so they are proxied rather than duplicated here.
+      {
+        source: "/sitemap.xml",
+        destination: `${backendUrl}/sitemap.xml`,
+      },
+      {
+        source: "/sitemaps/:file",
+        destination: `${backendUrl}/sitemaps/:file`,
+      },
+      {
+        source: "/robots.txt",
+        destination: `${backendUrl}/robots.txt`,
+      },
     ];
   },
   async redirects() {
