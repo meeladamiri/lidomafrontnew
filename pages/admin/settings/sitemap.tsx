@@ -45,6 +45,9 @@ interface Settings {
   maxUrlsPerFile: number;
   robotsExtra: string | null;
   crawlDelay: number | null;
+  imagesEnabled: boolean;
+  imageUrlMode: string;
+  imageOptimizerWidth: number;
 }
 
 interface Section {
@@ -220,6 +223,9 @@ function GlobalSettings({
     maxUrlsPerFile: settings.maxUrlsPerFile,
     robotsExtra: settings.robotsExtra ?? "",
     crawlDelay: settings.crawlDelay ?? "",
+    imagesEnabled: settings.imagesEnabled,
+    imageUrlMode: settings.imageUrlMode,
+    imageOptimizerWidth: settings.imageOptimizerWidth,
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -238,6 +244,9 @@ function GlobalSettings({
           maxUrlsPerFile: Number(form.maxUrlsPerFile),
           robotsExtra: form.robotsExtra.trim() || null,
           crawlDelay: form.crawlDelay === "" ? null : Number(form.crawlDelay),
+          imagesEnabled: form.imagesEnabled,
+          imageUrlMode: form.imageUrlMode,
+          imageOptimizerWidth: Number(form.imageOptimizerWidth),
         }),
       });
       onSaved();
@@ -305,6 +314,42 @@ function GlobalSettings({
             label="فعال‌بودن robots.txt"
           />
         </div>
+      </div>
+
+      <div className="mt-16 pt-16 border-t border-gray-EFEFEF">
+        <div className="text-13 leading-22 font-m text-gray-1E1D28 mb-10">sitemap عکس‌ها</div>
+        <div className="grid md:grid-cols-3 gap-14">
+          <div className="flex items-center">
+            <Toggle
+              checked={form.imagesEnabled}
+              onChange={(v) => setForm({ ...form, imagesEnabled: v })}
+              label="فعال"
+            />
+          </div>
+          <Field label="نحوه‌ی آدرس‌دهی عکس">
+            <Select
+              value={form.imageUrlMode}
+              onChange={(e) => setForm({ ...form, imageUrlMode: e.target.value })}
+            >
+              <option value="optimizer">از طریق بهینه‌ساز Next</option>
+              <option value="direct">آدرس مستقیم استوریج</option>
+            </Select>
+          </Field>
+          <Field label="عرض تصویر بهینه‌شده" hint="پیکسل">
+            <Input
+              type="number"
+              value={form.imageOptimizerWidth}
+              onChange={(e) => setForm({ ...form, imageOptimizerWidth: Number(e.target.value) })}
+            />
+          </Field>
+        </div>
+        {form.imageUrlMode === "direct" && (
+          <p className="text-11 leading-20 text-[#B45309] mt-8">
+            هشدار: باکت لیارا به هر User-Agent شامل «Mozilla» جواب ۴۰۴ می‌ده — یعنی به گوگل‌بات و
+            همه‌ی خزنده‌های عکس. تا وقتی این حفاظت برداشته نشده، آدرس مستقیم یعنی فرستادن ۴۰۴ به
+            گوگل. حالت «بهینه‌ساز» تنها شکلیه که خزنده می‌تونه بگیره.
+          </p>
+        )}
       </div>
 
       <Field
