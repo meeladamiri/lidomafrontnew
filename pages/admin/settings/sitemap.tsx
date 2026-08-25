@@ -60,6 +60,10 @@ interface Section {
   minResidenceCount: number;
   includeLastmod: boolean;
   requireSitemapFlag: boolean;
+  tagPriority: number;
+  tagChangeFreq: string;
+  listingPriority: number;
+  listingChangeFreq: string;
   sortOrder: number;
 }
 
@@ -459,10 +463,14 @@ function SectionRow({
         <Toggle checked={form.isEnabled} onChange={(v) => set({ isEnabled: v })} />
         <span className="text-13 leading-22 font-m text-gray-1E1D28">{section.label}</span>
         <span dir="ltr" className="text-11 text-gray-B0AFBC">
-          /sitemaps/{section.key}-1.xml
+          {section.key === "cities"
+            ? "/sitemaps/sitemap-<شهر>.xml"
+            : `/sitemaps/${section.key}-1.xml`}
         </span>
         {stat && (
-          <Badge tone={stat.included > 0 ? "green" : "gray"}>{faNum(stat.included)} آدرس</Badge>
+          <Badge tone={stat.included > 0 ? "green" : "gray"}>
+            {faNum(stat.included)} {section.key === "cities" ? "فایل" : "آدرس"}
+          </Badge>
         )}
         {dirty && (
           <Button onClick={save} disabled={saving} className="mr-auto">
@@ -514,6 +522,16 @@ function SectionRow({
           )}
         </div>
       </div>
+
+      {section.key === "cities" && (
+        <p className="text-11 leading-20 text-gray-B0AFBC mt-8">
+          هر شهر یک فایل جدا می‌گیره که سه چیز توشه: صفحه‌ی خود شهر و صفحات تگش با اولویت{" "}
+          {form.priority} و نرخ «{CHANGE_FREQ.find((f) => f.value === form.changeFreq)?.label}»، و
+          اقامتگاه‌های همون شهر با اولویت {section.listingPriority} و نرخ «
+          {CHANGE_FREQ.find((f) => f.value === section.listingChangeFreq)?.label}». این‌طوری توی
+          Search Console وضعیت ایندکس هر شهر جدا دیده می‌شه.
+        </p>
+      )}
 
       {section.key === "tag-pages" && form.requireSitemapFlag && (
         <p className="text-11 leading-20 text-gray-B0AFBC mt-8">
