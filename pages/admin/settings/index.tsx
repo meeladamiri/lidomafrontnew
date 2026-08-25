@@ -90,6 +90,19 @@ export default function AdminSettingsPage() {
               {t.label}
             </button>
           ))}
+          {/* Own pages rather than tabs — each carries a lot of state. */}
+          <Link
+            href="/admin/settings/locations"
+            className="px-14 py-8 rounded-10 text-13 leading-20 font-m whitespace-nowrap text-gray-6C6A7D hover:bg-gray-F0F0F0"
+          >
+            دسته‌بندی مکان‌ها
+          </Link>
+          <Link
+            href="/admin/settings/tags"
+            className="px-14 py-8 rounded-10 text-13 leading-20 font-m whitespace-nowrap text-gray-6C6A7D hover:bg-gray-F0F0F0"
+          >
+            تگ‌های سئو
+          </Link>
         </Card>
       }
     >

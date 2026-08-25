@@ -97,15 +97,19 @@ export function Field({
   label,
   children,
   className = "",
+  hint,
 }: {
   label: string;
   children: React.ReactNode;
   className?: string;
+  /** Small note under the input — used for SEO length limits and warnings. */
+  hint?: React.ReactNode;
 }) {
   return (
     <label className={`block ${className}`}>
       <span className="block mb-6 text-12 leading-18 text-gray-6C6A7D font-m">{label}</span>
       {children}
+      {!!hint && <span className="block mt-4 text-11 leading-18 text-gray-B0AFBC">{hint}</span>}
     </label>
   );
 }
@@ -201,12 +205,15 @@ export function Toggle({
   checked,
   onChange,
   disabled,
+  label,
 }: {
   checked: boolean;
   onChange: (next: boolean) => void;
   disabled?: boolean;
+  /** Renders the switch with a caption beside it. */
+  label?: React.ReactNode;
 }) {
-  return (
+  const button = (
     <button
       type="button"
       role="switch"
@@ -223,6 +230,14 @@ export function Toggle({
         }`}
       />
     </button>
+  );
+
+  if (!label) return button;
+  return (
+    <span className="inline-flex items-center gap-x-8">
+      {button}
+      <span className="text-12 leading-20 text-gray-6C6A7D">{label}</span>
+    </span>
   );
 }
 
