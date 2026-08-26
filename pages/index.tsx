@@ -110,13 +110,16 @@ export const getStaticProps: GetStaticProps = async () => {
   // NOTE: Keep index zero item for the title tage of page always.
   const metaTagsList = [
     homeTitle,
-    {
-      name: "title",
-      content: homeTitle,
-    },
+    // MainLayout renders index 1 as the canonical <link> — it must sit here.
+    // It used to be at index 2, so the layout emitted the "title" meta as a
+    // <link> and the home page shipped with no canonical at all.
     {
       rel: "canonical",
       href: `${BASE_URL}`,
+    },
+    {
+      name: "title",
+      content: homeTitle,
     },
     {
       name: "description",
