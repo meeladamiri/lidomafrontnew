@@ -346,6 +346,13 @@ function Search() {
                     },
                   ]
                 : []),
+              // On a tag page the trail has to end on the tag, not the city —
+              // otherwise it marks the city as the current page and disagrees
+              // with the BreadcrumbList markup, which already carries the tag
+              // as a fourth step.
+              ...(searchPageData?.params?.tag?.name
+                ? [{ name: searchPageData.params.tag.name }]
+                : []),
             ]}
           />
         </div>

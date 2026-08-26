@@ -28,6 +28,19 @@ function mapResidenceInfo(residence: any, publicId?: number) {
     return (imgB?.isMain ? 1 : 0) - (imgA?.isMain ? 1 : 0);
   });
 
+  // The backend attaches the listing to a single `location` row and hands its
+  // province back as `location.parent`. This mapper was reading `residence.city`
+  // and `residence.city.province`, neither of which exists on that payload, so
+  // every one of these four fields came out empty — which is why the residence
+  // page's breadcrumb rendered as "لیدوماتریپ / / / نام اقامتگاه".
+  //
+  // A listing pinned straight to a province has no city of its own; treating the
+  // province row as a city would put it in the breadcrumb twice.
+  const locationRow = residence.location ?? null;
+  const isProvinceRow = locationRow?.type === "PROVINCE";
+  const cityRow = isProvinceRow ? null : locationRow;
+  const provinceRow = isProvinceRow ? locationRow : locationRow?.parent ?? null;
+
   return {
     average_rating: residence.averageRating ?? 0,
     cancel_commission: residence.cancelCommission ?? 0,
@@ -35,9 +48,9 @@ function mapResidenceInfo(residence: any, publicId?: number) {
     checkin_from: [residence.checkinFrom ?? null],
     checkin_to: [residence.checkinTo ?? null],
     checkout: [residence.checkout ?? null],
-    city_id: residence.city?.id,
-    city: residence.city?.name || "",
-    city_title: residence.city?.titleEn || residence.city?.name || "",
+    city_id: cityRow?.id,
+    city: cityRow?.name || "",
+    city_title: cityRow?.titleEn || cityRow?.name || "",
     description: residence.description || "",
     display_type: mapDisplayType(residence.type),
     // Per-facility "توضیحات بیشتر" answers, keyed by amenity id — ResFacilities
@@ -77,10 +90,10 @@ function mapResidenceInfo(residence: any, publicId?: number) {
     min_reservable_days: residence.minReservableDays ?? 1,
     name: residence.name,
     name2: residence.name2 || "",
-    province_id: residence.city?.province?.id,
-    province: residence.city?.province?.name || "",
+    province_id: provinceRow?.id,
+    province: provinceRow?.name || "",
     // slug for /search/<slug> links + breadcrumb schema URLs
-    province_title: residence.city?.province?.titleEn || residence.city?.province?.name || "",
+    province_title: provinceRow?.titleEn || provinceRow?.name || "",
     // "کد آگهی" — the old site shows the public (Odoo) id, not "ODOO-..."
     reference: publicId ?? residence.reference,
     reserve_commission: residence.reserveCommission ?? 0,
@@ -214,7 +227,11 @@ export function mapObserveResidenceData(
     status: "success",
     params: {
       residence_info: mapResidenceInfo(residence, publicId),
-      images: (residence.images || []).map((img: any) => ({ id: img.id, name: img.title, url: img.url })),
+      images: (residence.images || []).map((img: any) => ({
+        id: img.id,
+        name: img.title,
+        url: img.url,
+      })),
       rooms: mapRooms(residence.rooms),
       features: mapFeatures(residence.amenities, residence),
       rules: mapRules(residence.rules),
