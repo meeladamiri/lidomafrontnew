@@ -1,6 +1,6 @@
 import Image from "next/image";
 // import { blurHashToDataURL } from "@/utilities/blurhashDataURL";
-import all_blur_hashes_data from "@/constants/all_blur_hashes";
+import { getBlurHash } from "@/utilities/getBlurHash";
 
 interface I_ResBlurImage {
   img: string;
@@ -10,8 +10,10 @@ interface I_ResBlurImage {
 }
 
 function ResBlurImage({ img, name, isOffscreen, i }: I_ResBlurImage) {
-  const rand_number = Math.floor(Math.random() * all_blur_hashes_data.length);
-  const image_blurHash = all_blur_hashes_data[rand_number];
+  // Was Math.random(), which picked a different placeholder on the server than
+  // on the client — React saw the prop change on every card image and failed
+  // hydration for the whole list. See `getBlurHash`.
+  const image_blurHash = getBlurHash(img || name);
 
   return (
     <Image

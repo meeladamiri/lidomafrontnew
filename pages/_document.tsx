@@ -20,11 +20,17 @@ export default class MyDocument extends Document<IProps> {
               2) requestAnimationFrame fallback: Next's dev client gates
                  hydration behind a rAF (displayContent), which never fires in a
                  background/occluded tab — automated-browser verification hangs
-                 without this. Timeout path only fires when real rAF doesn't. */}
+                 without this. Timeout path only fires when real rAF doesn't.
+              3) __reactErrs keeps React's own console.error text. React logs
+                 the *reason* for a hydration mismatch once, before the generic
+                 "Hydration failed" throw, and it scrolls out of the console
+                 buffer behind the throw's repeats. Read window.__reactErrs[0]
+                 to see which prop or element actually diverged. */}
           {process.env.NODE_ENV === "development" && (
             <script
               dangerouslySetInnerHTML={{
-                __html: `window.__earlyErrs=[];window.addEventListener('error',function(e){var t=e.target||{};window.__earlyErrs.push(e.message?(e.message+' @ '+((e.filename||'').split('/').pop())+':'+e.lineno):('RESOURCE-FAIL '+(t.tagName||'?')+' '+(t.src||t.href||'?')))},true);window.addEventListener('unhandledrejection',function(e){window.__earlyErrs.push('REJECTION: '+String(e.reason&&(e.reason.stack||e.reason.message)||e.reason).slice(0,400))});
+                __html: `window.__reactErrs=[];(function(){var _e=console.error;console.error=function(){try{window.__reactErrs.push(Array.prototype.slice.call(arguments).map(function(a){return typeof a==='string'?a:(a&&a.message)||String(a)}).join(' ').slice(0,600))}catch(e){}return _e.apply(console,arguments)}})();
+window.__earlyErrs=[];window.addEventListener('error',function(e){var t=e.target||{};window.__earlyErrs.push(e.message?(e.message+' @ '+((e.filename||'').split('/').pop())+':'+e.lineno):('RESOURCE-FAIL '+(t.tagName||'?')+' '+(t.src||t.href||'?')))},true);window.addEventListener('unhandledrejection',function(e){window.__earlyErrs.push('REJECTION: '+String(e.reason&&(e.reason.stack||e.reason.message)||e.reason).slice(0,400))});
 var _raf=window.requestAnimationFrame&&window.requestAnimationFrame.bind(window);window.requestAnimationFrame=function(cb){var done=false;function run(ts){if(done)return;done=true;cb(ts)}var t=setTimeout(function(){run(performance.now())},120);if(_raf)_raf(function(ts){clearTimeout(t);run(ts)});return t};`,
               }}
             />

@@ -183,8 +183,11 @@ const CustomTextField = forwardRef(function CustomTextField(
             placeholder={placeholder || ""}
             disabled={disabled}
             name={name}
+            // `?? ""` keeps this a controlled input: a null/undefined value
+            // makes React flip the field to uncontrolled and warn, and the
+            // switch back on the next keystroke wipes what was typed.
             value={
-              !!formik
+              (!!formik
                 ? inputmode === "numeric" || applyCommaSeperation
                   ? Number(formik?.values?.[name])?.toLocaleString("en-US")
                   : formik?.values?.[name]
@@ -193,7 +196,7 @@ const CustomTextField = forwardRef(function CustomTextField(
                   !!customValue
                   ? Number(customValue)?.toLocaleString("en-US")
                   : ""
-                : customValue
+                : customValue) ?? ""
             }
             onChange={(e) => {
               let enteredValue = e?.target?.value;

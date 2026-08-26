@@ -1,9 +1,9 @@
 import dynamic from "next/dynamic";
+import { getBlurHash } from "@/utilities/getBlurHash";
 import Image from "next/image";
 import { useState } from "react";
 import { Button } from "../../General/core/Button";
 import { T_image } from "@/interfaces/observe_residence";
-import all_blur_hashes_data from "@/constants/all_blur_hashes";
 
 const CustomLightbox = dynamic(() => import("@/components/General/CustomLightbox/CustomLightbox"), {
   ssr: true,
@@ -31,9 +31,7 @@ function ResidenceImagesInDesktop({ images, name }: { images: T_image[]; name: s
             style={{ objectFit: "cover" }}
             alt={name}
             placeholder="blur"
-            blurDataURL={
-              all_blur_hashes_data[Math.floor(Math.random() * all_blur_hashes_data.length)]
-            }
+            blurDataURL={getBlurHash(images?.[0]?.url)}
             className={`rounded-12 cursor-pointer transition-all duration-300 ${
               indexBeingHovered === null ? "" : indexBeingHovered === 0 ? "scale-105" : "opacity-60"
             }`}
@@ -57,9 +55,7 @@ function ResidenceImagesInDesktop({ images, name }: { images: T_image[]; name: s
               style={{ objectFit: "cover" }}
               alt={name}
               placeholder="blur"
-              blurDataURL={
-                all_blur_hashes_data[Math.floor(Math.random() * all_blur_hashes_data.length)]
-              }
+              blurDataURL={getBlurHash(images[1].url)}
               className={`rounded-12 cursor-pointer transition-all duration-300 ${
                 indexBeingHovered === null
                   ? ""
@@ -80,9 +76,7 @@ function ResidenceImagesInDesktop({ images, name }: { images: T_image[]; name: s
                   fill
                   style={{ objectFit: "cover" }}
                   placeholder="blur"
-                  blurDataURL={
-                    all_blur_hashes_data[Math.floor(Math.random() * all_blur_hashes_data.length)]
-                  }
+                  blurDataURL={getBlurHash(images[1].url)}
                   alt={name}
                   className={`rounded-12 cursor-pointer transition-all duration-300 ${
                     indexBeingHovered === null
@@ -104,9 +98,7 @@ function ResidenceImagesInDesktop({ images, name }: { images: T_image[]; name: s
                   style={{ objectFit: "cover" }}
                   alt={name}
                   placeholder="blur"
-                  blurDataURL={
-                    all_blur_hashes_data[Math.floor(Math.random() * all_blur_hashes_data.length)]
-                  }
+                  blurDataURL={getBlurHash(images[2].url)}
                   className={`rounded-12 cursor-pointer transition-all duration-300 ${
                     indexBeingHovered === null
                       ? ""
@@ -130,9 +122,7 @@ function ResidenceImagesInDesktop({ images, name }: { images: T_image[]; name: s
                   style={{ objectFit: "cover" }}
                   alt={name}
                   placeholder="blur"
-                  blurDataURL={
-                    all_blur_hashes_data[Math.floor(Math.random() * all_blur_hashes_data.length)]
-                  }
+                  blurDataURL={getBlurHash(images[1].url)}
                   className={`rounded-12 cursor-pointer transition-all duration-300 ${
                     indexBeingHovered === null
                       ? ""
@@ -153,9 +143,7 @@ function ResidenceImagesInDesktop({ images, name }: { images: T_image[]; name: s
                   style={{ objectFit: "cover" }}
                   alt={name}
                   placeholder="blur"
-                  blurDataURL={
-                    all_blur_hashes_data[Math.floor(Math.random() * all_blur_hashes_data.length)]
-                  }
+                  blurDataURL={getBlurHash(images[2].url)}
                   className={`rounded-12 cursor-pointer transition-all duration-300 ${
                     indexBeingHovered === null
                       ? ""
@@ -176,9 +164,7 @@ function ResidenceImagesInDesktop({ images, name }: { images: T_image[]; name: s
                   style={{ objectFit: "cover" }}
                   alt={name}
                   placeholder="blur"
-                  blurDataURL={
-                    all_blur_hashes_data[Math.floor(Math.random() * all_blur_hashes_data.length)]
-                  }
+                  blurDataURL={getBlurHash(images[3].url)}
                   className={`rounded-12 cursor-pointer transition-all duration-300 ${
                     indexBeingHovered === null
                       ? ""
@@ -204,11 +190,7 @@ function ResidenceImagesInDesktop({ images, name }: { images: T_image[]; name: s
                       style={{ objectFit: "cover" }}
                       alt={name}
                       placeholder="blur"
-                      blurDataURL={
-                        all_blur_hashes_data[
-                          Math.floor(Math.random() * all_blur_hashes_data.length)
-                        ]
-                      }
+                      blurDataURL={getBlurHash(images[idx + 1].url)}
                       className={`rounded-12 cursor-pointer transition-all duration-300 ${
                         indexBeingHovered === null
                           ? ""

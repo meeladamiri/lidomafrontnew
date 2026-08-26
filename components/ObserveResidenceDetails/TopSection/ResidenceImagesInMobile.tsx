@@ -1,4 +1,5 @@
 import Share from "components/General/Share/Share";
+import { getBlurHash } from "@/utilities/getBlurHash";
 import Image from "next/image";
 import { useRouter } from "next/router";
 import classes from "styles/Air-bnb-like-slider.module.css";
@@ -17,7 +18,6 @@ import dynamic from "next/dynamic";
 import { THandleSmoothClose } from "@/components/General/core/BottomSheet";
 import { BASE_URL_SITE } from "@/configs/info";
 import { T_image } from "@/interfaces/observe_residence";
-import all_blur_hashes_data from "@/constants/all_blur_hashes";
 import ResPageDynamicHeaderInMobile from "./ResPageDynamicHeaderInMobile";
 const BottomSheet = dynamic(() => import("@/components/General/core/BottomSheet"), {
   ssr: true,
@@ -77,9 +77,7 @@ function ResidenceImagesInMobile({ images, name }: { images: T_image[]; name: st
                     objectFit: "cover",
                   }}
                   placeholder="blur"
-                  blurDataURL={
-                    all_blur_hashes_data[Math.floor(Math.random() * all_blur_hashes_data.length)]
-                  }
+                  blurDataURL={getBlurHash(img.url)}
                 />
               </SwiperSlide>
             );

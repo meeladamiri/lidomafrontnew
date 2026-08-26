@@ -56,16 +56,17 @@ function ContinuedText({
           <h2 className="text-16 leading-24 text-black font-m mb-12 md:mb-16">{title}</h2>
 
           <div className="">
-            <p
+            {/* <div>, not <p>: the CMS text is HTML and may contain block tags,
+                which a <p> cannot hold — the browser would re-parse it into a
+                different DOM and break hydration. */}
+            <div
               ref={textBoxRef}
               className={`
                 text-14 leading-20 text-black font-l ${classes["line-clamp-5"]} md:!block
                 ${!!showMoreText ? "!block" : ""}
               `}
               dangerouslySetInnerHTML={{ __html: sanitize(desc) }}
-            >
-              {/* {desc} */}
-            </p>
+            ></div>
           </div>
         </div>
       </div>
