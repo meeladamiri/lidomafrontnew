@@ -7,7 +7,7 @@ import { I_Residence_display_type } from "@/interfaces/Residences";
 import BedNMaxCapacityCode from "../General/BedNMaxCapacityCode";
 import ResLocationWithoutBreadCrumb from "../General/ResLocationWithoutBreadCrumb";
 import dynamic from "next/dynamic";
-import EachNightPriceFromWithDiscount from "../General/EachNightPriceFrom";
+import EachNightPriceFromWithDiscount, { StayQuote } from "../General/EachNightPriceFrom";
 const LastMomentForToday = dynamic(() => import("components/General/LastMomentForToday"), {
   ssr: true,
 });
@@ -49,6 +49,8 @@ interface I_SearchResidenceCard {
   isOffscreen: boolean;
   /** Cards in the first row opt out of lazy loading — see SearchCardGallery. */
   priority?: boolean;
+  /** Price for the dates the reader selected, when they selected any. */
+  stay?: StayQuote | null;
   resPureNameAlone: string;
   isFull: boolean;
   capacity: number;
@@ -86,6 +88,7 @@ function SearchResidenceCard({
   capacity,
   peak_dates,
   priority,
+  stay,
 }: I_SearchResidenceCard) {
   const router = useRouter();
 
@@ -161,6 +164,7 @@ function SearchResidenceCard({
             nowruzPrice={nowruzPrice}
             price={price}
             discountP={discountP}
+            stay={stay}
           />
         </footer>
 

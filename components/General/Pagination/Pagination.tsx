@@ -56,27 +56,34 @@ const Pagination = (props: I_Pagination) => {
     return qs ? `${base}?${qs}` : base;
   };
 
-  const arrow = (page: number, disabled: boolean, dir: "left" | "right", label: string) => (
-    <li className={`${classes["pagination-item"]} ${disabled ? classes["disabled"] : ""}`}>
-      {disabled ? (
-        <span aria-hidden="true" className={`${classes["arrow"]} ${classes[dir]}`} />
-      ) : (
-        <Link
-          href={hrefForPage(page)}
-          prefetch={false}
-          aria-label={label}
-          onClick={(e) => {
-            // Client-side navigation when JS is available; the href is what
-            // makes it work when it is not.
-            e.preventDefault();
-            onPageChange(page);
-          }}
-        >
-          <span aria-hidden="true" className={`${classes["arrow"]} ${classes[dir]}`} />
-        </Link>
-      )}
-    </li>
-  );
+  // Both states use the same `cell` box, so the glyph sits in the same place
+  // whether the arrow is a link or not. Wrapping only the enabled one in an <a>
+  // moved the arrow the moment you left the first page.
+  const arrow = (page: number, disabled: boolean, dir: "left" | "right", label: string) => {
+    const glyph = <span aria-hidden="true" className={`${classes["arrow"]} ${classes[dir]}`} />;
+    return (
+      <li className={`${classes["pagination-item"]} ${disabled ? classes["disabled"] : ""}`}>
+        {disabled ? (
+          <span className={classes["cell"]}>{glyph}</span>
+        ) : (
+          <Link
+            href={hrefForPage(page)}
+            prefetch={false}
+            aria-label={label}
+            className={classes["cell"]}
+            onClick={(e) => {
+              // Client-side navigation when JS is available; the href is what
+              // makes it work when it is not.
+              e.preventDefault();
+              onPageChange(page);
+            }}
+          >
+            {glyph}
+          </Link>
+        )}
+      </li>
+    );
+  };
 
   return (
     <ol className={`${classes["pagination-container"]} ${className || ""}`}>
@@ -90,7 +97,7 @@ const Pagination = (props: I_Pagination) => {
               aria-hidden="true"
               className={`${classes["pagination-item"]} ${classes["dots"]}`}
             >
-              &#8230;
+              <span className={classes["cell"]}>&#8230;</span>
             </li>
           );
         }
@@ -110,6 +117,7 @@ const Pagination = (props: I_Pagination) => {
               // it the current page is only a colour.
               aria-current={isCurrent ? "page" : undefined}
               aria-label={`صفحه ${page}`}
+              className={classes["cell"]}
               onClick={(e) => {
                 e.preventDefault();
                 onPageChange(page);

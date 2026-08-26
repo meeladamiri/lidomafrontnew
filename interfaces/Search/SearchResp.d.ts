@@ -32,6 +32,16 @@ export interface IPrices {
 }
 
 export interface IProduct_SearchResidences {
+  /**
+   * The price for the dates the reader selected, when they selected any.
+   * Absent on an unfiltered search, where the card shows the "from" price.
+   */
+  stay?: {
+    nights: number;
+    total: number;
+    perNight: number;
+    discountPercent: number;
+  } | null;
   average_rating: number;
   city: string;
   city_id: number;

@@ -1,8 +1,24 @@
 import apiBuilder from "../apiBuilder";
-import { I_SearchResidenceApi_params, IProduct_SearchResidences } from "@/interfaces/Search/SearchResp";
+import {
+  I_SearchResidenceApi_params,
+  IProduct_SearchResidences,
+} from "@/interfaces/Search/SearchResp";
 import moment from "moment-jalaali";
 
-const VALID_ORDERS = ["price_asc", "price_desc", "rating_desc", "newest"];
+// The sort control speaks Odoo's vocabulary; the new backend speaks its own.
+// Nothing translated between them, so `order` never passed the validity check
+// below and every sort option silently did nothing.
+const SORT_TO_ORDER: Record<string, string> = {
+  lowest_price: "price_asc",
+  highest_price: "price_desc",
+  highest_rate: "rating_desc",
+  highest_discount: "discount_desc",
+  // "پیشنهاد لیدوما" is the default ordering (importance), which the backend
+  // applies when no order is sent.
+  lidoma_suggestion: "",
+};
+
+const VALID_ORDERS = ["price_asc", "price_desc", "rating_desc", "newest", "discount_desc"];
 
 // Date filters live in the URL as Jalali ("1405/06/10"); the backend only
 // accepts Gregorian ISO (YYYY-MM-DD) — anything else fails validation and
@@ -40,6 +56,8 @@ export function mapCard(card: any): IProduct_SearchResidences {
     reference: card.reference,
     discount: 0,
     display_type: undefined as any,
+    // The quote for the selected dates, when there are any. See the card.
+    stay: card.stay ?? null,
     prices: {
       discounted_days: [],
       extra_guests_price: 0,
@@ -57,7 +75,13 @@ export function mapCard(card: any): IProduct_SearchResidences {
 // have no equivalent on the new one — flatten to what `/api/search/residences` accepts.
 // Exported so `pages/search/index.tsx`'s `getServerSideProps` (which must hit the
 // backend by absolute URL, not through the browser-only rewrite) can build the same body.
-export function buildSearchBody({ page = 1, page_size = 20, order, filters, features }: I_SearchResidenceApi_params) {
+export function buildSearchBody({
+  page = 1,
+  page_size = 20,
+  order,
+  filters,
+  features,
+}: I_SearchResidenceApi_params) {
   const body: Record<string, any> = {
     page,
     pageSize: page_size,
@@ -93,7 +117,8 @@ export function buildSearchBody({ page = 1, page_size = 20, order, filters, feat
       maxLng: filters.map_bounds.max_lng,
     };
   }
-  if (order && VALID_ORDERS.includes(order)) body.order = order;
+  const mappedOrder = order ? SORT_TO_ORDER[order] ?? order : undefined;
+  if (mappedOrder && VALID_ORDERS.includes(mappedOrder)) body.order = mappedOrder;
 
   return body;
 }

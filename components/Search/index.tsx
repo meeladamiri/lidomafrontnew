@@ -191,32 +191,6 @@ function Search() {
           id="SearchPageContent"
           className="pt-[193px] md:!pt-120 CustomContainer2 transition-all duration-500 ease-in-out"
         >
-          <SearchBreadcrumb
-            crumbs={[
-              { name: "لیدوماتریپ", href: "/" },
-              ...(searchPageData?.params?.province?.name
-                ? [
-                    {
-                      name: searchPageData.params.province.name,
-                      href: searchPageData?.params?.province?.title_en
-                        ? `/search/${searchPageData.params.province.title_en}`
-                        : undefined,
-                    },
-                  ]
-                : []),
-              ...(searchPageData?.params?.city?.name
-                ? [
-                    {
-                      name: searchPageData.params.city.name,
-                      href: searchPageData?.params?.city?.title_en
-                        ? `/search/${searchPageData.params.city.title_en}`
-                        : undefined,
-                    },
-                  ]
-                : []),
-            ]}
-          />
-
           <ContentHeader
             counterIsLoading={isLoading || (isFetching && !fetchTriggeredByPagination)}
             nameIsLoading={searchPageDataIsLoading || searchPageDataIsFetching}
@@ -344,6 +318,37 @@ function Search() {
               )}
             </section>
           )}
+
+        {/* The trail sits at the foot of the page rather than above the
+            results: up here it collided with the fixed filter bar, and down
+            here it reads as the "where am I" summary after the listing. */}
+        <div className="CustomContainer2 pb-24">
+          <SearchBreadcrumb
+            crumbs={[
+              { name: "لیدوماتریپ", href: "/" },
+              ...(searchPageData?.params?.province?.name
+                ? [
+                    {
+                      name: searchPageData.params.province.name,
+                      href: searchPageData?.params?.province?.title_en
+                        ? `/search/${searchPageData.params.province.title_en}`
+                        : undefined,
+                    },
+                  ]
+                : []),
+              ...(searchPageData?.params?.city?.name
+                ? [
+                    {
+                      name: searchPageData.params.city.name,
+                      href: searchPageData?.params?.city?.title_en
+                        ? `/search/${searchPageData.params.city.title_en}`
+                        : undefined,
+                    },
+                  ]
+                : []),
+            ]}
+          />
+        </div>
 
         {/* The search page shipped without a <footer> entirely — no site-wide
             links, no landmark, nothing for a crawler to follow out of the page. */}
