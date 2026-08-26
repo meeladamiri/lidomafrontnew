@@ -417,6 +417,15 @@ export const getServerSideProps: GetServerSideProps = async ({ req, query, res }
     return query?.queryKey?.[0] === "getSearchData";
   })?.state?.data?.params;
 
+  // A query that resolved to nothing is a soft 404: 200, no canonical, no
+  // results. Google's sitelinks searchbox points visitors' free text at this
+  // page, so without this those URLs are indexable empty pages. "follow" keeps
+  // the links on the page worth crawling.
+  const resultCount = (queryClient as any)?.queryCache?.queries.find(
+    (query: any) => query?.queryKey?.[0] === "searchResidences"
+  )?.state?.data?.params?.count;
+  const isEmptyResult = resultCount === 0;
+
   // NOTE: Keep index zero item for the title tage of page always.
   const metaTagsList = [
     `${metaTagsOfSearchPage?.title || "جستجوی اقامتگاه | لیدوما تریپ"}`,
@@ -425,6 +434,7 @@ export const getServerSideProps: GetServerSideProps = async ({ req, query, res }
     metaTagsOfSearchPage?.canonical
       ? { rel: "canonical", href: `${metaTagsOfSearchPage?.canonical}` }
       : {},
+    ...(isEmptyResult ? [{ name: "robots", content: "noindex,follow" }] : []),
     {
       name: "title",
       content: `${metaTagsOfSearchPage?.title}`,

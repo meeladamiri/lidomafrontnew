@@ -40,6 +40,15 @@ const HomePage: NextPage = () => {
     },
   };
 
+  // Sitelinks searchbox. The target has to be a URL that genuinely answers an
+  // arbitrary query, and it has to match what the site's own search form does —
+  // Google compares the two.
+  //
+  // It used to be `/search/{search_term_string}`, putting visitors' free text
+  // into the path segment the indexable city pages live in. That resolves for a
+  // real city name and returns an empty 200 for anything else. `?id=` is the
+  // parameter `/search` actually reads and is exactly what the hero form
+  // submits without JavaScript, so the markup and the form now agree.
   let schema2 = {
     "@context": "https://schema.org",
     "@type": "WebSite",
@@ -48,7 +57,10 @@ const HomePage: NextPage = () => {
     url: "https://lidomatrip.com/",
     potentialAction: {
       "@type": "SearchAction",
-      target: "https://lidomatrip.com/search/{search_term_string}",
+      target: {
+        "@type": "EntryPoint",
+        urlTemplate: "https://lidomatrip.com/search?id={search_term_string}",
+      },
       "query-input": "required name=search_term_string",
     },
   };
