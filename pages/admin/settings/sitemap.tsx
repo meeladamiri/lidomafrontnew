@@ -48,6 +48,7 @@ interface Settings {
   imagesEnabled: boolean;
   imageUrlMode: string;
   imageOptimizerWidth: number;
+  listCitySitemapsInRobots: boolean;
 }
 
 interface Section {
@@ -230,6 +231,7 @@ function GlobalSettings({
     imagesEnabled: settings.imagesEnabled,
     imageUrlMode: settings.imageUrlMode,
     imageOptimizerWidth: settings.imageOptimizerWidth,
+    listCitySitemapsInRobots: settings.listCitySitemapsInRobots,
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -251,6 +253,7 @@ function GlobalSettings({
           imagesEnabled: form.imagesEnabled,
           imageUrlMode: form.imageUrlMode,
           imageOptimizerWidth: Number(form.imageOptimizerWidth),
+          listCitySitemapsInRobots: form.listCitySitemapsInRobots,
         }),
       });
       onSaved();
@@ -316,6 +319,11 @@ function GlobalSettings({
             checked={form.robotsEnabled}
             onChange={(v) => setForm({ ...form, robotsEnabled: v })}
             label="فعال‌بودن robots.txt"
+          />
+          <Toggle
+            checked={form.listCitySitemapsInRobots}
+            onChange={(v) => setForm({ ...form, listCitySitemapsInRobots: v })}
+            label="لیست‌کردن sitemap هر شهر در robots.txt"
           />
         </div>
       </div>
@@ -430,6 +438,10 @@ function SectionRow({
     minResidenceCount: section.minResidenceCount,
     includeLastmod: section.includeLastmod,
     requireSitemapFlag: section.requireSitemapFlag,
+    tagPriority: section.tagPriority,
+    tagChangeFreq: section.tagChangeFreq,
+    listingPriority: section.listingPriority,
+    listingChangeFreq: section.listingChangeFreq,
   });
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
@@ -448,6 +460,8 @@ function SectionRow({
           ...form,
           priority: Number(form.priority),
           minResidenceCount: Number(form.minResidenceCount),
+          tagPriority: Number(form.tagPriority),
+          listingPriority: Number(form.listingPriority),
         }),
       });
       setDirty(false);
@@ -524,13 +538,55 @@ function SectionRow({
       </div>
 
       {section.key === "cities" && (
-        <p className="text-11 leading-20 text-gray-B0AFBC mt-8">
-          هر شهر یک فایل جدا می‌گیره که سه چیز توشه: صفحه‌ی خود شهر و صفحات تگش با اولویت{" "}
-          {form.priority} و نرخ «{CHANGE_FREQ.find((f) => f.value === form.changeFreq)?.label}»، و
-          اقامتگاه‌های همون شهر با اولویت {section.listingPriority} و نرخ «
-          {CHANGE_FREQ.find((f) => f.value === section.listingChangeFreq)?.label}». این‌طوری توی
-          Search Console وضعیت ایندکس هر شهر جدا دیده می‌شه.
-        </p>
+        <div className="mt-14 pt-14 border-t border-gray-F5F5F5">
+          <p className="text-11 leading-20 text-gray-B0AFBC mb-10">
+            فایل هر شهر سه نوع آدرس داره. بالا وزن «صفحه‌ی شهر» تنظیم می‌شه؛ این‌جا وزن دو تای
+            دیگه — صفحات تگ همون شهر و اقامتگاه‌هاش.
+          </p>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-12">
+            <Field label="اولویت صفحات تگ">
+              <Input
+                type="number"
+                step="0.1"
+                min="0"
+                max="1"
+                value={form.tagPriority}
+                onChange={(e) => set({ tagPriority: Number(e.target.value) })}
+              />
+            </Field>
+            <Field label="نرخ تغییر صفحات تگ">
+              <Select value={form.tagChangeFreq} onChange={(e) => set({ tagChangeFreq: e.target.value })}>
+                {CHANGE_FREQ.map((f) => (
+                  <option key={f.value} value={f.value}>
+                    {f.label}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+            <Field label="اولویت اقامتگاه‌ها">
+              <Input
+                type="number"
+                step="0.1"
+                min="0"
+                max="1"
+                value={form.listingPriority}
+                onChange={(e) => set({ listingPriority: Number(e.target.value) })}
+              />
+            </Field>
+            <Field label="نرخ تغییر اقامتگاه‌ها">
+              <Select
+                value={form.listingChangeFreq}
+                onChange={(e) => set({ listingChangeFreq: e.target.value })}
+              >
+                {CHANGE_FREQ.map((f) => (
+                  <option key={f.value} value={f.value}>
+                    {f.label}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+          </div>
+        </div>
       )}
 
       {section.key === "tag-pages" && form.requireSitemapFlag && (
