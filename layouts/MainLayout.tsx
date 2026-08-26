@@ -78,13 +78,25 @@ const MainLayout = ({ Component, pageProps }: any) => {
 
         {/* The site is Persian-only, so hreflang has one entry plus the
             x-default that names it as the fallback for every other locale.
-            Both point at the page canonical. */}
-        {!!pageProps.metaTagsList?.[1]?.href && (
-          <>
-            <link rel="alternate" hrefLang="fa-IR" href={pageProps.metaTagsList[1].href} />
-            <link rel="alternate" hrefLang="x-default" href={pageProps.metaTagsList[1].href} />
-          </>
-        )}
+            Both point at the page canonical.
+
+            An array, not a fragment: next/head walks its children one level
+            deep and drops anything wrapped in a <>...</>, which is why these
+            two links silently never reached the head the first time. */}
+        {!!pageProps.metaTagsList?.[1]?.href && [
+          <link
+            key="hreflang-fa"
+            rel="alternate"
+            hrefLang="fa-IR"
+            href={pageProps.metaTagsList[1].href}
+          />,
+          <link
+            key="hreflang-default"
+            rel="alternate"
+            hrefLang="x-default"
+            href={pageProps.metaTagsList[1].href}
+          />,
+        ]}
         {!!pageProps.metaTagsList &&
           pageProps.metaTagsList.map((item: any, index: number) => {
             // Index 0 is the title and index 1 the canonical, both handled

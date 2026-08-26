@@ -20,6 +20,7 @@ import { useSearchData } from "Hooks/SearchPages/useSearchData";
 // import Head from "next/head";
 import { renderSearchPagination } from "@/utilities/renderSearchPagination";
 import SearchBreadcrumb from "./SearchBreadcrumb";
+import ResidenceTypeLinks from "./ResidenceTypeLinks";
 import Footer from "@/layouts/Footer";
 import RelatedSearches from "../General/RelatedSearches";
 import AboutInSearch from "./AboutInSearch";
@@ -226,6 +227,9 @@ function Search() {
           {/* Every block on the page is a named landmark now. Without these the
               filters, the results and the related searches were one flat run of
               divs, indistinguishable to anything reading the structure. */}
+          {/* The crawlable half of the type filter — see ResidenceTypeLinks. */}
+          <ResidenceTypeLinks />
+
           <section aria-label="نتایج جستجو">
             {/* cart mapping wrapper */}
             {isLoading || isFetching ? (
