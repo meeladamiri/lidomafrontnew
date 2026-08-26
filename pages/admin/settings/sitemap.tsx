@@ -144,6 +144,12 @@ export default function AdminSitemapPage() {
           <span className="px-14 py-8 rounded-10 text-13 leading-20 font-m whitespace-nowrap bg-primary-main text-white">
             sitemap و robots
           </span>
+          <Link
+            href="/admin/settings/faqs"
+            className="px-14 py-8 rounded-10 text-13 leading-20 font-m whitespace-nowrap text-gray-6C6A7D hover:bg-gray-F0F0F0"
+          >
+            سوالات متداول
+          </Link>
         </Card>
       }
     >
