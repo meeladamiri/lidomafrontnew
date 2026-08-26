@@ -1,7 +1,5 @@
 import Search from "@/components/Search";
-import { BASE_URL } from "@/configs/info";
 import { buildSearchBody, mapSearchResponse } from "@/api/Search/search";
-import { getRefinedParams } from "@/utilities/SearchPage/getRefinedParams";
 import { getSearchResidences_API_params } from "@/utilities/SearchPage/getSearchResidences_API_params";
 import { getSearchResidences_Query_dep_array } from "@/utilities/SearchPage/getSearchResidences_Query_dep_array";
 import { QueryClient, dehydrate } from "@tanstack/react-query";

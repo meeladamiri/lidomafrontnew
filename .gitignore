@@ -3,3 +3,12 @@ node_modules/
 .next/
 .env.local
 tsconfig.tsbuildinfo
+
+# next-pwa writes these into public/ on every build
+public/sw.js
+public/sw.js.map
+public/workbox-*.js
+public/workbox-*.js.map
+
+# scratch dist dir used by NEXT_DIST_DIR for measurement builds
+.next-perf/

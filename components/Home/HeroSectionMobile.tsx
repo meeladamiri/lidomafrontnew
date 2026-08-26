@@ -32,11 +32,16 @@ function HeroSectionMobile({
     <div className="relative">
       <Image
         src={"/assets/home/home-mobile.webp"}
-        unoptimized
-        alt={"/assets/home/home-mobile.webp"}
+        // `alt` was the file path — the mobile LCP image announced itself to
+        // crawlers and screen readers as "/assets/home/home-mobile.webp".
+        alt="اجاره ویلا، سوئیت و اقامتگاه بوم‌گردی در سراسر ایران"
         className="rounded-16"
         width={460}
         height={504}
+        // Was `unoptimized`, which shipped the full 80KB original to every
+        // phone. Through the optimizer a 390px-wide screen gets a ~20KB
+        // rendition instead.
+        sizes="(max-width: 480px) 100vw, 460px"
         style={{
           objectFit: "contain",
         }}

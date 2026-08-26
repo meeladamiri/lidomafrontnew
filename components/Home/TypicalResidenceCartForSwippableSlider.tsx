@@ -69,12 +69,18 @@ function TypicalResidenceCartForSwippableSlider({
       <article className="group cursor-pointer">
         <header>
           <div className="relative h-[280px] md:h-[240px] w-full">
+            {/* The slide is a fixed 310px box at every breakpoint, so this is
+                sized rather than `fill`. With `fill` the srcSet defaulted to
+                100vw — the browser downloaded a 1920px rendition for a
+                thumbnail, and the page carried eight candidate URLs per card.
+                Explicit dimensions give one 1x and one 2x candidate. */}
             <Image
               src={image}
-              fill
-              style={{ objectFit: "cover" }}
+              width={310}
+              height={280}
               alt={name}
-              className="rounded-12"
+              className="rounded-12 absolute inset-0 h-full w-full object-cover"
+              loading="lazy"
             />
             {!!isFull && <ResIsFull />}
 

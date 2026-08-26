@@ -8,7 +8,6 @@ import { useGetObserveResidence } from "Hooks/ObserveResidence/useGetObserveResi
 // import ResPageNavigationTabs from "./TopSection/ResPageNavigationTabs";
 import Footer from "@/layouts/Footer";
 import SimilarReses from "./ResCompleteInfo/SimilarReses";
-import LazyLoad from "react-lazyload";
 import RelatedSearches from "../General/RelatedSearches";
 // import { useEffect } from "react";
 // import { useRouter } from "next/router";

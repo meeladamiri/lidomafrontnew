@@ -29,6 +29,9 @@ const withPWA = require("next-pwa")({
 
 const nextConfig = {
   output: "standalone",
+  // Lets a build run into a scratch directory while a dev server holds `.next`
+  // (on Windows the two fight over the same files). Unset in normal use.
+  distDir: process.env.NEXT_DIST_DIR || ".next",
   // StrictMode's dev-only double-mount leaves Swiper's Virtual module with
   // zero rendered slides (search-card image sliders show up empty in dev).
   // Production builds never double-mount, so this only changes dev behavior.
@@ -38,6 +41,13 @@ const nextConfig = {
   },
   swcMinify: isProd,
   images: {
+    // Trimmed from the defaults. Every `sizes`-based <Image> writes one
+    // candidate URL per entry into the HTML, and these are ~120 bytes each —
+    // on a listing page that is tens of kilobytes of markup. Nothing on the
+    // site is displayed above 1920px, and the tiny icon widths were only ever
+    // matched by avatars.
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920],
+    imageSizes: [96, 128, 256, 384],
     domains: [
       "cdn.lidomatrip.com",
       "test.lidomatrip.com",
@@ -83,7 +93,10 @@ const nextConfig = {
       },
     ];
   },
-  productionBrowserSourceMaps: true,
+  // Off by default: it roughly doubles what the build writes and ships a
+  // `sourceMappingURL` on every chunk. Set SOURCE_MAPS=true when a production
+  // stack trace actually needs decoding.
+  productionBrowserSourceMaps: process.env.SOURCE_MAPS === "true",
   async rewrites() {
     // Proxies the frontend's own-origin `/api/*` calls to the real backend server-side,
     // so the browser never needs to know the backend's actual URL (no CORS, cookies stay same-site).

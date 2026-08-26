@@ -1,4 +1,5 @@
 import Home from "@/components/Home";
+import { mapHomeBundle } from "@/api/Home";
 import { BASE_URL } from "@/configs/info";
 import { QueryClient, dehydrate } from "@tanstack/react-query";
 import type { GetStaticProps, NextPage } from "next";
@@ -91,15 +92,11 @@ export const getStaticProps: GetStaticProps = async () => {
     // its empty state and the next revalidate picks the content back up.
   }
 
-  const homePageData = { status: "success", params: home ?? {} };
+  // Narrowed to the keys the tree renders and reshaped to the card shape the
+  // components read — see `mapHomeBundle`.
+  const homePageData = { status: "success", params: mapHomeBundle(home) };
 
-  await Promise.all([
-    queryClient.prefetchQuery(["getHomePageData"], async () => homePageData),
-    queryClient.prefetchQuery(["getHomePageMetaTags"], async () => ({
-      status: "success",
-      params: home?.seo ?? {},
-    })),
-  ]);
+  await queryClient.prefetchQuery(["getHomePageData"], async () => homePageData);
 
   const seo = home?.seo ?? {};
   const homeTitle = seo.title || "لیدوما تریپ | اجاره ویلا، سوئیت و اقامتگاه بوم‌گردی";
@@ -175,7 +172,8 @@ export const getStaticProps: GetStaticProps = async () => {
     props: {
       dehydratedState: JSON.parse(JSON.stringify(dehydrate(queryClient))),
       metaTagsList,
-      home: home ?? null,
+      // NOTE: no raw `home` prop here. It used to ride along unread next to the
+      // dehydrated copy of the same data, which doubled `__NEXT_DATA__`.
     },
     // Curated content, so a long window is fine; an admin edit shows up on the
     // next request after it expires rather than rebuilding the whole site.

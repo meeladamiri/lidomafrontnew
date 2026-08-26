@@ -1,5 +1,5 @@
 import { IFeature } from "@/interfaces/observe_residence";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { IShowFacilityDetails } from "./FacilityDetailsBottomSheet";
 import FacilityItem from "./FacilityItem";
 import { Button } from "../../../General/core/Button";

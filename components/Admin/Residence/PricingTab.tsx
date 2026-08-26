@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { apiFetch } from "@/api/Admin/adminApi";
-import { Button, Card, faNum } from "@/components/Admin/ui";
+import { Button, Card } from "@/components/Admin/ui";
 
 // "نرخ اقامتگاه" tab. Prices are stored in تومان; discounts are percentages
 // (the unit dropdown mirrors the design — a fixed-amount discount would need

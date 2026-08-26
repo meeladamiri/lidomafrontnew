@@ -78,10 +78,81 @@ export interface ICustomSliders {
   residences: ICustomSlide[];
 }
 
-const getHomePageData = async () => {
-  const url = `/api/home/get_items`;
+/**
+ * The card components read the old Odoo snake_case shape (`min_price`,
+ * `main_image`, ...). The new backend serves camelCase, so every home rail was
+ * rendering with a blank image, no price, no rating and no capacity — the
+ * markup was there, the values were all `undefined`.
+ *
+ * Mapping here (rather than in the page) also keeps a client-side refetch
+ * consistent with what `getStaticProps` dehydrated.
+ */
+export function mapHomeCard(c: any) {
+  return {
+    id: c.id,
+    name: c.name,
+    name2: c.name2 ?? "",
+    province: c.province,
+    city: c.city,
+    neighborhood: c.neighborhood || "",
+    average_rating: c.averageRating ?? 0,
+    reviews_count: c.reviewsCount ?? 0,
+    min_price: c.minPrice ?? 0,
+    rooms_count: c.roomsCount ?? 0,
+    max_capacity: c.maxCapacity ?? 0,
+    reference: c.reference,
+    main_image: c.mainImage || c.images?.[0] || "",
+    is_fast: !!c.isFast,
+    is_full: !!c.isFull,
+    is_offer: !!c.isOffer,
+    discount: 0,
+  };
+}
 
-  return apiBuilder.setUrl(url).setCallMethod("POST").setJsonRpcMethod("call").setParams({}).call();
+// The rails the page renders. `mapHomeCard` also drops what no card reads —
+// the image gallery, coordinates and the price breakdown — which is roughly
+// two thirds of each card's bytes.
+const RAIL_KEYS = ["shomal_reses", "tehran_reses", "boomgardi_reses"] as const;
+
+// Everything else the page reads. The bundle carries more than this (rails for
+// sections that are currently commented out, plus the app/video/search-suggestion
+// blocks that exist in the admin panel but are not wired into the page yet).
+// Shipping those put ~60KB of JSON nobody reads into `__NEXT_DATA__` on every
+// request, so the bundle is narrowed to what the tree touches.
+const BUNDLE_KEYS = [
+  "hero",
+  "sections",
+  "slides",
+  "banners",
+  "desc_boxes",
+  "articles",
+  "suggests",
+] as const;
+
+/** Narrows the CMS bundle to what the home page renders, in the shape it expects. */
+export function mapHomeBundle(raw: any) {
+  if (!raw || typeof raw !== "object") return {};
+
+  const out: Record<string, any> = {};
+  for (const key of BUNDLE_KEYS) {
+    if (raw[key] !== undefined) out[key] = raw[key];
+  }
+  for (const key of RAIL_KEYS) {
+    out[key] = Array.isArray(raw[key]) ? raw[key].map(mapHomeCard) : [];
+  }
+  // Always present: the page indexes into it without a guard.
+  out.faqs = Array.isArray(raw.faqs) ? raw.faqs : [];
+
+  return out;
+}
+
+const getHomePageData = async () => {
+  // Was `/api/home/get_items` (Odoo JSON-RPC). That route does not exist on the
+  // new backend, so every client-side refetch 404'd and only the prefetched
+  // copy kept the page alive.
+  const resp: any = await apiBuilder.setUrl(`/api/home/page-data`).setCallMethod("GET").call();
+
+  return { status: "success", params: mapHomeBundle(resp?.data) };
 };
 
 const getCustomSliders = async ({

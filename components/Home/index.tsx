@@ -1,13 +1,7 @@
 import HeroSection from "./HeroSection";
 // import MainCategoriesOfResidences from "./MainCategoriesOfResidences";
 import { useQuery } from "@tanstack/react-query";
-import {
-  getCustomSliders,
-  getHomePageData,
-  // ICustomSlide,
-  ICustomSliders,
-  IHomePageData,
-} from "@/api/Home";
+import { getHomePageData, IHomePageData } from "@/api/Home";
 // import HomePageSpecialSliderSkeleton from "../General/Sliders/HomePageSpecialSlider/HomePageSpecialSliderSkeleton";
 // import ReadyToBeDeliveredTonightRightSection from "./ReadyToBeDeliveredTonight-RightSection";
 import dynamic from "next/dynamic";
@@ -70,7 +64,13 @@ function Home() {
   const isDesktop: boolean = useMediaQuery("(min-width: 1024px)");
   const isMobile: boolean = useMediaQuery("(max-width: 480px)");
 
-  const { data, isLoading } = useQuery(["getHomePageData"], () => getHomePageData());
+  // The bundle is fixed for the life of the statically generated page, so the
+  // hydrated copy is never stale. Without this the global 5-minute staleTime
+  // made every visitor who landed on a page older than that refetch the whole
+  // bundle on mount, for data identical to what the HTML already carried.
+  const { data, isLoading } = useQuery(["getHomePageData"], () => getHomePageData(), {
+    staleTime: Infinity,
+  });
 
   // The two city rails used to call getCustomSliders with Odoo category ids
   // (1079 / 164). That endpoint does not exist on the new backend, so both
@@ -329,7 +329,7 @@ function Home() {
       </section>
 
       {/* <LazyLoad height={150} once offset={100}> */}
-      {(data?.params as IHomePageData)?.faqs.length !== 0 && (
+      {!!(data?.params as IHomePageData)?.faqs?.length && (
         <HomePageFAQs faqs={(data?.params as IHomePageData)?.faqs} />
       )}
       {/* </LazyLoad> */}

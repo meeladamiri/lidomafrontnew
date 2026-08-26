@@ -1,7 +1,6 @@
 import Image from "next/image";
 import villaSuitMain from "../../public/assets/home/villa-main.webp";
 import MainSearchBox from "../General/MainSearchBox";
-import { useState } from "react";
 function HeroSectionDesktop({
   title,
   tagline,
@@ -9,8 +8,6 @@ function HeroSectionDesktop({
   title?: string | null;
   tagline?: string | null;
 }) {
-  const [isLoading, setLoading] = useState(true);
-
   return (
     <>
       <Image
@@ -23,10 +20,11 @@ function HeroSectionDesktop({
         priority
         sizes="100vw"
         placeholder="blur"
-        className={`
-        duration-300 ease-in-out group-hover:opacity-75
-        ${isLoading ? "scale-110 blur-2xl grayscale" : "scale-100 blur-0 grayscale-0"})`}
-        onLoadingComplete={() => setLoading(false)}
+        // The blur/scale/grayscale reveal used to be gated on an `isLoading`
+        // state: the LCP image painted blurred and desaturated for 300ms after
+        // it had already downloaded, which is exactly the frame Lighthouse
+        // measures. `placeholder="blur"` already covers the pre-load state.
+        className="duration-300 ease-in-out group-hover:opacity-75"
         // blurDataURL={
         //   all_blur_hashes_data[Math.floor(Math.random() * all_blur_hashes_data.length)]
         // }
