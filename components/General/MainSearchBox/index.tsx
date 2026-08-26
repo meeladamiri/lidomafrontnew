@@ -326,28 +326,14 @@ ${panel === "guests" ? "border-r-transparent" : ""}
 
             <button
               type="submit"
-              className={`
-       w-[44px] h-[44px] rounded-full flex items-center gap-x-12 bg-primary-main cursor-pointer
-       overflow-x-hidden shrink-0
-       transition-all duration-200
-       hover:w-[123px] hover:pl-24 hover:pr-16 hover:justify-start
-       focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary-main
-       ${panelIsOpen ? "!w-[123px] pl-24 pr-16" : "justify-center pr-12"}
-`}
+              className="flex h-[52px] shrink-0 cursor-pointer items-center justify-center gap-x-8 rounded-full bg-primary-main px-20 text-white transition-colors hover:bg-primary-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-main focus-visible:ring-offset-2"
             >
-              <i aria-hidden="true" className="icon-Search text-white text-24" />
-              <span
-                className={`
-         text-16 leading-24 text-white font-m whitespace-nowrap
-         transition-all duration-200
-         ${panelIsOpen ? "w-auto" : "w-0"}
-       `}
-              >
-                جستجو
-              </span>
-              {/* The label is always available to assistive tech, even while the
-                  button is collapsed to an icon. */}
-              <span className="sr-only">جستجو</span>
+              {/* The label is always shown. It used to be a zero-width span that
+                  appeared only on hover or once a panel was open — a primary
+                  action nobody can read until they hover it is not discoverable,
+                  and on touch it never appeared at all. */}
+              <i aria-hidden="true" className="icon-Search text-24" />
+              <span className="whitespace-nowrap font-m text-16 leading-24">جستجو</span>
             </button>
           </div>
         </div>

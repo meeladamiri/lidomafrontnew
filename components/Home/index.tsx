@@ -13,7 +13,6 @@ import Footer from "@/layouts/Footer";
 import HomePageBannerSkeleton from "./Skeletons/HomePageBannerSkeleton";
 
 const WhereYouWannaGo = dynamic(() => import("./WhereYouWannaGo"), { ssr: true });
-const SearchSuggestions = dynamic(() => import("./SearchSuggestions"), { ssr: true });
 const ResidenceTypes = dynamic(() => import("./ResidenceTypes"), { ssr: true });
 const HomeRails = dynamic(() => import("./HomeRails"), { ssr: true });
 const HomePageBannerComp = dynamic(() => import("./HomePageBannerComp"), { ssr: true });
@@ -91,19 +90,18 @@ function Home() {
     <div className="pt-[56px] md:pt-0">
       <div className="md:hidden">{!isDesktop && <WhereYouWannaGo />}</div>
 
-      <section className="mb-24 md:mb-32">
+      {/* The hero owns the H1, the search form and the shortcut chips: they are
+          one unit, and the chips belong next to the control they shortcut. */}
+      <div className="mb-24 md:mb-32">
         <HeroSection
           mobileHeroSectionItems={params.slides}
           title={params.hero?.title}
           titleMobile={params.hero?.title_mobile}
           tagline={params.hero?.subtitle}
           taglineMobile={params.hero?.subtitle_mobile}
+          suggestions={params.search_suggestions || []}
         />
-      </section>
-
-      {/* Directly under the search box and above every other section — these
-          are the shortest path from landing to a result. */}
-      <SearchSuggestions suggestions={params.search_suggestions || []} />
+      </div>
 
       <ResidenceTypes
         types={params.res_types || []}

@@ -18,24 +18,27 @@ function SearchSuggestions({ suggestions }: { suggestions: SearchSuggestion[] })
   if (!suggestions?.length) return null;
 
   return (
-    <section className="CustomContainer mb-24 md:mb-32" aria-label="جستجوهای پیشنهادی">
-      <nav className="flex items-center gap-x-8 gap-y-8 flex-wrap">
-        <span className="text-13 leading-22 font-m text-gray-57585C shrink-0">پیشنهاد ما:</span>
-        {suggestions.map((s) => (
-          <Link
-            key={s.id}
-            prefetch={false}
-            // The panel accepts links with or without a leading slash; a chip
-            // linking to "search/shiraz" would otherwise resolve relative to
-            // whatever page it is rendered on.
-            href={s.href.startsWith("/") || /^https?:\/\//.test(s.href) ? s.href : `/${s.href}`}
-            className="px-14 py-8 rounded-full border border-gray-CACFD3 text-13 leading-20 font-r text-black hover:border-primary-main"
-          >
-            {s.label}
-          </Link>
-        ))}
-      </nav>
-    </section>
+    <nav
+      aria-label="جستجوهای پیشنهادی"
+      className="CustomContainer mt-16 flex flex-wrap items-center gap-8 md:mt-20"
+    >
+      <span className="shrink-0 font-m text-13 leading-22 text-gray-57585C">پیشنهاد ما:</span>
+      {suggestions.map((s) => (
+        <Link
+          key={s.id}
+          prefetch={false}
+          // The panel accepts links with or without a leading slash; a chip
+          // linking to "search/shiraz" would otherwise resolve relative to
+          // whatever page it is rendered on.
+          href={s.href.startsWith("/") || /^https?:\/\//.test(s.href) ? s.href : `/${s.href}`}
+          // min-h keeps the chip at a comfortable tap target; the padding alone
+          // left it at 38px, under the 44px minimum.
+          className="inline-flex min-h-[44px] items-center rounded-full border border-gray-CACFD3 bg-white px-16 font-r text-13 leading-20 text-black transition-colors hover:border-primary-main hover:text-primary-main focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-main focus-visible:ring-offset-2 md:min-h-[38px]"
+        >
+          {s.label}
+        </Link>
+      ))}
+    </nav>
   );
 }
 
