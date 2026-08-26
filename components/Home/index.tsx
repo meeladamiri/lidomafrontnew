@@ -1,11 +1,9 @@
 import HeroSection from "./HeroSection";
-// import MainCategoriesOfResidences from "./MainCategoriesOfResidences";
 import { useQuery } from "@tanstack/react-query";
 import { getHomePageData, IHomePageData } from "@/api/Home";
-// import HomePageSpecialSliderSkeleton from "../General/Sliders/HomePageSpecialSlider/HomePageSpecialSliderSkeleton";
-// import ReadyToBeDeliveredTonightRightSection from "./ReadyToBeDeliveredTonight-RightSection";
 import dynamic from "next/dynamic";
 import { useMediaQuery } from "@/utilities/useMediaQuery";
+import { toEmbedUrl } from "@/utilities/videoEmbed";
 import Image from "next/image";
 import Link from "next/link";
 import mayketBlack from "../../public/assets/home/MykeyButtonBlack.svg";
@@ -13,51 +11,57 @@ import bazaarBlack from "../../public/assets/home/BazaarButtonBlack.svg";
 import downloadApp from "../../public/assets/home/DownloadApp.png";
 import Footer from "@/layouts/Footer";
 import HomePageBannerSkeleton from "./Skeletons/HomePageBannerSkeleton";
-import ManuallySwippableSliderComp from "./ManuallySwippableSliderComp";
 
-const WhereYouWannaGo = dynamic(() => import("./WhereYouWannaGo"), {
-  ssr: true,
-});
-const HomePageBannerComp = dynamic(() => import("./HomePageBannerComp"), {
-  ssr: true,
-});
-const AwayFromCitiesStress = dynamic(() => import("./AwayFromCitiesStress"), {
-  ssr: true,
-});
-const TripGuideArticlesComp = dynamic(() => import("./TripGuideArticlesComp"), {
-  ssr: true,
-});
-const PopularDestsComp = dynamic(() => import("./PopularDestsComp"), {
-  ssr: true,
-});
+const WhereYouWannaGo = dynamic(() => import("./WhereYouWannaGo"), { ssr: true });
+const SearchSuggestions = dynamic(() => import("./SearchSuggestions"), { ssr: true });
+const ResidenceTypes = dynamic(() => import("./ResidenceTypes"), { ssr: true });
+const HomeRails = dynamic(() => import("./HomeRails"), { ssr: true });
+const HomePageBannerComp = dynamic(() => import("./HomePageBannerComp"), { ssr: true });
+const AwayFromCitiesStress = dynamic(() => import("./AwayFromCitiesStress"), { ssr: true });
+const TripGuideArticlesComp = dynamic(() => import("./TripGuideArticlesComp"), { ssr: true });
+const PopularDestsComp = dynamic(() => import("./PopularDestsComp"), { ssr: true });
 const SeasonalRecommendationsComp = dynamic(() => import("./SeasonalRecommendationsComp"), {
   ssr: true,
 });
-const LidomaFeatures = dynamic(() => import("./LidomaFeatures"), {
-  ssr: true,
-});
+const LidomaFeatures = dynamic(() => import("./LidomaFeatures"), { ssr: true });
+const HomePageFAQs = dynamic(() => import("./HomePageFAQs"), { ssr: true });
+const ContinuedText = dynamic(() => import("./ContinuedText"), { ssr: true });
 
-const HomePageFAQs = dynamic(() => import("./HomePageFAQs"), {
-  ssr: true,
-});
-const ContinuedText = dynamic(() => import("./ContinuedText"), {
-  ssr: true,
-});
-// const SpecialSliderCart = dynamic(
-//   () => import("../General/Sliders/HomePageSpecialSlider/SpecialSliderCart"),
-//   {
-//     ssr: true,
-//   }
-// );
-// const HomePageSpecialSlider = dynamic(
-//   () => import("components/General/Sliders/HomePageSpecialSlider"),
-//   {
-//     ssr: true,
-//   }
-// );
-// const Footer = dynamic(() => import("@/layouts/Footer"), {
-//   ssr: true,
-// });
+/**
+ * One banner slot. The CMS holds an ordered list and the page places them at
+ * fixed points down the layout; `index` is the position in that list, so an
+ * editor reorders banners in the panel rather than in this file.
+ */
+function BannerSlot({
+  banners,
+  index,
+  isLoading,
+}: {
+  banners: IHomePageData["banners"] | undefined;
+  index: number;
+  isLoading: boolean;
+}) {
+  if (isLoading) {
+    return (
+      <section className="mb-24 md:mb-40 CustomContainer">
+        <HomePageBannerSkeleton />
+      </section>
+    );
+  }
+  const banner = banners?.[index];
+  if (!banner?.pc_image && !banner?.mobile_image) return null;
+
+  return (
+    <section className="mb-24 md:mb-40 CustomContainer">
+      <HomePageBannerComp
+        loaderCondition={false}
+        link={banner.link}
+        mobile_image={banner.mobile_image}
+        pc_image={banner.pc_image}
+      />
+    </section>
+  );
+}
 
 function Home() {
   const isDesktop: boolean = useMediaQuery("(min-width: 1024px)");
@@ -71,117 +75,65 @@ function Home() {
     staleTime: Infinity,
   });
 
-  // The two city rails used to call getCustomSliders with Odoo category ids
-  // (1079 / 164). That endpoint does not exist on the new backend, so both
-  // rails silently rendered empty. They come from the page bundle now.
-  const params = data?.params as any;
-  const shomalSlidersIsLoading = isLoading;
-  const tehranSlidersIsLoading = isLoading;
+  const params = (data?.params ?? {}) as any;
+  const sections = params.sections ?? {};
+  const app = params.app;
+  const video = params.video;
+  const standaloneVideo = toEmbedUrl(video?.url);
+
+  // The panel's app image is a free-text URL, and a localhost one pasted while
+  // testing would 404 for every real visitor. Fall back to the bundled artwork
+  // rather than render a broken image.
+  const appImage: string | null =
+    app?.image && !/^https?:\/\/(localhost|127\.0\.0\.1)/i.test(app.image) ? app.image : null;
 
   return (
     <div className="pt-[56px] md:pt-0">
       <div className="md:hidden">{!isDesktop && <WhereYouWannaGo />}</div>
 
-      <section className="mb-24 md:mb-48">
+      <section className="mb-24 md:mb-32">
         <HeroSection
-          mobileHeroSectionItems={(data?.params as IHomePageData)?.slides}
-          title={(data?.params as any)?.hero?.title}
-          titleMobile={(data?.params as any)?.hero?.title_mobile}
-          tagline={(data?.params as any)?.hero?.subtitle}
-          taglineMobile={(data?.params as any)?.hero?.subtitle_mobile}
+          mobileHeroSectionItems={params.slides}
+          title={params.hero?.title}
+          titleMobile={params.hero?.title_mobile}
+          tagline={params.hero?.subtitle}
+          taglineMobile={params.hero?.subtitle_mobile}
         />
       </section>
 
-      {/* <section className="CustomContainer mb-24 md:mb-42">
-        <MainCategoriesOfResidences />
-      </section>
- */}
+      {/* Directly under the search box and above every other section — these
+          are the shortest path from landing to a result. */}
+      <SearchSuggestions suggestions={params.search_suggestions || []} />
+
+      <ResidenceTypes
+        types={params.res_types || []}
+        title={sections.types?.title}
+        headingLevel={sections.types?.heading_level}
+      />
+
       <PopularDestsComp />
 
-      {isLoading ? (
-        <section className="mb-24 md:mb-40 CustomContainer">
-          <HomePageBannerSkeleton />
-        </section>
-      ) : (
-        // <LazyLoad height={270} once offset={100}>
-        <section className="mb-24 md:mb-40 CustomContainer">
-          <HomePageBannerComp
-            loaderCondition={isLoading}
-            link={(data?.params as IHomePageData)?.banners?.[3]?.link}
-            mobile_image={(data?.params as IHomePageData)?.banners?.[3]?.mobile_image}
-            pc_image={(data?.params as IHomePageData)?.banners?.[3]?.pc_image}
-          />
-        </section>
-        // </LazyLoad>
-      )}
+      <BannerSlot banners={params.banners} index={0} isLoading={isLoading} />
 
       <section className="mb-24 md:mb-40 CustomContainer">
-        {/* <LazyLoad height={86} once offset={100}> */}
         <LidomaFeatures />
-        {/* </LazyLoad> */}
       </section>
 
-      <ManuallySwippableSliderComp
-        title="ویلاهای شمال"
-        loaderCondition={shomalSlidersIsLoading}
-        data_list={params?.shomal_reses || []}
-        linkTo="/search/shomal?villa=1"
-      />
+      {/* The configurable sliders. Which listings each one shows is set in the
+          panel, not here. */}
+      <HomeRails rails={params.rails || []} />
 
-      {/* <LazyLoad height={204} once offset={100}> */}
       <SeasonalRecommendationsComp
         loaderCondition={isLoading}
-        suggestsList={(data?.params as IHomePageData)?.suggests || []}
+        suggestsList={params.suggests || []}
       />
-      {/* </LazyLoad> */}
 
-      <ManuallySwippableSliderComp
-        title="اقامتگاه های تهران"
-        loaderCondition={tehranSlidersIsLoading}
-        data_list={params?.tehran_reses || []}
-        linkTo="/search/tehran"
-      />
+      <BannerSlot banners={params.banners} index={1} isLoading={isLoading} />
+
       <section className="mb-24 md:mb-40 ContainerForSliders">
-        {/* <LazyLoad height={270} once offset={100}> */}
         <AwayFromCitiesStress />
-        {/* </LazyLoad> */}
       </section>
 
-      {/* <LazyLoad height={419} once offset={100}> */}
-      {/* <HomePageSpecialSliderComp
-        loaderCondition={isLoading}
-        data_list={(data?.params as IHomePageData)?.last_time_offers || []}
-        rightSectionComp={
-          <LastMomentRecommendationsRightSection
-            last_time_offers_arr={(data?.params as IHomePageData)?.last_time_offers || []}
-          />
-        }
-        bgClassname="bg-red-main"
-        seeAllResesLink={`/search/city/اقامتگاه-ها-1?tonight=true&discounted=true&fast=true`}
-      /> */}
-      {/* </LazyLoad> */}
-
-      {/* <LazyLoad height={294} once offset={100}> */}
-      {/* <PopularDestsComp
-        loaderCondition={isLoading}
-        popularsList={(data?.params as IHomePageData)?.populars || []}
-      /> */}
-      {/* </LazyLoad> */}
-
-      {/* <LazyLoad height={304} once offset={100}>
-        <HomePageBannerComp
-          loaderCondition={isLoading}
-          link={(data?.params as IHomePageData)?.banners?.[0]?.link}
-          mobile_image={(data?.params as IHomePageData)?.banners?.[0]?.mobile_image}
-          pc_image={(data?.params as IHomePageData)?.banners?.[0]?.pc_image}
-        />
-      </LazyLoad>
- */}
-      {/* <LazyLoad height={314} once offset={100}> */}
-      {/* AccordingToYourTasteComp was removed from the tree; the bundle still
-          serves `your_taste` for whenever it comes back. */}
-      {/* </LazyLoad> */}
-      {/* <LazyLoad height={304} once offset={100}> */}
       <section className="mb-24 md:mb-40 CustomContainer h-[500px]">
         <div
           data-loaded="false"
@@ -200,14 +152,14 @@ function Home() {
             <p
               className={`text-black ${isMobile ? "text-30" : "text-[60px]"} font-[YekanBakhBlack]`}
             >
-              اپلیکیشن لیدوما
+              {app?.title || "اپلیکیشن لیدوما"}
             </p>
             <p
               className={`text-black ${
                 isMobile ? "text-14 my-10" : "text-[23px] my-18"
               } font-[YekanBakhRegular]`}
             >
-              دریافت از مارکت های رسمی دانلود اپلیکیشن
+              {app?.subtitle || "دریافت از مارکت های رسمی دانلود اپلیکیشن"}
             </p>
             <div className="flex items-center gap-x-18">
               <Link
@@ -215,7 +167,7 @@ function Home() {
                 target="_blank"
                 prefetch={false}
                 passHref
-                href={"https://myket.ir/app/app.lidomatrip.com"}
+                href={app?.myket || "https://myket.ir/app/app.lidomatrip.com"}
               >
                 <Image
                   src={mayketBlack}
@@ -230,7 +182,7 @@ function Home() {
                 target="_blank"
                 prefetch={false}
                 passHref
-                href={"https://cafebazaar.ir/app/app.lidomatrip.com"}
+                href={app?.bazaar || "https://cafebazaar.ir/app/app.lidomatrip.com"}
               >
                 <Image
                   src={bazaarBlack}
@@ -243,107 +195,98 @@ function Home() {
             </div>
           </div>
           <div className="flex-[1_1_50%] box-border">
-            <Image
-              height={isMobile ? 400 : 431}
-              width={isMobile ? 300 : 529}
-              src={downloadApp}
-              style={{ objectFit: "contain" }}
-              alt={"downloadApp"}
-              placeholder="blur"
-            />
+            {appImage ? (
+              <Image
+                height={isMobile ? 400 : 431}
+                width={isMobile ? 300 : 529}
+                src={appImage}
+                style={{ objectFit: "contain" }}
+                alt={app?.title || "اپلیکیشن لیدوما"}
+                loading="lazy"
+              />
+            ) : (
+              <Image
+                height={isMobile ? 400 : 431}
+                width={isMobile ? 300 : 529}
+                src={downloadApp}
+                style={{ objectFit: "contain" }}
+                alt={app?.title || "اپلیکیشن لیدوما"}
+                placeholder="blur"
+              />
+            )}
           </div>
         </div>
       </section>
-      {/* </LazyLoad> */}
 
-      {/* <LazyLoad height={436} once offset={100}> */}
-      <ManuallySwippableSliderComp
-        loaderCondition={isLoading}
-        data_list={params?.boomgardi_reses || []}
-        title={(data?.params as any)?.sections?.boomgardi?.title || "اقامتگاه های بوم گردی"}
-        linkTo="/search?boomgardi=1"
-      />
-      {/* </LazyLoad> */}
+      <BannerSlot banners={params.banners} index={2} isLoading={isLoading} />
 
-      {/* <LazyLoad height={304} once offset={100}>
-        <HomePageBannerComp
-          loaderCondition={isLoading}
-          link={(data?.params as IHomePageData)?.banners?.[2]?.link}
-          mobile_image={(data?.params as IHomePageData)?.banners?.[2]?.mobile_image}
-          pc_image={(data?.params as IHomePageData)?.banners?.[2]?.pc_image}
-        />
-      </LazyLoad> */}
+      {/* Standalone intro video — the "ویدیو معرفی" toggle in the panel. */}
+      {!!standaloneVideo && (
+        <section className="mb-24 md:mb-40 CustomContainer defer-render">
+          <ContinuedText
+            videoUrl={
+              <iframe
+                className="w-full h-full rounded-12"
+                src={standaloneVideo}
+                title={video?.title || "ویدیو معرفی لیدوما تریپ"}
+                allowFullScreen
+                loading="lazy"
+              />
+            }
+            title={video?.title}
+            desc={video?.description || ""}
+          />
+        </section>
+      )}
 
-      {/* <LazyLoad height={419} once offset={100}> */}
-      {/* <HomePageSpecialSliderComp
-        loaderCondition={isLoading}
-        data_list={(data?.params as IHomePageData)?.discounted_reses || []}
-        rightSectionComp={<SpecialDiscountsRightSection />}
-        styles={{
-          background: "linear-gradient(117.55deg, #FF00A8 -0.33%, #FF0000 100.19%)",
-        }}
-        seeAllResesLink={`/search/city/اقامتگاه-ها-1?discounted=true`}
-      /> */}
-      {/* </LazyLoad> */}
+      {/* SEO: the page's main descriptive copy, each block with its own <h2>.
+          These used to sit inside <LazyLoad>, which renders an empty placeholder
+          on the server — the text never reached the HTML a crawler reads.
+          `defer-render` skips the rendering work while keeping the markup.
+          The video beside each block now comes from the panel too; it used to be
+          a hardcoded <iframe> with the Aparat hash inlined here. */}
+      {(params.desc_boxes || []).map((box: any, i: number) => {
+        const embed = toEmbedUrl(box.video);
+        return (
+          <section key={box.id ?? i} className="mb-24 md:mb-40 CustomContainer defer-render">
+            <ContinuedText
+              isReverse={i % 2 === 1}
+              videoUrl={
+                embed ? (
+                  <iframe
+                    className="w-full h-full rounded-12"
+                    src={embed}
+                    title={box.title || "ویدیو"}
+                    allowFullScreen
+                    loading="lazy"
+                  />
+                ) : box.pc_image ? (
+                  <Image
+                    src={box.pc_image}
+                    width={320}
+                    height={200}
+                    alt={box.alt || box.title || ""}
+                    className="h-full w-full object-cover rounded-12"
+                    loading="lazy"
+                  />
+                ) : (
+                  <div className="h-full w-full rounded-12 bg-gray-F5F5F5" />
+                )
+              }
+              title={box.title}
+              desc={box.content}
+            />
+          </section>
+        );
+      })}
 
-      {/* SEO: this is the page's main descriptive copy and carries an <h2>.
-          It used to sit inside <LazyLoad>, which renders an empty 200px
-          placeholder on the server — the text was in __NEXT_DATA__ but never in
-          the HTML a crawler reads. `defer-render` gets the same "skip the work
-          until it is near the viewport" benefit while keeping the markup. */}
-      <section className="mb-24 md:mb-40 CustomContainer defer-render">
-        <ContinuedText
-          videoUrl={
-            <iframe
-              className="w-full h-full rounded-12"
-              src="https://www.aparat.com/video/video/embed/videohash/lCSq8/vt/frame"
-              allowFullScreen
-              loading="lazy"
-              // webkitallowfullscreen
-              // mozallowfullscreen="true"
-            ></iframe>
-          }
-          // image="/assets/tmp/res-0.webp"
-          title={(data?.params as IHomePageData)?.desc_boxes?.[0]?.title}
-          desc={(data?.params as IHomePageData)?.desc_boxes?.[0]?.content}
-        />
-      </section>
-
-      <section className="mb-24 md:mb-40 CustomContainer defer-render">
-        <ContinuedText
-          isReverse
-          videoUrl={
-            <iframe
-              className="w-full h-full rounded-12"
-              src="https://www.aparat.com/video/video/embed/videohash/73Nt6/vt/frame"
-              allowFullScreen
-              loading="lazy"
-              // webkitallowfullscreen
-              // mozallowfullscreen="true"
-            ></iframe>
-          }
-          // image="/assets/tmp/res-1.webp"
-          title={(data?.params as IHomePageData)?.desc_boxes?.[1]?.title}
-          desc={(data?.params as IHomePageData)?.desc_boxes?.[1]?.content}
-        />
-      </section>
-
-      {/* <LazyLoad height={150} once offset={100}> */}
       {!!(data?.params as IHomePageData)?.faqs?.length && (
         <HomePageFAQs faqs={(data?.params as IHomePageData)?.faqs} />
       )}
-      {/* </LazyLoad> */}
 
-      {/* <LazyLoad height={288} once offset={100}> */}
-      <TripGuideArticlesComp
-        loaderCondition={isLoading}
-        articlesList={(data?.params as IHomePageData)?.articles || []}
-      />
-      {/* </LazyLoad> */}
+      <TripGuideArticlesComp loaderCondition={isLoading} articlesList={params.articles || []} />
 
-      {/* <LazyLoad height={637} once offset={100}> */}
       <Footer />
-      {/* </LazyLoad> */}
     </div>
   );
 }

@@ -21,15 +21,22 @@ function ManuallySwippableSlider({
   seeAllItemsLink,
   data,
   titleAsH1,
+  headingLevel,
   showArrowsForNextAndPrevSlide = true,
 }: {
   title?: string;
   titleAsH1?: boolean;
+  /** 2–4. Set per slider in the admin panel; ignored when titleAsH1 is set. */
+  headingLevel?: number;
   seeAllItemsLink?: string;
   data: JSX.Element[];
   showArrowsForNextAndPrevSlide?: boolean;
 }) {
   const [swiper_slide, set_swiper_slide] = useState<Swiper>();
+
+  // The page's single H1 lives in the hero, so a slider heading is H2 by
+  // default and can be pushed deeper when the section is a subsection.
+  const Heading = `h${Math.min(Math.max(headingLevel ?? 2, 2), 4)}` as unknown as "h2";
 
   return (
     <div>
@@ -39,7 +46,7 @@ function ManuallySwippableSlider({
             {!!titleAsH1 ? (
               <h1 className="text-[#000000] text-16 leading-28 font-m">{title}</h1>
             ) : (
-              <h2 className="text-[#000000] text-16 leading-28 font-m">{title}</h2>
+              <Heading className="text-[#000000] text-16 leading-28 font-m">{title}</Heading>
             )}
           </header>
         )}

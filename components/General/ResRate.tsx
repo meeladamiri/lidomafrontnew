@@ -21,7 +21,11 @@ function ResRate({
     >
       {!!average_rating && (
         <>
-          <span className="text-15 leading-20 text-black font-m">{average_rating}</span>
+          {/* At most two decimals. The raw average comes out of the database as
+              a float, so a card could otherwise read "4.333333333333333". */}
+          <span className="text-15 leading-20 text-black font-m">
+            {Math.round(average_rating * 100) / 100}
+          </span>
           <i className="icon-StarFill text-18 text-warning"></i>
         </>
       )}

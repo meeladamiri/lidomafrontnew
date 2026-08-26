@@ -109,24 +109,31 @@ export function mapHomeCard(c: any) {
   };
 }
 
-// The rails the page renders. `mapHomeCard` also drops what no card reads —
-// the image gallery, coordinates and the price breakdown — which is roughly
-// two thirds of each card's bytes.
+// The listing rails the page renders. `mapHomeCard` also drops what no card
+// reads — the image gallery, coordinates and the price breakdown — which is
+// roughly two thirds of each card's bytes.
+//
+// `rails` (the configurable ones from the admin panel) are mapped separately
+// below; these are the fixed legacy keys still referenced by name.
 const RAIL_KEYS = ["shomal_reses", "tehran_reses", "boomgardi_reses"] as const;
 
-// Everything else the page reads. The bundle carries more than this (rails for
-// sections that are currently commented out, plus the app/video/search-suggestion
-// blocks that exist in the admin panel but are not wired into the page yet).
-// Shipping those put ~60KB of JSON nobody reads into `__NEXT_DATA__` on every
-// request, so the bundle is narrowed to what the tree touches.
+// Everything else the page reads. The bundle carries more than this — rails for
+// sections that are currently commented out — and shipping those put ~60KB of
+// JSON nobody reads into `__NEXT_DATA__`, so it is narrowed to what the tree
+// actually touches.
 const BUNDLE_KEYS = [
   "hero",
   "sections",
   "slides",
   "banners",
+  "res_types",
   "desc_boxes",
+  "service_boxes",
   "articles",
   "suggests",
+  "search_suggestions",
+  "app",
+  "video",
 ] as const;
 
 /** Narrows the CMS bundle to what the home page renders, in the shape it expects. */
@@ -140,8 +147,27 @@ export function mapHomeBundle(raw: any) {
   for (const key of RAIL_KEYS) {
     out[key] = Array.isArray(raw[key]) ? raw[key].map(mapHomeCard) : [];
   }
-  // Always present: the page indexes into it without a guard.
+
+  // Admin-configured sliders. A residence rail carries cards; a destination
+  // rail carries its own items (city/tag tiles with their own image and link).
+  out.rails = Array.isArray(raw.rails)
+    ? raw.rails.map((r: any) => ({
+        id: r.id,
+        kind: r.kind,
+        title: r.title ?? null,
+        subtitle: r.subtitle ?? null,
+        heading_level: r.heading_level ?? 2,
+        link_to: r.link_to ?? null,
+        items: Array.isArray(r.items) ? r.items : [],
+        residences: Array.isArray(r.residences) ? r.residences.map(mapHomeCard) : [],
+      }))
+    : [];
+
+  // Always present: the page indexes into these without a guard.
   out.faqs = Array.isArray(raw.faqs) ? raw.faqs : [];
+  out.search_suggestions = Array.isArray(raw.search_suggestions) ? raw.search_suggestions : [];
+  out.res_types = Array.isArray(raw.res_types) ? raw.res_types : [];
+  out.banners = Array.isArray(raw.banners) ? raw.banners : [];
 
   return out;
 }
