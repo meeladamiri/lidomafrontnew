@@ -62,51 +62,60 @@ function HeroSection({
   const mobileTagline = taglineMobile ?? tagline ?? "هر جا بری باهاتیم ...";
 
   return (
-    <section aria-label="جستجوی اقامتگاه" className="relative isolate">
-      <div className="relative overflow-hidden md:rounded-b-[32px]">
-        {/* Painted before the photo arrives, so the headline never sits on
+    <section aria-label="جستجوی اقامتگاه">
+      {/* The photographic band. The chips below deliberately sit outside it —
+          they are white pills and belong on the page background, not floating
+          over the dark end of the hero image. */}
+      <div className="relative">
+        {/* The backdrop is its own layer, and it is the only thing that clips.
+          Rounding the hero needs `overflow-hidden`, and while that lived on a
+          wrapper that also held the search box it cut the destination list, the
+          calendar and the guests popover off at the hero's edge. Keeping the
+          content out of the clipper is what makes those popovers whole. */}
+        <div aria-hidden="true" className="absolute inset-0 overflow-hidden md:rounded-b-[32px]">
+          {/* Painted before the photo arrives, so the headline never sits on
             white and the LCP frame is never a blank box. */}
-        <div className="absolute inset-0 bg-[#0b3b3f]" />
+          <div className="absolute inset-0 bg-[#0b3b3f]" />
 
-        <picture>
-          <source
-            media="(min-width: 1024px)"
-            // Only widths listed in next.config's deviceSizes/imageSizes are
-            // valid — anything else is a 400 and the hero silently disappears —
-            // so these stick to values that are in Next's own defaults. The
-            // optimizer never upscales, so asking for 1920 of a 1440-wide source
-            // returns it at its native 1440.
-            srcSet={`${optimized(villaMain.src, 1080)} 1080w, ${optimized(
-              villaMain.src,
-              1920
-            )} 1920w`}
-            sizes="100vw"
-          />
-          <img
-            src={optimized(homeMobile.src, 828)}
-            srcSet={`${optimized(homeMobile.src, 640)} 640w, ${optimized(
-              homeMobile.src,
-              828
-            )} 828w`}
-            sizes="100vw"
-            alt="اجاره ویلا، سوئیت و اقامتگاه بوم‌گردی در سراسر ایران"
-            width={1440}
-            height={480}
-            // The LCP element: tell the browser before it works it out.
-            // eslint-disable-next-line @next/next/no-img-element
-            {...({ fetchpriority: "high" } as any)}
-            decoding="async"
-            className="absolute inset-0 h-full w-full object-cover"
-          />
-        </picture>
+          <picture>
+            <source
+              media="(min-width: 1024px)"
+              // Only widths listed in next.config's deviceSizes/imageSizes are
+              // valid — anything else is a 400 and the hero silently disappears —
+              // so these stick to values that are in Next's own defaults. The
+              // optimizer never upscales, so asking for 1920 of a 1440-wide source
+              // returns it at its native 1440.
+              srcSet={`${optimized(villaMain.src, 1080)} 1080w, ${optimized(
+                villaMain.src,
+                1920
+              )} 1920w`}
+              sizes="100vw"
+            />
+            <img
+              src={optimized(homeMobile.src, 828)}
+              srcSet={`${optimized(homeMobile.src, 640)} 640w, ${optimized(
+                homeMobile.src,
+                828
+              )} 828w`}
+              sizes="100vw"
+              alt="اجاره ویلا، سوئیت و اقامتگاه بوم‌گردی در سراسر ایران"
+              width={1440}
+              height={480}
+              // The LCP element: tell the browser before it works it out.
+              // eslint-disable-next-line @next/next/no-img-element
+              {...({ fetchpriority: "high" } as any)}
+              decoding="async"
+              className="absolute inset-0 h-full w-full object-cover"
+            />
+          </picture>
 
-        {/* Contrast is not left to the photograph. */}
-        <div
-          aria-hidden="true"
-          className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/45 to-black/25"
-        />
+          {/* Contrast is not left to the photograph. */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/45 to-black/25" />
+        </div>
 
-        <div className="CustomContainer relative z-1 flex min-h-[440px] flex-col justify-end pb-24 pt-80 md:min-h-[460px] md:justify-center md:pb-40 md:pt-64">
+        {/* `relative` with no z-index: enough to paint above the backdrop layer,
+          not enough to trap the popovers inside a new stacking context. */}
+        <div className="CustomContainer relative flex min-h-[440px] flex-col justify-end pb-24 pt-80 md:min-h-[460px] md:justify-center md:pb-40 md:pt-64">
           <div className="max-w-[720px]">
             <h1 className="font-b text-white text-26 leading-38 md:text-40 md:leading-48 [text-shadow:0_1px_12px_rgba(0,0,0,0.35)]">
               <span className="md:hidden">{mobileTitle}</span>

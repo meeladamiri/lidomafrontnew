@@ -50,15 +50,18 @@ function BannerSlot({
   const banner = banners?.[index];
   if (!banner?.pc_image && !banner?.mobile_image) return null;
 
+  // A plain div, not a <section>: HomePageBannerComp renders its own sectioning
+  // element and its own bottom margin. Wrapping it in a second one nested two
+  // headingless sections and doubled the gap underneath to 80px.
   return (
-    <section className="mb-24 md:mb-40 CustomContainer">
+    <div className="CustomContainer">
       <HomePageBannerComp
         loaderCondition={false}
         link={banner.link}
         mobile_image={banner.mobile_image}
         pc_image={banner.pc_image}
       />
-    </section>
+    </div>
   );
 }
 
