@@ -44,6 +44,16 @@ function ResidenceTypeFilter({
                 : "border-gray-CACFD3"
             }
           `}
+        role="button"
+        tabIndex={0}
+        aria-haspopup="dialog"
+        aria-label="انتخاب نوع اقامتگاه"
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            (e.currentTarget as HTMLElement).click();
+          }
+        }}
         onClick={() => {
           if (!!isDesktop) {
             setShowResidenceTypeFilterPaper((prev) => !prev);

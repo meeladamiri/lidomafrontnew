@@ -20,7 +20,7 @@ function ResLocationWithBreadCrumb({
   residenceId,
 }: IResLocationWithBreadCrumb) {
   return (
-    <nav>
+    <nav aria-label="مسیر صفحه">
       <ol className={`flex items-center text-13 leading-16 text-gray-B1B2B4 font-r gap-x-4`}>
         <BreadCrumb
           cityName={city}

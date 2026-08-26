@@ -1,4 +1,7 @@
 import Search from "@/components/Search";
+import { BASE_URL } from "@/configs/info";
+import { SOCIAL_FALLBACK_IMAGE } from "@/constants/socialImage";
+import { search_pages_pageSize } from "@/constants/search_pages_pageSize";
 import { buildSearchBody, mapSearchResponse } from "@/api/Search/search";
 import { getSearchResidences_API_params } from "@/utilities/SearchPage/getSearchResidences_API_params";
 import { getSearchResidences_Query_dep_array } from "@/utilities/SearchPage/getSearchResidences_Query_dep_array";
@@ -40,13 +43,62 @@ const SearchPage: NextPage = () => {
     .map((key) => `${key}=1`) // Convert to query param strings
     .join("&"); // Join into a single string
 
-  let residences = data?.params?.products.map((product: any) => {
-    return {
-      "@type": "ListItem",
-      position: 1,
+  // Every entry used to be `position: 1`, which tells a crawler the list has no
+  // order. Each item is now a LodgingBusiness carrying its own photo, price and
+  // rating, which is what a listing result needs to be eligible for a rich
+  // result rather than a bare link.
+  let residences = data?.params?.products.map((product: any, index: number) => {
+    const lodging: any = {
+      "@type": "LodgingBusiness",
+      "@id": `https://lidomatrip.com/rentals/${product?.id}`,
       name: product?.name,
       url: `https://lidomatrip.com/rentals/${product?.id}`,
       image: product?.main_image,
+      address: {
+        "@type": "PostalAddress",
+        addressCountry: "IR",
+        addressLocality: product?.city,
+        addressRegion: product?.province,
+      },
+    };
+
+    if (product?.latitude && product?.longitude) {
+      lodging.geo = {
+        "@type": "GeoCoordinates",
+        latitude: product.latitude,
+        longitude: product.longitude,
+      };
+    }
+
+    if (product?.min_price) {
+      lodging.priceRange = `${product.min_price} IRR`;
+      lodging.offers = {
+        "@type": "Offer",
+        price: product.min_price,
+        priceCurrency: "IRR",
+        availability: product?.is_full
+          ? "https://schema.org/SoldOut"
+          : "https://schema.org/InStock",
+        url: `https://lidomatrip.com/rentals/${product?.id}`,
+      };
+    }
+
+    // Only claim a rating when there is a review behind it. An aggregateRating
+    // with reviewCount 0 is a structured-data error, not an empty field.
+    if (product?.average_rating > 0 && product?.reviews_count > 0) {
+      lodging.aggregateRating = {
+        "@type": "AggregateRating",
+        ratingValue: Math.round(product.average_rating * 100) / 100,
+        reviewCount: product.reviews_count,
+        bestRating: 5,
+        worstRating: 1,
+      };
+    }
+
+    return {
+      "@type": "ListItem",
+      position: index + 1,
+      item: lodging,
     };
   });
 
@@ -169,6 +221,29 @@ const SearchPage: NextPage = () => {
     schema2.mainEntity.itemListElement = residences;
   }
 
+  // The page already renders these questions; FAQPage is what makes them
+  // eligible to show under the result. Only emitted when there are real
+  // questions — an empty FAQPage is a structured-data error.
+  const faqList = searchPageData?.params?.faqs ?? [];
+  const schemaFaq =
+    faqList.length > 0
+      ? {
+          "@context": "https://schema.org",
+          "@type": "FAQPage",
+          mainEntity: faqList.map((faq: any) => ({
+            "@type": "Question",
+            name: faq?.question,
+            acceptedAnswer: {
+              "@type": "Answer",
+              text: String(faq?.answer ?? "")
+                .replace(/<[^>]*>/g, " ")
+                .replace(/s+/g, " ")
+                .trim(),
+            },
+          })),
+        }
+      : null;
+
   return (
     <>
       <Head>
@@ -216,6 +291,13 @@ const SearchPage: NextPage = () => {
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(schema2) }}
         />
+
+        {!!schemaFaq && (
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{ __html: JSON.stringify(schemaFaq) }}
+          />
+        )}
       </Head>
 
       <Search />
@@ -426,6 +508,31 @@ export const getServerSideProps: GetServerSideProps = async ({ req, query, res }
   )?.state?.data?.params?.count;
   const isEmptyResult = resultCount === 0;
 
+  // rel="prev"/rel="next" describe the sequence to a crawler, and the first
+  // listing photo replaces the SVG logo as the social preview — SVG is not
+  // rendered by Google or by any of the social networks.
+  const searchProducts =
+    (queryClient as any)?.queryCache?.queries.find(
+      (query: any) => query?.queryKey?.[0] === "searchResidences"
+    )?.state?.data?.params?.products ?? [];
+
+  const currentPage = Number(query?.page) > 1 ? Number(query.page) : 1;
+  const lastPage = resultCount ? Math.ceil(resultCount / search_pages_pageSize) : 1;
+
+  const pageHref = (page: number) => {
+    const params = new URLSearchParams();
+    Object.entries(query).forEach(([key, value]) => {
+      if (key === "page" || key === "id" || value === undefined) return;
+      params.set(key, Array.isArray(value) ? value.join(",") : String(value));
+    });
+    if (page > 1) params.set("page", String(page));
+    const base = `${BASE_URL}/search${query?.id ? `/${query.id}` : ""}`;
+    const qs = params.toString();
+    return qs ? `${base}?${qs}` : base;
+  };
+
+  const socialImage = searchProducts[0]?.main_image || SOCIAL_FALLBACK_IMAGE;
+
   // NOTE: Keep index zero item for the title tage of page always.
   const metaTagsList = [
     `${metaTagsOfSearchPage?.title || "جستجوی اقامتگاه | لیدوما تریپ"}`,
@@ -463,18 +570,16 @@ export const getServerSideProps: GetServerSideProps = async ({ req, query, res }
       property: "og:description",
       content: `${metaTagsOfSearchPage?.description}`,
     },
-    {
-      property: "og:image",
-      content: "https://lidomatrip.com/assets/logos/Lidoma-logo2.svg",
-    },
+    { property: "og:image", content: socialImage },
+    { property: "og:image:width", content: "1200" },
+    { property: "og:image:height", content: "630" },
+    ...(currentPage > 1 ? [{ rel: "prev", href: pageHref(currentPage - 1) }] : []),
+    ...(currentPage < lastPage ? [{ rel: "next", href: pageHref(currentPage + 1) }] : []),
     {
       name: "twitter:site",
       content: "@lidomatrip",
     },
-    {
-      name: "twitter:card",
-      content: "https://lidomatrip.com/assets/logos/Lidoma-logo2.svg",
-    },
+    { name: "twitter:card", content: "summary_large_image" },
     {
       name: "twitter:title",
       content: `${metaTagsOfSearchPage?.description}`,
@@ -483,10 +588,7 @@ export const getServerSideProps: GetServerSideProps = async ({ req, query, res }
       name: "twitter:description",
       content: `${metaTagsOfSearchPage?.description}`,
     },
-    {
-      name: "twitter:image:src",
-      content: "https://lidomatrip.com/assets/logos/Lidoma-logo2.svg",
-    },
+    { name: "twitter:image:src", content: socialImage },
   ];
 
   return {

@@ -44,6 +44,9 @@ function RenderResidences({
               cityId={product.city_id}
               displayType={product.display_type}
               isOffscreen={!!isDesktop ? idx >= 8 : idx >= 2}
+              // The first row. Whichever of these turns out to be the LCP
+              // element, it should not be waiting behind loading="lazy".
+              priority={idx < 4}
               isFull={product.is_full}
               resPureNameAlone={product.name2}
               prices={product.prices}

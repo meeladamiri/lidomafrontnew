@@ -32,6 +32,16 @@ function GeneralFilters({
                 : "border-gray-CACFD3"
             }
           `}
+        role="button"
+        tabIndex={0}
+        aria-haspopup="dialog"
+        aria-label="فیلترهای بیشتر"
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            (e.currentTarget as HTMLElement).click();
+          }
+        }}
         onClick={() => setShowGeneralFiltersModal(true)}
       >
         <div className="flex items-center gap-x-6 pl-8">

@@ -18,7 +18,7 @@ import {
 import SearchedDestinationItem from "@/components/Home/PopularDestinations/SearchedDestinationItem";
 import { getPropertyPageUrl } from "@/utilities/getPropertyPageUrl";
 
-function WhereYouWannaGoModal({ 
+function WhereYouWannaGoModal({
   showWhereYouWannaGoModal,
   setShowWhereYouWannaGoModal,
   searchText,

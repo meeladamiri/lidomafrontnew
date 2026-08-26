@@ -10,8 +10,10 @@ interface IProps {
 export default class MyDocument extends Document<IProps> {
   render() {
     // const isDev = process.env.NODE_ENV === "development";
+    // lang takes a BCP 47 tag: "fa", not the "fa_IR" locale form (that belongs
+    // in og:locale, where it already is).
     return (
-      <Html dir="rtl" lang="fa_IR" id="html">
+      <Html dir="rtl" lang="fa" id="html">
         <Head>
           {/* Dev-only debugging aids:
               1) __earlyErrs collects every early error/rejection (incl. failed

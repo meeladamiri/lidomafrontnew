@@ -61,10 +61,11 @@ const MainLayout = ({ Component, pageProps }: any) => {
       <Loader />
 
       <Head>
-        <meta
-          name="viewport"
-          content="width=device-width,height=device-height,initial-scale=1,maximum-scale=1"
-        />
+        {/* No maximum-scale: pinning it to 1 blocks pinch-zoom, which is an
+            accessibility failure for anyone who needs to magnify the page.
+            height=device-height is dropped too — it does nothing on modern
+            browsers and confuses iOS Safari when the URL bar collapses. */}
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
 
         <link rel="shortcut icon" href="/favicon.ico" />
         <meta property="og:locale" content="fa_IR" />
@@ -74,9 +75,23 @@ const MainLayout = ({ Component, pageProps }: any) => {
 
         {!!pageProps.metaTagsList && <title>{pageProps.metaTagsList[0]}</title>}
         {!!pageProps.metaTagsList && <link {...pageProps.metaTagsList[1]} />}
+
+        {/* The site is Persian-only, so hreflang has one entry plus the
+            x-default that names it as the fallback for every other locale.
+            Both point at the page canonical. */}
+        {!!pageProps.metaTagsList?.[1]?.href && (
+          <>
+            <link rel="alternate" hrefLang="fa-IR" href={pageProps.metaTagsList[1].href} />
+            <link rel="alternate" hrefLang="x-default" href={pageProps.metaTagsList[1].href} />
+          </>
+        )}
         {!!pageProps.metaTagsList &&
           pageProps.metaTagsList.map((item: any, index: number) => {
-            if (index === 0 || index === 1) return; // bcz the item in the zero index is the title of the page and the item in one index is canonical of the page, not a meta tag info.
+            // Index 0 is the title and index 1 the canonical, both handled
+            // above. Anything else carrying a `rel` is a <link> as well — that
+            // is how rel="next"/"prev" reach the head.
+            if (index === 0 || index === 1) return;
+            if (item?.rel) return <link {...item} key={index} />;
             return <meta {...item} key={index} />;
           })}
         {getFontsLinks()}

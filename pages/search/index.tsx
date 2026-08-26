@@ -1,4 +1,7 @@
 import Search from "@/components/Search";
+import { BASE_URL } from "@/configs/info";
+import { SOCIAL_FALLBACK_IMAGE } from "@/constants/socialImage";
+import { search_pages_pageSize } from "@/constants/search_pages_pageSize";
 import { buildSearchBody, mapSearchResponse } from "@/api/Search/search";
 import { getSearchResidences_API_params } from "@/utilities/SearchPage/getSearchResidences_API_params";
 import { getSearchResidences_Query_dep_array } from "@/utilities/SearchPage/getSearchResidences_Query_dep_array";
@@ -287,6 +290,31 @@ export const getServerSideProps: GetServerSideProps = async ({ req, query, res }
   )?.state?.data?.params?.count;
   const isEmptyResult = resultCount === 0;
 
+  // rel="prev"/rel="next" describe the sequence to a crawler, and the first
+  // listing photo replaces the SVG logo as the social preview — SVG is not
+  // rendered by Google or by any of the social networks.
+  const searchProducts =
+    (queryClient as any)?.queryCache?.queries.find(
+      (query: any) => query?.queryKey?.[0] === "searchResidences"
+    )?.state?.data?.params?.products ?? [];
+
+  const currentPage = Number(query?.page) > 1 ? Number(query.page) : 1;
+  const lastPage = resultCount ? Math.ceil(resultCount / search_pages_pageSize) : 1;
+
+  const pageHref = (page: number) => {
+    const params = new URLSearchParams();
+    Object.entries(query).forEach(([key, value]) => {
+      if (key === "page" || key === "id" || value === undefined) return;
+      params.set(key, Array.isArray(value) ? value.join(",") : String(value));
+    });
+    if (page > 1) params.set("page", String(page));
+    const base = `${BASE_URL}/search${query?.id ? `/${query.id}` : ""}`;
+    const qs = params.toString();
+    return qs ? `${base}?${qs}` : base;
+  };
+
+  const socialImage = searchProducts[0]?.main_image || SOCIAL_FALLBACK_IMAGE;
+
   // NOTE: Keep index zero item for the title tage of page always.
   const metaTagsList = [
     `${
@@ -320,10 +348,7 @@ export const getServerSideProps: GetServerSideProps = async ({ req, query, res }
       name: "twitter:description",
       content: `${metaTagsOfSearchPage?.description}`,
     },
-    {
-      name: "twitter:image",
-      content: "https://lidomatrip.com/assets/logos/Lidoma-logo2.svg",
-    },
+    { name: "twitter:image", content: socialImage },
     {
       property: "og:title",
       content: `${metaTagsOfSearchPage?.title}`,
@@ -332,10 +357,11 @@ export const getServerSideProps: GetServerSideProps = async ({ req, query, res }
       property: "og:description",
       content: `${metaTagsOfSearchPage?.description}`,
     },
-    {
-      property: "og:image",
-      content: "https://lidomatrip.com/assets/logos/Lidoma-logo2.svg",
-    },
+    { property: "og:image", content: socialImage },
+    { property: "og:image:width", content: "1200" },
+    { property: "og:image:height", content: "630" },
+    ...(currentPage > 1 ? [{ rel: "prev", href: pageHref(currentPage - 1) }] : []),
+    ...(currentPage < lastPage ? [{ rel: "next", href: pageHref(currentPage + 1) }] : []),
     {
       property: "og:url",
       content: `https://lidomatrip.com${req.url}`,

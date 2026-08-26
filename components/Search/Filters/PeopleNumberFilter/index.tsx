@@ -40,6 +40,16 @@ function PeopleNumberFilter({
               : "border-gray-CACFD3"
           }
         `}
+        role="button"
+        tabIndex={0}
+        aria-haspopup="dialog"
+        aria-label="انتخاب تعداد نفرات"
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            (e.currentTarget as HTMLElement).click();
+          }
+        }}
         onClick={() => {
           if (!!isDesktop) {
             setShowChooseNumberOfPeopleFloatingBox((prev) => !prev);

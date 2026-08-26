@@ -32,7 +32,9 @@ function FiltersSection({
   setShowResidenceTypeFilterBottomSheet: Dispatch<SetStateAction<boolean>>;
 }) {
   return (
-    <nav>
+    // A landmark with no name is announced only as "navigation"; with four
+    // of them on a search page that tells a screen-reader user nothing.
+    <nav aria-label="فیلترهای جستجو">
       <div className="CustomContainer2">
         <ul className="flex items-center gap-x-8 md:gap-x-10 hideScrollbar overflow-x-scroll md:overflow-x-visible">
           <li>

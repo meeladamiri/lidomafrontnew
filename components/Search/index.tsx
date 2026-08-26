@@ -19,6 +19,8 @@ import { search_pages_pageSize } from "@/constants/search_pages_pageSize";
 import { useSearchData } from "Hooks/SearchPages/useSearchData";
 // import Head from "next/head";
 import { renderSearchPagination } from "@/utilities/renderSearchPagination";
+import SearchBreadcrumb from "./SearchBreadcrumb";
+import Footer from "@/layouts/Footer";
 import RelatedSearches from "../General/RelatedSearches";
 import AboutInSearch from "./AboutInSearch";
 import SearchPageFAQ from "./SearchPageFAQ";
@@ -188,6 +190,32 @@ function Search() {
           id="SearchPageContent"
           className="pt-[193px] md:!pt-120 CustomContainer2 transition-all duration-500 ease-in-out"
         >
+          <SearchBreadcrumb
+            crumbs={[
+              { name: "لیدوماتریپ", href: "/" },
+              ...(searchPageData?.params?.province?.name
+                ? [
+                    {
+                      name: searchPageData.params.province.name,
+                      href: searchPageData?.params?.province?.title_en
+                        ? `/search/${searchPageData.params.province.title_en}`
+                        : undefined,
+                    },
+                  ]
+                : []),
+              ...(searchPageData?.params?.city?.name
+                ? [
+                    {
+                      name: searchPageData.params.city.name,
+                      href: searchPageData?.params?.city?.title_en
+                        ? `/search/${searchPageData.params.city.title_en}`
+                        : undefined,
+                    },
+                  ]
+                : []),
+            ]}
+          />
+
           <ContentHeader
             counterIsLoading={isLoading || (isFetching && !fetchTriggeredByPagination)}
             nameIsLoading={searchPageDataIsLoading || searchPageDataIsFetching}
@@ -195,7 +223,10 @@ function Search() {
             name={!!searchPageData?.params?.page_title ? searchPageData?.params?.page_title : ""}
           />
 
-          <section className="">
+          {/* Every block on the page is a named landmark now. Without these the
+              filters, the results and the related searches were one flat run of
+              divs, indistinguishable to anything reading the structure. */}
+          <section aria-label="نتایج جستجو">
             {/* cart mapping wrapper */}
             {isLoading || isFetching ? (
               <div className="grid grid-cols-12 gap-x-16 gap-y-24">
@@ -221,7 +252,7 @@ function Search() {
               search_pages_pageSize,
               (data?.params as ISearchResidences_ServerResp)?.count
             ) && (
-              <nav className="mt-24 md:mt-40 md:w-[280px] mx-auto">
+              <nav aria-label="صفحه‌بندی نتایج" className="mt-24 md:mt-40 md:w-[280px] mx-auto">
                 <Pagination
                   className={`flex items-center justify-center`}
                   currentPage={!!router?.query?.page ? Number(router?.query?.page) : 1}
@@ -279,7 +310,10 @@ function Search() {
         </div>
         {router_pathname !== "/alternatives/[alt_order]" &&
           router_pathname !== "/crm/city/[lead_id]" && (
-            <section className="bg-gray-F0F0F0 border-gray-E5E5E6 pt-20 mt-24 pb-[100px] md:pb-40">
+            <section
+              aria-label="راهنما و جستجوهای مرتبط"
+              className="bg-gray-F0F0F0 border-gray-E5E5E6 pt-20 mt-24 pb-[100px] md:pb-40"
+            >
               <RelatedSearches tags={searchPageData?.params?.related_tags} />
 
               {/* The long per-city guide text (Odoo `content`); falls back to
@@ -305,6 +339,10 @@ function Search() {
               )}
             </section>
           )}
+
+        {/* The search page shipped without a <footer> entirely — no site-wide
+            links, no landmark, nothing for a crawler to follow out of the page. */}
+        <Footer />
       </div>
 
       {!!showChooseEnterAndExitDaysCalendarModal && (

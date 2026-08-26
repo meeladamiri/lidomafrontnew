@@ -13,7 +13,7 @@ function RelatedSearches({
       <header>
         <h2 className="text-16 leading-22 font-r text-black">جستجوهای مرتبط</h2>
       </header>
-      <nav className="flex items-center gap-12 mt-16 flex-wrap">
+      <nav aria-label="جستجوهای مرتبط" className="flex items-center gap-12 mt-16 flex-wrap">
         {tags?.map((t) => (
           <Link
             key={t?.tag}

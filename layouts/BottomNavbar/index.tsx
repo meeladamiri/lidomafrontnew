@@ -83,6 +83,7 @@ function BottomNavbar() {
   return (
     <>
       <nav
+        aria-label="ناوبری اصلی"
         ref={footerRef}
         className={`
           flex flex-col md:hidden fixed z-5 bottom-0 right-0 left-0 transition-all duration-500 ease-in-out md:transition-none md:translate-y-0

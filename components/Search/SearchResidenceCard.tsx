@@ -1,19 +1,7 @@
-import classes from "styles/Air-bnb-like-slider.module.css";
 import LikeOrNot from "components/General/LikeOrNot";
 import Link from "next/link";
 import { getPropertyPageUrl } from "@/utilities/getPropertyPageUrl";
 import moment from "moment-jalaali";
-
-// Import Swiper styles
-import "swiper/css";
-import "swiper/css/navigation";
-import "swiper/css/pagination";
-import "swiper/css/virtual";
-// Import Swiper React components
-import { Swiper, SwiperSlide } from "swiper/react";
-import SwiperCore, { Navigation, Pagination, Virtual } from "swiper";
-// install Swiper modules
-SwiperCore.use([Navigation, Pagination]);
 
 import { I_Residence_display_type } from "@/interfaces/Residences";
 import BedNMaxCapacityCode from "../General/BedNMaxCapacityCode";
@@ -32,7 +20,7 @@ const ResIsFull = dynamic(() => import("./ResIsFull"), {
 const FinalCheckoutTotal = dynamic(() => import("./FinalCheckoutTotal"), {
   ssr: true,
 });
-import ResBlurImage from "./ResBlurImage";
+import SearchCardGallery from "./SearchCardGallery";
 import { useRouter } from "next/router";
 import { IPrices } from "@/interfaces/Search/SearchResp";
 
@@ -59,6 +47,8 @@ interface I_SearchResidenceCard {
   discountP: number;
   isLastMomentForToday: boolean;
   isOffscreen: boolean;
+  /** Cards in the first row opt out of lazy loading — see SearchCardGallery. */
+  priority?: boolean;
   resPureNameAlone: string;
   isFull: boolean;
   capacity: number;
@@ -95,6 +85,7 @@ function SearchResidenceCard({
   isFull,
   capacity,
   peak_dates,
+  priority,
 }: I_SearchResidenceCard) {
   const router = useRouter();
 
@@ -109,34 +100,13 @@ function SearchResidenceCard({
     <Link target="_blank" prefetch={false} href={_href}>
       <article className="group cursor-pointer">
         <header>
-          <div
-            className={`relative ${classes["Air-bnb-like-slider"]} h-[280px] md:h-[240px] w-full Make_swiper_slide_width_full`}
-          >
-            <Swiper
-              slidesPerView={1}
-              pagination={{
-                dynamicBullets: true,
-                el: ".swiper-pagination",
-                clickable: true,
-                dynamicMainBullets: 1,
-              }}
-              modules={[Virtual]}
-              virtual
-              className="rounded-12"
-            >
-              {[mainImage, ...images]?.map((img, i) => {
-                return (
-                  <SwiperSlide
-                    key={i}
-                    virtualIndex={i}
-                    className="relative w-full !h-[280px] md:!h-[240px]"
-                  >
-                    <ResBlurImage img={img} name={name} isOffscreen={isOffscreen} i={i} />
-                  </SwiperSlide>
-                );
-              })}
-              <div className="swiper-pagination"></div>
-            </Swiper>
+          <div className="relative h-[280px] md:h-[240px] w-full">
+            <SearchCardGallery
+              images={[mainImage, ...(images || [])]}
+              name={name}
+              priority={priority}
+              isOffscreen={isOffscreen}
+            />
 
             {!!isFull && <ResIsFull />}
 
@@ -158,7 +128,7 @@ function SearchResidenceCard({
           />
           <h2
             title={name}
-            className="text-14 leading-24 text-black font-r OnlyOneLineAndEndWithElipsis group-hover:text-primary-main mb-10"
+            className="product-card text-14 leading-24 text-black font-r OnlyOneLineAndEndWithElipsis group-hover:text-primary-main mb-10"
           >
             {name}
           </h2>

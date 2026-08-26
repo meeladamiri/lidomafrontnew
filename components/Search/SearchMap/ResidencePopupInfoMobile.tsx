@@ -88,7 +88,8 @@ function ResidencePopupInfoMobile({
               <p className="text-10 leading-17 text-black font-l">هر شب از:</p>
 
               <p className="text-12 leading-21 text-black font-m">
-                {(!!discountP ? price - price * (discountP / 100) : price)?.toLocaleString("en-US")} تومان
+                {(!!discountP ? price - price * (discountP / 100) : price)?.toLocaleString("en-US")}{" "}
+                تومان
               </p>
             </div>
 

@@ -13,6 +13,15 @@ interface I_Pagination {
   className?: string;
 }
 
+/**
+ * Search pagination.
+ *
+ * Every control is a real `<a href>`, including the arrows, so the pages are
+ * reachable without JavaScript and discoverable by a crawler. Previously the
+ * arrows were `<li onClick>` with no link at all, and the numbered links built
+ * their URL by concatenation that dropped the `?` as soon as any filter was
+ * present — `/search/shirazguests_count=4&page=2`.
+ */
 const Pagination = (props: I_Pagination) => {
   const { onPageChange, totalCount, siblingCount = 1, currentPage, pageSize, className } = props;
 
@@ -30,69 +39,89 @@ const Pagination = (props: I_Pagination) => {
     return null;
   }
 
-  const onNext = () => {
-    onPageChange(currentPage + 1);
+  const lastPage = Number(paginationRange?.[paginationRange!?.length - 1] ?? currentPage);
+
+  /** The current URL with `page` swapped. Built with URLSearchParams, not string glue. */
+  const hrefForPage = (page: number) => {
+    const params = new URLSearchParams();
+    Object.entries(query).forEach(([key, value]) => {
+      if (key === "page" || key === "id" || value === undefined) return;
+      params.set(key, Array.isArray(value) ? value.join(",") : String(value));
+    });
+    // Page one is the canonical URL of the list: it carries no `page`.
+    if (page > 1) params.set("page", String(page));
+
+    const base = `/search${query?.id ? `/${query.id}` : ""}`;
+    const qs = params.toString();
+    return qs ? `${base}?${qs}` : base;
   };
 
-  const onPrevious = () => {
-    onPageChange(currentPage - 1);
-  };
-
-  let lastPage = paginationRange?.[paginationRange!?.length - 1];
-
-  // Construct the filtered query string without the 'page' parameter
-  const filteredQueryString = Object.entries(query)
-    .filter(([key]) => key !== "page" && key !== "id")
-    .map(([key, value]) => `${key}=${value}`)
-    .join("&");
+  const arrow = (page: number, disabled: boolean, dir: "left" | "right", label: string) => (
+    <li className={`${classes["pagination-item"]} ${disabled ? classes["disabled"] : ""}`}>
+      {disabled ? (
+        <span aria-hidden="true" className={`${classes["arrow"]} ${classes[dir]}`} />
+      ) : (
+        <Link
+          href={hrefForPage(page)}
+          prefetch={false}
+          aria-label={label}
+          onClick={(e) => {
+            // Client-side navigation when JS is available; the href is what
+            // makes it work when it is not.
+            e.preventDefault();
+            onPageChange(page);
+          }}
+        >
+          <span aria-hidden="true" className={`${classes["arrow"]} ${classes[dir]}`} />
+        </Link>
+      )}
+    </li>
+  );
 
   return (
     <ol className={`${classes["pagination-container"]} ${className || ""}`}>
-      <li
-        className={`${classes["pagination-item"]} ${currentPage === 1 ? classes["disabled"] : ""}`}
-        onClick={onPrevious}
-      >
-        <div className={`${classes["arrow"]} ${classes["left"]}`} />
-      </li>
+      {arrow(currentPage - 1, currentPage === 1, "left", "صفحه قبل")}
+
       {paginationRange?.map((pageNumber, idx: number) => {
         if (pageNumber === DOTS) {
           return (
-            <li key={idx} className={`${classes["pagination-item"]} ${classes["dots"]}`}>
+            <li
+              key={idx}
+              aria-hidden="true"
+              className={`${classes["pagination-item"]} ${classes["dots"]}`}
+            >
               &#8230;
             </li>
           );
         }
 
+        const page = Number(pageNumber);
+        const isCurrent = page === currentPage;
+
         return (
           <li
             key={idx}
-            className={`${classes["pagination-item"]} ${
-              pageNumber === currentPage ? classes["selected"] : ""
-            }`}
-            onClick={() => onPageChange(pageNumber as number)}
+            className={`${classes["pagination-item"]} ${isCurrent ? classes["selected"] : ""}`}
           >
             <Link
-              href={`/search${
-                query?.id ? `/${query?.id}` : ""
-              }${new URLSearchParams(filteredQueryString).toString()}${
-                filteredQueryString.length > 0 ? "&" : "?"
-              }page=${pageNumber}`}
+              href={hrefForPage(page)}
               prefetch={false}
-              passHref
+              // Tells assistive tech which page of the set is showing. Without
+              // it the current page is only a colour.
+              aria-current={isCurrent ? "page" : undefined}
+              aria-label={`صفحه ${page}`}
+              onClick={(e) => {
+                e.preventDefault();
+                onPageChange(page);
+              }}
             >
               {pageNumber}
             </Link>
           </li>
         );
       })}
-      <li
-        className={`${classes["pagination-item"]} ${
-          currentPage === lastPage ? classes["disabled"] : ""
-        }`}
-        onClick={onNext}
-      >
-        <div className={`${classes["arrow"]} ${classes["right"]}`} />
-      </li>
+
+      {arrow(currentPage + 1, currentPage === lastPage, "right", "صفحه بعد")}
     </ol>
   );
 };

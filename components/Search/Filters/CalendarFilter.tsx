@@ -106,6 +106,16 @@ function CalendarFilter({
             : "border-gray-CACFD3"
         }
       `}
+          role="button"
+          tabIndex={0}
+          aria-haspopup="dialog"
+          aria-label="انتخاب تاریخ رفت و برگشت"
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              (e.currentTarget as HTMLElement).click();
+            }
+          }}
           onClick={() => {
             // setBlueBoxHasBeenShown(true);
             if (!!isDesktop) {
