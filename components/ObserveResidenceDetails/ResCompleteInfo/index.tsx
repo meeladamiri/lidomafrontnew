@@ -1,4 +1,5 @@
 import dynamic from "next/dynamic";
+import type { CSSProperties } from "react";
 import ResFourInfos from "./ResFourInfos";
 import { useGetObserveResidence } from "Hooks/ObserveResidence/useGetObserveResidence";
 import ResVideo from "./ResVideo";
@@ -94,9 +95,13 @@ function ResCompleteInfo() {
       {/* Boomgardi Specific starts here */}
       {resp?.residence_info?.display_type === "suit" ? null : resp?.residence_info?.display_type ===
         "boomgardi" ? (
-        <LazyLoad height={247} once offset={240}>
+        /* SEO: the FAQ answers are crawlable text (and back the FAQPage
+           markup). LazyLoad renders an empty placeholder on the server, so
+           none of it reached the HTML. defer-render skips the rendering work
+           without dropping the content. */
+        <div className="defer-render" style={{ "--defer-height": "247px" } as CSSProperties}>
           <ResFAQs />
-        </LazyLoad>
+        </div>
       ) : null}
       {/* Boomgardi Specific ends here */}
     </>

@@ -97,7 +97,7 @@ a:hover {
 }
 
 .hideScrollbar {
-  scrollbar-width: none; 
+  scrollbar-width: none;
 }
 
 /* For factor printing */
@@ -201,4 +201,28 @@ because the nesting selector cannot represent pseudo-elements. */
 
 .text-nowrap {
   text-wrap: nowrap;
+}
+/*
+ * Below-the-fold sections that should stay in the server HTML but need not be
+ * laid out or painted until the reader gets close to them.
+ *
+ * This replaces <LazyLoad> (react-lazyload) on content sections. LazyLoad
+ * renders an empty placeholder on the server, so the text inside it never
+ * reached the HTML a crawler reads — on the home page that silently cost two
+ * <h2> blocks of descriptive copy. content-visibility keeps the markup and
+ * skips the rendering work instead.
+ *
+ * contain-intrinsic-size gives the skipped subtree a placeholder height so the
+ * scrollbar does not jump; `auto` lets the browser remember the real size once
+ * the section has been rendered. Keep the guess close to the real height or the
+ * section visibly resizes as the reader scrolls into it — the home page's two
+ * blocks measure 200px, which is where this default comes from. Override with
+ * --defer-height where a section is a different size.
+ *
+ * Not for Swiper containers: containment makes the slider measure zero width
+ * while it is skipped, and it initialises with empty slides.
+ */
+.defer-render {
+  content-visibility: auto;
+  contain-intrinsic-size: auto var(--defer-height, 200px);
 }

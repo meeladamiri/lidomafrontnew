@@ -5,7 +5,6 @@ import { getHomePageData, IHomePageData } from "@/api/Home";
 // import HomePageSpecialSliderSkeleton from "../General/Sliders/HomePageSpecialSlider/HomePageSpecialSliderSkeleton";
 // import ReadyToBeDeliveredTonightRightSection from "./ReadyToBeDeliveredTonight-RightSection";
 import dynamic from "next/dynamic";
-import LazyLoad from "react-lazyload";
 import { useMediaQuery } from "@/utilities/useMediaQuery";
 import Image from "next/image";
 import Link from "next/link";
@@ -287,45 +286,46 @@ function Home() {
       /> */}
       {/* </LazyLoad> */}
 
-      <section className="mb-24 md:mb-40 CustomContainer">
-        <LazyLoad height={200} once offset={100}>
-          <ContinuedText
-            videoUrl={
-              <iframe
-                className="w-full h-full rounded-12"
-                src="https://www.aparat.com/video/video/embed/videohash/lCSq8/vt/frame"
-                allowFullScreen
-                loading="lazy"
-                // webkitallowfullscreen
-                // mozallowfullscreen="true"
-              ></iframe>
-            }
-            // image="/assets/tmp/res-0.webp"
-            title={(data?.params as IHomePageData)?.desc_boxes?.[0]?.title}
-            desc={(data?.params as IHomePageData)?.desc_boxes?.[0]?.content}
-          />
-        </LazyLoad>
+      {/* SEO: this is the page's main descriptive copy and carries an <h2>.
+          It used to sit inside <LazyLoad>, which renders an empty 200px
+          placeholder on the server — the text was in __NEXT_DATA__ but never in
+          the HTML a crawler reads. `defer-render` gets the same "skip the work
+          until it is near the viewport" benefit while keeping the markup. */}
+      <section className="mb-24 md:mb-40 CustomContainer defer-render">
+        <ContinuedText
+          videoUrl={
+            <iframe
+              className="w-full h-full rounded-12"
+              src="https://www.aparat.com/video/video/embed/videohash/lCSq8/vt/frame"
+              allowFullScreen
+              loading="lazy"
+              // webkitallowfullscreen
+              // mozallowfullscreen="true"
+            ></iframe>
+          }
+          // image="/assets/tmp/res-0.webp"
+          title={(data?.params as IHomePageData)?.desc_boxes?.[0]?.title}
+          desc={(data?.params as IHomePageData)?.desc_boxes?.[0]?.content}
+        />
       </section>
 
-      <section className="mb-24 md:mb-40 CustomContainer">
-        <LazyLoad height={200} once offset={100}>
-          <ContinuedText
-            isReverse
-            videoUrl={
-              <iframe
-                className="w-full h-full rounded-12"
-                src="https://www.aparat.com/video/video/embed/videohash/73Nt6/vt/frame"
-                allowFullScreen
-                loading="lazy"
-                // webkitallowfullscreen
-                // mozallowfullscreen="true"
-              ></iframe>
-            }
-            // image="/assets/tmp/res-1.webp"
-            title={(data?.params as IHomePageData)?.desc_boxes?.[1]?.title}
-            desc={(data?.params as IHomePageData)?.desc_boxes?.[1]?.content}
-          />
-        </LazyLoad>
+      <section className="mb-24 md:mb-40 CustomContainer defer-render">
+        <ContinuedText
+          isReverse
+          videoUrl={
+            <iframe
+              className="w-full h-full rounded-12"
+              src="https://www.aparat.com/video/video/embed/videohash/73Nt6/vt/frame"
+              allowFullScreen
+              loading="lazy"
+              // webkitallowfullscreen
+              // mozallowfullscreen="true"
+            ></iframe>
+          }
+          // image="/assets/tmp/res-1.webp"
+          title={(data?.params as IHomePageData)?.desc_boxes?.[1]?.title}
+          desc={(data?.params as IHomePageData)?.desc_boxes?.[1]?.content}
+        />
       </section>
 
       {/* <LazyLoad height={150} once offset={100}> */}
