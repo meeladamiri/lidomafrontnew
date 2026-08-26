@@ -6,6 +6,7 @@ import SquareSkeleton from "../General/Skeletons/Square";
 import { useMediaQuery } from "@/utilities/useMediaQuery";
 import SortFilter from "./SortFilter";
 import { Button } from "../General/core/Button";
+import { countAndPricePhrase, faNumber } from "@/utilities/SearchPage/buildSearchTitle";
 
 const BottomSheet = dynamic(() => import("../General/core/BottomSheet"), { ssr: true });
 const SortFilterBottomSheet = dynamic(() => import("./Filters/SortFilterBottomSheet"), {
@@ -17,11 +18,13 @@ function ContentHeader({
   nameIsLoading,
   count,
   name,
+  minPrice,
 }: {
   counterIsLoading: boolean;
   nameIsLoading: boolean;
   count: number;
   name: string;
+  minPrice?: number | null;
 }) {
   const [showSortFilterBottomSheet, setShowSortFilterBottomSheet] = useState<boolean>(false);
   const router = useRouter();
@@ -30,7 +33,11 @@ function ContentHeader({
   return (
     <>
       <header>
-        <h1 className="text-20 leading-28 font-m text-black md:mt-24 mt-0 mb-20">
+        {/* The count sits inside the H1, the way jabama does it — the heading
+            answers "how many, from how much" instead of leaving that to a line
+            underneath. The second line is a span, so the page still has one
+            heading with one accessible name. */}
+        <h1 className="md:mt-24 mt-0 mb-20">
           {nameIsLoading ? (
             <SquareSkeleton
               heightClass="h-28"
@@ -38,7 +45,17 @@ function ContentHeader({
               borderRadiusClass="rounded-2"
             />
           ) : (
-            name
+            <>
+              <span className="block text-20 leading-28 font-m text-black">{name}</span>
+              {/* Both spans are block-level, so this space costs nothing
+                  visually — but without it the H1's accessible name reads as
+                  one run-on word: "…در شیراز۳۴۶ اقامتگاه". */}{" "}
+              {!counterIsLoading && !!count && (
+                <span className="mt-4 block text-14 leading-22 font-r text-gray-6C6A7D">
+                  {countAndPricePhrase(count, minPrice) ?? `${faNumber(count)} اقامتگاه`}
+                </span>
+              )}
+            </>
           )}
         </h1>
 
@@ -50,7 +67,7 @@ function ContentHeader({
               borderRadiusClass="rounded-2"
             />
           ) : (
-            <p className="text-14 leading-20 font-r text-black"> تعداد {count} آگهی یافت شد</p>
+            <span aria-hidden="true" />
           )}
 
           {/* {isLoading ? (

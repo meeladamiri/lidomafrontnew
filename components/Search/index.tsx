@@ -222,6 +222,7 @@ function Search() {
             nameIsLoading={searchPageDataIsLoading || searchPageDataIsFetching}
             count={(data?.params as ISearchResidences_ServerResp)?.count}
             name={!!searchPageData?.params?.page_title ? searchPageData?.params?.page_title : ""}
+            minPrice={searchPageData?.params?.min_price}
           />
 
           {/* Every block on the page is a named landmark now. Without these the

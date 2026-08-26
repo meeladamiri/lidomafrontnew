@@ -1,4 +1,5 @@
 import Search from "@/components/Search";
+import { countAndPricePhrase, withCountInTitle } from "@/utilities/SearchPage/buildSearchTitle";
 import { BASE_URL } from "@/configs/info";
 import { SOCIAL_FALLBACK_IMAGE } from "@/constants/socialImage";
 import { search_pages_pageSize } from "@/constants/search_pages_pageSize";
@@ -533,19 +534,29 @@ export const getServerSideProps: GetServerSideProps = async ({ req, query, res }
 
   const socialImage = searchProducts[0]?.main_image || SOCIAL_FALLBACK_IMAGE;
 
+  // The count and the starting price go where "تضمین امنیت و نظافت" used to sit:
+  // the same claim on every page, replaced by a live figure a searcher is
+  // actually choosing on. Both come from the page's own canonical, unfiltered,
+  // so the title does not move with a date or guest filter.
+  const listingsPhrase = countAndPricePhrase(
+    metaTagsOfSearchPage?.count,
+    metaTagsOfSearchPage?.min_price
+  );
+  const composedTitle = withCountInTitle(
+    metaTagsOfSearchPage?.title || "جستجوی اقامتگاه | لیدوما تریپ",
+    listingsPhrase
+  );
+
   // NOTE: Keep index zero item for the title tage of page always.
   const metaTagsList = [
-    `${metaTagsOfSearchPage?.title || "جستجوی اقامتگاه | لیدوما تریپ"}`,
+    composedTitle,
     // MainLayout renders index 1 as the canonical <link> — it must sit here,
     // not further down the list (it silently rendered a broken tag before).
     metaTagsOfSearchPage?.canonical
       ? { rel: "canonical", href: `${metaTagsOfSearchPage?.canonical}` }
       : {},
     ...(isEmptyResult ? [{ name: "robots", content: "noindex,follow" }] : []),
-    {
-      name: "title",
-      content: `${metaTagsOfSearchPage?.title}`,
-    },
+    { name: "title", content: composedTitle },
     {
       name: "description",
       content: `${metaTagsOfSearchPage?.description}`,
@@ -562,10 +573,7 @@ export const getServerSideProps: GetServerSideProps = async ({ req, query, res }
       property: "og:type",
       content: "website",
     },
-    {
-      property: "og:title",
-      content: `${metaTagsOfSearchPage?.title}`,
-    },
+    { property: "og:title", content: composedTitle },
     {
       property: "og:description",
       content: `${metaTagsOfSearchPage?.description}`,
