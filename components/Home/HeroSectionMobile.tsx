@@ -18,8 +18,12 @@ import WhereYouWannaGoModals from "../Search/WhereYouWannaGoSearchBox/WhereYouWa
 
 function HeroSectionMobile({
   mobileHeroSectionItems,
+  title,
+  tagline,
 }: {
   mobileHeroSectionItems: IHomePageData["slides"];
+  title?: string | null;
+  tagline?: string | null;
 }) {
   const [showWhereYouWannaGoModal, setShowWhereYouWannaGoModal] = useState<boolean>(false);
   const [showCitiesListModal, setShowCitiesListModal] = useState<boolean>(false);
@@ -39,8 +43,9 @@ function HeroSectionMobile({
         priority
       />
       <div className="absolute bottom-12 right-16">
-        <p className="text-15 text-white leading-30 font-r">هر جا بری باهاتیم ...</p>
-        <h1 className="text-19 text-white leading-30 font-r">اجاره ویلا و سوئیت در سراسر ایران </h1>
+        <p className="text-15 text-white leading-30 font-r">{tagline || "هر جا بری باهاتیم ..."}</p>
+        {/* Visual heading only — see HeroSection for the real H1. */}
+        <p className="text-19 text-white leading-30 font-r">{title}</p>
       </div>
       <div className="absolute top-[16px] w-full">
         <div className="relative w-full">

@@ -2,7 +2,13 @@ import Image from "next/image";
 import villaSuitMain from "../../public/assets/home/villa-main.webp";
 import MainSearchBox from "../General/MainSearchBox";
 import { useState } from "react";
-function HeroSectionDesktop() {
+function HeroSectionDesktop({
+  title,
+  tagline,
+}: {
+  title?: string | null;
+  tagline?: string | null;
+}) {
   const [isLoading, setLoading] = useState(true);
 
   return (
@@ -28,10 +34,12 @@ function HeroSectionDesktop() {
       />
       {/* <div className="absolute top-0 left-0 h-full w-full bg-[#73340c] bg-opacity-30 z-1"></div> */}
       <div className="absolute bottom-[70px] right-[240px] z-1">
-        <p className="text-right text-22 leading-26 font-r text-white mb-16">هرجا بری باهاتیم...</p>
-        <h1 className="text-28 leading-28 font-r text-white text-center mb-16">
-          اجاره ویلا و سوئیت در سراسر ایران
-        </h1>
+        <p className="text-right text-22 leading-26 font-r text-white mb-16">
+          {tagline || "هرجا بری باهاتیم..."}
+        </p>
+        {/* Visual heading only — the real H1 is hoisted into HeroSection so the
+            two breakpoints cannot each contribute one. */}
+        <p className="text-28 leading-28 font-r text-white text-center mb-16">{title}</p>
       </div>
       <div className="top-72 absolute right-0 left-0 z-1 md:pt-24">
         <div>

@@ -73,39 +73,39 @@ const HomePage: NextPage = () => {
 export const getStaticProps: GetStaticProps = async () => {
   const queryClient = new QueryClient();
 
-  // The old backend's home page was a hand-curated CMS bundle (hero slides, promo
-  // banners, "picked for you"/"popular"/"last-minute" residence rails, seasonal
-  // sliders, SEO meta) — none of that curation/CMS layer exists on the new backend.
-  // Degrade every section to empty rather than querying the old production site
-  // directly (which is what this getStaticProps did before, on every dev request).
-  const emptyHomePageData = {
-    status: "success",
-    params: {
-      slides: [],
-      banners: [],
-      suggests: [],
-      last_time_offers: [],
-      populars: [],
-      your_taste: [],
-      boomgardi_reses: [],
-      discounted_reses: [],
-      desc_boxes: [],
-      faqs: [],
-      articles: [],
-      service_boxes: [],
-    },
-  };
+  // The home page is a curated CMS bundle now served by the new backend
+  // (GET /api/home/page-data). It used to be five separate calls against the
+  // old Odoo endpoints; this is one, prefetched here so the whole page is in
+  // the server HTML rather than appearing after hydration.
+  const backendUrl = process.env.BACKEND_API_URL || "http://localhost:4000";
+
+  let home: any = null;
+  try {
+    const res = await fetch(`${backendUrl}/api/home/page-data`);
+    if (res.ok) {
+      const json = await res.json();
+      if (json?.status === "success") home = json.data;
+    }
+  } catch {
+    // A build must not fail because the backend blinked — the page degrades to
+    // its empty state and the next revalidate picks the content back up.
+  }
+
+  const homePageData = { status: "success", params: home ?? {} };
 
   await Promise.all([
-    queryClient.prefetchQuery(["getHomePageData"], async () => emptyHomePageData),
-    queryClient.prefetchQuery(["getHomePageMetaTags"], async () => ({ status: "success", params: {} })),
-    queryClient.prefetchQuery(["getShomalSliders"], async () => ({ status: "success", params: {} })),
-    queryClient.prefetchQuery(["getTehranSliders"], async () => ({ status: "success", params: {} })),
-    queryClient.prefetchQuery(["getJonubSliders"], async () => ({ status: "success", params: {} })),
+    queryClient.prefetchQuery(["getHomePageData"], async () => homePageData),
+    queryClient.prefetchQuery(["getHomePageMetaTags"], async () => ({
+      status: "success",
+      params: home?.seo ?? {},
+    })),
   ]);
 
-  const metaTagsOfHomePage = (queryClient as any).queryCache.queries[1]?.state?.data;
-  const homeTitle = metaTagsOfHomePage?.params?.title || "لیدوما تریپ | اجاره ویلا، سوئیت و اقامتگاه بوم‌گردی";
+  const seo = home?.seo ?? {};
+  const homeTitle = seo.title || "لیدوما تریپ | اجاره ویلا، سوئیت و اقامتگاه بوم‌گردی";
+  const homeDescription =
+    seo.description ||
+    "رزرو و اجاره آنلاین ویلا، سوئیت، هتل و اقامتگاه بوم‌گردی در سراسر ایران با تضمین قیمت و پشتیبانی ۲۴ ساعته.";
 
   // NOTE: Keep index zero item for the title tage of page always.
   const metaTagsList = [
@@ -120,7 +120,7 @@ export const getStaticProps: GetStaticProps = async () => {
     },
     {
       name: "description",
-      content: `${metaTagsOfHomePage?.params?.meta_description}`,
+      content: `${homeDescription}`,
     },
     {
       property: "og:url",
@@ -136,11 +136,11 @@ export const getStaticProps: GetStaticProps = async () => {
     },
     {
       property: "og:title",
-      content: `${metaTagsOfHomePage?.params?.title}`,
+      content: `${homeTitle}`,
     },
     {
       property: "og:description",
-      content: `${metaTagsOfHomePage?.params?.meta_description}`,
+      content: `${homeDescription}`,
     },
     {
       property: "og:image",
@@ -152,15 +152,15 @@ export const getStaticProps: GetStaticProps = async () => {
     },
     {
       name: "twitter:card",
-      content: `${metaTagsOfHomePage?.params?.image}`,
+      content: "summary_large_image",
     },
     {
       name: "twitter:title",
-      content: `${metaTagsOfHomePage?.params?.title}`,
+      content: `${homeTitle}`,
     },
     {
       name: "twitter:description",
-      content: `${metaTagsOfHomePage?.params?.meta_description}`,
+      content: `${homeDescription}`,
     },
     {
       name: "twitter:image:src",
@@ -172,8 +172,11 @@ export const getStaticProps: GetStaticProps = async () => {
     props: {
       dehydratedState: JSON.parse(JSON.stringify(dehydrate(queryClient))),
       metaTagsList,
+      home: home ?? null,
     },
-    revalidate: 30 * 60,
+    // Curated content, so a long window is fine; an admin edit shows up on the
+    // next request after it expires rather than rebuilding the whole site.
+    revalidate: 10 * 60,
   };
 };
 

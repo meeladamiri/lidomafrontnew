@@ -72,22 +72,25 @@ function Home() {
 
   const { data, isLoading } = useQuery(["getHomePageData"], () => getHomePageData());
 
-  const { data: shomalSlidersData, isLoading: shomalSlidersIsLoading } = useQuery(
-    ["getShomalSliders"],
-    () => getCustomSliders({ cat_id: 1079, limit: 15, res_type: "suit" })
-  );
-
-  const { data: tehranSlidersData, isLoading: tehranSlidersIsLoading } = useQuery(
-    ["getTehranSliders"],
-    () => getCustomSliders({ cat_id: 164, limit: 15, res_type: "suit" })
-  );
+  // The two city rails used to call getCustomSliders with Odoo category ids
+  // (1079 / 164). That endpoint does not exist on the new backend, so both
+  // rails silently rendered empty. They come from the page bundle now.
+  const params = data?.params as any;
+  const shomalSlidersIsLoading = isLoading;
+  const tehranSlidersIsLoading = isLoading;
 
   return (
     <div className="pt-[56px] md:pt-0">
       <div className="md:hidden">{!isDesktop && <WhereYouWannaGo />}</div>
 
       <section className="mb-24 md:mb-48">
-        <HeroSection mobileHeroSectionItems={(data?.params as IHomePageData)?.slides} />
+        <HeroSection
+          mobileHeroSectionItems={(data?.params as IHomePageData)?.slides}
+          title={(data?.params as any)?.hero?.title}
+          titleMobile={(data?.params as any)?.hero?.title_mobile}
+          tagline={(data?.params as any)?.hero?.subtitle}
+          taglineMobile={(data?.params as any)?.hero?.subtitle_mobile}
+        />
       </section>
 
       {/* <section className="CustomContainer mb-24 md:mb-42">
@@ -122,7 +125,7 @@ function Home() {
       <ManuallySwippableSliderComp
         title="ویلاهای شمال"
         loaderCondition={shomalSlidersIsLoading}
-        data_list={(shomalSlidersData?.params as ICustomSliders)?.residences}
+        data_list={params?.shomal_reses || []}
         linkTo="/search/shomal?villa=1"
       />
 
@@ -136,7 +139,7 @@ function Home() {
       <ManuallySwippableSliderComp
         title="اقامتگاه های تهران"
         loaderCondition={tehranSlidersIsLoading}
-        data_list={(tehranSlidersData?.params as ICustomSliders)?.residences}
+        data_list={params?.tehran_reses || []}
         linkTo="/search/tehran"
       />
       <section className="mb-24 md:mb-40 ContainerForSliders">
@@ -176,10 +179,8 @@ function Home() {
       </LazyLoad>
  */}
       {/* <LazyLoad height={314} once offset={100}> */}
-      {/* <AccordingToYourTasteComp
-        loaderCondition={isLoading}
-        your_taste_list={(data?.params as IHomePageData)?.your_taste || []}
-      /> */}
+      {/* AccordingToYourTasteComp was removed from the tree; the bundle still
+          serves `your_taste` for whenever it comes back. */}
       {/* </LazyLoad> */}
       {/* <LazyLoad height={304} once offset={100}> */}
       <section className="mb-24 md:mb-40 CustomContainer h-[500px]">
@@ -257,12 +258,12 @@ function Home() {
       {/* </LazyLoad> */}
 
       {/* <LazyLoad height={436} once offset={100}> */}
-      {/* <ManuallySwippableSliderComp
+      <ManuallySwippableSliderComp
         loaderCondition={isLoading}
-        data_list={(data?.params as IHomePageData)?.boomgardi_reses || []}
-        title="بوم گردی های منتخب"
-        linkTo="/boomgardi"
-      /> */}
+        data_list={params?.boomgardi_reses || []}
+        title={(data?.params as any)?.sections?.boomgardi?.title || "اقامتگاه های بوم گردی"}
+        linkTo="/search?boomgardi=1"
+      />
       {/* </LazyLoad> */}
 
       {/* <LazyLoad height={304} once offset={100}>

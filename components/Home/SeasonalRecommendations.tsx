@@ -11,20 +11,20 @@ function SeasonalRecommendation({
   id,
   image,
   name,
-  titleEn,
+  href,
 }: {
   // average: number;
   content: string;
   id: number;
   image: string;
   name: string;
-  titleEn: string;
+  href: string;
 }) {
   return (
     <Link
       passHref
       prefetch={false}
-      href={`/search/${titleEn}`}
+      href={href || "/search"}
       className="flex items-center gap-x-12 w-full text-black"
     >
       <div className="w-56 h-56 relative">
@@ -53,7 +53,7 @@ function SeasonalRecommendations({
     image: string;
     name: string;
     content: string;
-    titleEn: string;
+    href: string;
   }[];
 }) {
   return (
@@ -70,7 +70,7 @@ function SeasonalRecommendations({
                 image={sr.image}
                 name={sr.name}
                 content={sr.content}
-                titleEn={sr.titleEn}
+                href={sr.href}
               />
             </div>
           );
@@ -96,7 +96,7 @@ function SeasonalRecommendations({
                     image={sr.image}
                     name={sr.name}
                     content={sr.content}
-                    titleEn={sr.titleEn}
+                    href={sr.href}
                   />
                 </div>
               );
@@ -113,7 +113,7 @@ function SeasonalRecommendations({
                     image={sr.image}
                     name={sr.name}
                     content={sr.content}
-                    titleEn={sr.titleEn}
+                    href={sr.href}
                   />
                 </div>
               );

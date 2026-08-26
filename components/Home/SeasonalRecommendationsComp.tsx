@@ -35,7 +35,8 @@ function SeasonalRecommendationsComp({
                 image: item.image,
                 name: item.name,
                 content: item.content,
-                titleEn: item.title_en
+                // The curated link, already resolved server-side past any 301.
+                href: (item as any).link,
               };
             })}
           />

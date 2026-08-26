@@ -92,12 +92,15 @@ function TypicalResidenceCartForSwippableSlider({
             neighborhood={neighborhood}
             province={provice}
           />
-          <h2
+          {/* A card inside a rail sits under that rail's H2, so its title is an
+              H3. As an H2 every card competed with the section headings and
+              flattened the document outline. */}
+          <h3
             title={name}
             className="text-14 leading-24 text-black font-r OnlyOneLineAndEndWithElipsis group-hover:text-primary-main mb-10"
           >
             {name}
-          </h2>
+          </h3>
         </header>
 
         <div>
