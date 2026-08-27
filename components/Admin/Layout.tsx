@@ -11,6 +11,7 @@ const NAV: { href: string; label: string; icon: string }[] = [
   { href: "/admin/residences", label: "اقامتگاه‌ها", icon: "icon-Homes" },
   { href: "/admin/reservations", label: "رزروها", icon: "icon-Reserve" },
   { href: "/admin/comments", label: "نظرات", icon: "icon-message" },
+  { href: "/admin/conversations", label: "گفتگوها", icon: "icon-Comments" },
   { href: "/admin/statistics", label: "گزارش‌ها", icon: "icon-Amaar" },
   { href: "/admin/transactions", label: "تراکنش‌ها", icon: "icon-Cash" },
   { href: "/admin/settings", label: "تنظیمات", icon: "icon-Setting" },

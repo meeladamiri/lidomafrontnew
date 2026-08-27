@@ -1,308 +1,213 @@
-import {
-  getAllChats,
-  getSingleChatMessages,
-  IChat,
-  ISingleChatDetails,
-  submitChatMessage,
-} from "@/api/chats";
-import { ChatStatus_enum } from "@/constants/enums/chat_status";
-import { defaultError, EXCEPTIONTYPES } from "@/constants/enums/exception_types";
+import { useRouter } from "next/router";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { getConversations, type IConversationRow, type IMessagePage } from "@/api/chats";
 import { useUserProfile } from "@/providers/Profile";
-import { miladiToJalali } from "@/utilities/dateTools";
-import exception from "@/utilities/exception";
-import { renderPagination } from "@/utilities/Pagination";
 import { useMediaQuery } from "@/utilities/useMediaQuery";
-import { useMutation, useQuery } from "@tanstack/react-query";
-import Tabs from "components/General/core/Tabs";
+import { useChatStream, type ChatStreamEvent } from "@/utilities/useChatStream";
 import PageTitle from "components/General/PageTitle";
-import UnHappyMessage from "components/General/UnHappyMessage";
-import Image from "next/image";
-import { useEffect, useState } from "react";
-import { Button } from "../General/core/Button";
-import ChatCart from "./ChatCart";
+import Tabs from "components/General/core/Tabs";
 import { TinyLoader } from "../General/Loader/TinyLoader";
-import ChatMessagesSection from "../Chat/ChatMessagesSection";
-import SubmitChatMessageArea from "../Chat/SubmitChatMessageArea";
-import { useFormik } from "formik";
-import * as Yup from "yup";
+import ChatThread from "./ChatThread";
+import ConversationList from "./ConversationList";
 
-const formInit_V = { messageTextInput: "" };
-const yupSchema = {
-  messageTextInput: Yup.string(),
-  // .test(
-  //   `تبادل شماره تماس تا قبل از قطعی شدن رزرو، خلاف قوانین سایت می باشد و در صورت انجام این کار ، حساب کاربری شما مسدود خواهد شد.`,
-  //   (value) => !/\d{4,}/.test(value || "")
-  // ),
-};
+/**
+ * The conversations page.
+ *
+ * Two panes on a desktop, one at a time on a phone. The selected thread lives
+ * in the query string (`?c=`) rather than component state, which is what makes
+ * the link in the notification SMS open straight into the right conversation,
+ * and lets the browser's back button do what it looks like it should.
+ *
+ * The live stream is opened once, here, and its events are written into the
+ * react-query cache. Both panes read from that cache, so an arriving message
+ * updates the thread and reorders the list without either of them knowing the
+ * stream exists.
+ */
+
+/** Only while the stream is unavailable — see useChatStream. */
+const FALLBACK_POLL_MS = 15_000;
+/** The indicator is a hint, not a state to get stuck in. */
+const TYPING_TIMEOUT_MS = 4000;
+
+type TabKey = "all" | "archived";
 
 function Chats() {
-  const [activeTab, setActiveTab] = useState<number>(0);
-  const isDesktop: boolean = useMediaQuery("(min-width: 1024px)");
-  const [possibilityOfEnteringPhoneNumber, setPossibilityOfEnteringPhoneNumber] =
-    useState<boolean>(false);
-  const [isCompletePhoneNumber, setIsCompletePhoneNumber] = useState<boolean>(false);
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const profile = useUserProfile();
+  const meId = profile?.id ?? 0;
+  const isDesktop = useMediaQuery("(min-width: 1024px)");
 
-  const [selectedChatId, setSelectedChatId] = useState<number>();
-  const [chatInfo, setChatInfo] = useState<ISingleChatDetails>();
+  const [tab, setTab] = useState<TabKey>("all");
+  const [polling, setPolling] = useState(false);
+  const [typing, setTyping] = useState<{ conversationId: string; userId: number } | null>(null);
 
-  const [pageSize, setPageSize] = useState<number>(10);
+  const selectedId = typeof router.query.c === "string" ? router.query.c : null;
 
-  const profileData = useUserProfile();
-
-  const { isSuccess, isLoading, data } = useQuery(
-    [
-      "getAllChats",
-      1, // for page
-      pageSize,
-      activeTab,
-    ],
-    () =>
-      getAllChats({
-        page: 1,
-        page_size: pageSize,
-        status: activeTab === 0 ? ChatStatus_enum.ACTIVE : ChatStatus_enum.ARCHIVED,
-      })
-  );
-
-  useEffect(() => {
-    if (!!data) {
-      if (data?.status === "success") {
-        // console.log("In success of getAllChats, data is: ", data);
-      } else {
-        exception.message([{ type: EXCEPTIONTYPES.ERROR, title: data?.err_msg || defaultError }]);
-      }
-    }
-  }, [data]);
-
-  function onSelectChat(chatId: number) {
-    setSelectedChatId(chatId);
-  }
-
-  const {
-    isSuccess: isSuccessGetSingleChatMessages,
-    isLoading: isLoadingGetSingleChatMessages,
-    data: singleChatMessagesData,
-    refetch: refetchSingleChatMessages,
-  } = useQuery(
-    ["getSingleChatMessages", selectedChatId],
-    () =>
-      getSingleChatMessages({
-        order_id: selectedChatId as number,
-      }),
-    {
-      enabled: !!selectedChatId,
-      refetchOnReconnect: true,
-      refetchOnWindowFocus: true,
-      refetchInterval: 10000, // in ms
-    }
-  );
-
-  // useEffect(() => {
-  //   if (!!data) {
-  //     if (data?.status === "success") {
-  //       console.log("In success of getAllChats, data is: ", data);
-
-  //       const chatData: ISingleChatDetails = data?.params;
-  //       setChatInfo(chatData);
-  //     } else {
-  //       exception.message([{ type: EXCEPTIONTYPES.ERROR, title: data?.err_msg || defaultError }]);
-  //     }
-  //   }
-  // }, [data]);
-
-  useEffect(() => {
-    if (!!singleChatMessagesData) {
-      if (singleChatMessagesData?.status === "success") {
-        const chatData: ISingleChatDetails = singleChatMessagesData?.params;
-        setChatInfo(chatData);
-      } else {
-        exception.message([
-          { type: EXCEPTIONTYPES.ERROR, title: singleChatMessagesData?.err_msg || defaultError },
-        ]);
-      }
-    }
-  }, [singleChatMessagesData]);
-
-  useEffect(() => {
-    setSelectedChatId(undefined);
-  }, [activeTab]);
-
-  const addChatMessageMutation = useMutation(
-    ({ text, order_id }: { text: string; order_id: number }) => {
-      return submitChatMessage({
-        text,
-        order_id,
-      });
+  const select = useCallback(
+    (id: string | null) => {
+      const query = { ...router.query };
+      if (id) query.c = id;
+      else delete query.c;
+      // Shallow: this is a pane change, not a page change. A real navigation
+      // would throw away the loaded messages and reopen the stream.
+      router.push({ pathname: router.pathname, query }, undefined, { shallow: true });
     },
-    {
-      onSuccess: (data) => {
-        if (data?.status === "success") {
-          formik.setFieldValue("messageTextInput", "");
-          refetchSingleChatMessages();
-        } else {
-          exception.message([{ type: EXCEPTIONTYPES.ERROR, title: data?.err_msg || defaultError }]);
-        }
-      },
-    }
+    [router]
   );
 
-  const formik = useFormik({
-    initialValues: formInit_V,
-    validationSchema: Yup.object(yupSchema),
-    validateOnChange: true,
-    onSubmit: (values) => {
-      if (!values.messageTextInput || possibilityOfEnteringPhoneNumber) return;
-
-      addChatMessageMutation.mutate({
-        order_id: chatInfo?.order_details.id as number,
-        text: values.messageTextInput,
-      });
-    },
+  const { data, isLoading } = useQuery({
+    queryKey: ["conversations", tab],
+    queryFn: () => getConversations({ archived: tab === "archived", take: 50 }),
+    refetchInterval: polling ? FALLBACK_POLL_MS : false,
   });
+
+  const items: IConversationRow[] = useMemo(() => data?.items ?? [], [data]);
+
+  // --- live updates -------------------------------------------------------
+
+  const handleEvent = useCallback(
+    (event: ChatStreamEvent) => {
+      const conversationId = event.data?.conversation_id;
+      if (!conversationId) return;
+
+      if (event.type === "message") {
+        const message = event.data.message;
+
+        queryClient.setQueryData<IMessagePage>(["messages", conversationId], (current) => {
+          if (!current) return current;
+          // The sender receives their own message back through the stream, and
+          // it is already on screen as the optimistic copy. Match on id and on
+          // nonce so neither path duplicates it.
+          const seen = current.items.some(
+            (m) => m.id === message.id || (!!m.client_nonce && m.client_nonce === message.client_nonce)
+          );
+          if (seen) {
+            return {
+              ...current,
+              items: current.items.map((m) =>
+                m.client_nonce && m.client_nonce === message.client_nonce ? message : m
+              ),
+            };
+          }
+          return { ...current, items: [...current.items, message] };
+        });
+
+        queryClient.invalidateQueries({ queryKey: ["conversations"] });
+        if (message.sender_id !== meId) {
+          queryClient.invalidateQueries({ queryKey: ["chat-unread"] });
+        }
+        return;
+      }
+
+      if (event.type === "read") {
+        queryClient.setQueryData(["conversation", conversationId], (current: any) =>
+          current && event.data.reader_id !== meId
+            ? { ...current, peer_last_read_message_id: event.data.last_read_message_id }
+            : current
+        );
+        return;
+      }
+
+      if (event.type === "typing") {
+        setTyping({ conversationId, userId: event.data.user_id });
+        return;
+      }
+
+      if (event.type === "message-deleted") {
+        queryClient.setQueryData<IMessagePage>(["messages", conversationId], (current) =>
+          current
+            ? {
+                ...current,
+                items: current.items.map((m) =>
+                  m.id === event.data.message_id ? { ...m, deleted: true, body: "" } : m
+                ),
+              }
+            : current
+        );
+      }
+    },
+    [meId, queryClient]
+  );
+
+  useChatStream(!!meId, handleEvent, setPolling);
+
+  // The indicator clears itself; there is no "stopped typing" event, and a
+  // dot animation that never stops is worse than none.
+  useEffect(() => {
+    if (!typing) return;
+    const timer = setTimeout(() => setTyping(null), TYPING_TIMEOUT_MS);
+    return () => clearTimeout(timer);
+  }, [typing]);
+
+  // --- render -------------------------------------------------------------
+
+  const showThread = !!selectedId;
+  const showList = isDesktop || !showThread;
 
   return (
     <div className="pb-40 md:pb-0">
       <PageTitle
         title="گفتگو ها"
-        icon={<i className="icon-message text-24" />}
-        containerClassname="mb-24"
+        icon={<i aria-hidden="true" className="icon-message text-24" />}
+        containerClassname="mb-16"
       />
 
-      <div className="w-[65%] md:w-full mx-auto mb-24">
-        <Tabs
-          activeIndex={activeTab}
-          onChange={(idx: number) => {
-            setActiveTab(idx);
-          }}
-          data={[
-            {
-              tabLabel: (
-                <>
-                  <span className="hidden md:inline">گفتگو های جاری</span>
-                  <span className="md:hidden">جاری</span>
-                </>
-              ),
-              tabIndex: 0,
-            },
-            {
-              tabLabel: (
-                <>
-                  <span className="hidden md:inline">گفتگو های پایان یافته</span>
-                  <span className="md:hidden">پایان یافته</span>
-                </>
-              ),
-
-              tabIndex: 1,
-            },
-          ]}
-        />
-      </div>
-
-      {(data?.params?.orders as IChat[])?.length === 0 ? (
-        <div className="pt-64">
-          <UnHappyMessage
-            title="هنوز گفتگویی صورت نگرفته !"
-            iconSrc="/assets/No-conversation.svg"
+      {showList && (
+        <div className="mb-16 w-full md:w-[360px]">
+          <Tabs
+            activeIndex={tab === "all" ? 0 : 1}
+            onChange={(index: number) => setTab(index === 0 ? "all" : "archived")}
+            data={[
+              { tabLabel: "جاری", tabIndex: 0 },
+              { tabLabel: "پایان یافته", tabIndex: 1 },
+            ]}
           />
         </div>
-      ) : (
-        <>
-          <div className="grid grid-cols-14 md:gap-x-16">
-            <div className="col-span-full md:col-span-6 md:p-24 md:border-gray-CACFD3 md:border-solid md:border-1 md:rounded-20 md:h-[624px]">
-              <div className="md:h-full md:overflow-y-auto">
-                {(data?.params?.orders as IChat[])?.map((chat, idx) => {
-                  return (
-                    <div
-                      key={`${chat.id}-${idx}`}
-                      className="mb-12 last:mb-0 md:border-b-1 md:border-solid md:border-b-gray-CACFD3"
-                    >
-                      <ChatCart
-                        name={chat.contact.name}
-                        image={chat.contact.avatar_url || "/assets/default-profile.svg"}
-                        from={miladiToJalali(chat.start_date)}
-                        to={miladiToJalali(chat.end_date)}
-                        reserveCode={chat.reference}
-                        isFinished={activeTab === 1}
-                        action={chat?.action}
-                        chatId={chat.id}
-                        hasAroundBorder={!isDesktop}
-                        onSelectChat={!!isDesktop ? () => onSelectChat(chat.id) : undefined}
-                      />
-                    </div>
-                  );
-                })}
-              </div>
+      )}
 
-              {!!renderPagination(1, pageSize, (data?.params?.orders as IChat[])?.length) && (
-                <Button
-                  isFullWidth
-                  color="black"
-                  variant="outlined"
-                  className="mt-48"
-                  onClick={() => setPageSize((prev) => prev + 10)}
-                >
-                  نمایش بیشتر
-                </Button>
-              )}
-            </div>
-
-            <div className="hidden md:block md:col-span-8 md:px-24 md:pt-16 max-h-full h-full relative md:border-gray-CACFD3 md:border-solid md:border-1 md:rounded-20 md:h-[624px]">
-              {!selectedChatId ? (
-                <div className="w-full h-full flex items-center justify-center">
-                  <Image
-                    src="/assets/Chat-dialog-with-support-service.svg"
-                    width={398}
-                    height={491}
-                    alt=""
-                  />
-                </div>
-              ) : !!isLoadingGetSingleChatMessages || !chatInfo ? (
+      <div className="grid h-[calc(100vh-260px)] min-h-[460px] grid-cols-1 overflow-hidden rounded-16 border-1 border-solid border-gray-EFEFEF bg-white md:h-[calc(100vh-280px)] md:grid-cols-[360px_1fr]">
+        {showList && (
+          <div className="min-h-0 overflow-y-auto border-l-0 border-solid border-gray-EFEFEF md:border-l-1">
+            {isLoading ? (
+              <div className="flex h-full items-center justify-center">
                 <TinyLoader />
-              ) : (
-                <div className="pb-[82px] h-full overflow-y-auto">
-                  <div className="w-full h-full absolute top-0 right-0 left-0 bottom-0 bg-gray-F8F8F8 rounded-20">
-                    <Image
-                      src={"/assets/chat-bg.svg"}
-                      fill
-                      style={{ objectFit: "cover", borderRadius: "20px" }}
-                      className="opacity-[7%]"
-                      alt=""
-                    />
-                  </div>
-
-                  <div className="z-1 relative">
-                    <ChatMessagesSection
-                      rightEndAvatar={"/assets/default-profile.svg"}
-                      leftEndAvatar={"/assets/default-profile.svg"}
-                      leftSideName={chatInfo?.contact?.name || ""}
-                      rightSideName={profileData?.name}
-                      payamHa={
-                        chatInfo?.messages?.map((el) => ({
-                          id: el.id,
-                          seen: el.seen,
-                          senderName: el.sender,
-                          text: el.text,
-                          time: el.time,
-                          date: el.date,
-                        })) || []
-                      }
-                    />
-                  </div>
-
-                  <div className="absolute bottom-0 right-0 left-0 z-5">
-                    <SubmitChatMessageArea
-                      formik={formik}
-                      possibilityOfEnteringPhoneNumber={possibilityOfEnteringPhoneNumber}
-                      isCompletePhoneNumber={isCompletePhoneNumber}
-                      canAttachFiles={false}
-                      containerClassname="rounded-br-20 rounded-bl-20"
-                    />
-                  </div>
-                </div>
-              )}
-            </div>
+              </div>
+            ) : (
+              <ConversationList items={items} selectedId={selectedId} onSelect={select} />
+            )}
           </div>
-        </>
+        )}
+
+        {showThread ? (
+          <ChatThread
+            key={selectedId}
+            conversationId={selectedId as string}
+            meId={meId}
+            isDesktop={isDesktop}
+            typingFrom={typing?.conversationId === selectedId ? typing.userId : null}
+            onBack={() => select(null)}
+          />
+        ) : (
+          isDesktop && (
+            <div className="flex flex-col items-center justify-center bg-gray-F5F5F7 px-24 text-center">
+              <i aria-hidden="true" className="icon-message text-40 text-gray-CACFD3" />
+              <p className="mt-12 text-14 leading-24 font-m text-black">
+                یک گفتگو را از فهرست انتخاب کنید
+              </p>
+              <p className="mt-4 text-12 leading-20 font-r text-gray-6C6A7D">
+                پیام‌های شما با میزبان‌ها و پشتیبانی همین‌جا جمع می‌شود.
+              </p>
+            </div>
+          )
+        )}
+      </div>
+
+      {polling && (
+        <p className="mt-8 text-center text-11 leading-18 font-r text-gray-B0AFBC">
+          اتصال زنده برقرار نشد؛ پیام‌ها هر چند ثانیه به‌روز می‌شوند.
+        </p>
       )}
     </div>
   );

@@ -1,4 +1,5 @@
 import Image from "next/image";
+import ChatBadge from "./ChatBadge";
 import Link from "next/link";
 import { UserType_enum, useUserProfile } from "@/providers/Profile";
 import { useRouter } from "next/router";
@@ -368,6 +369,10 @@ function MainHeader({ setIsSideNavbarOpen }: { setIsSideNavbarOpen: (state: bool
                   <span className="text-16 leading-24 font-r">میزبان شوید</span>
                   {/* <Image src="/assets/non-icomoon-icons/Home2.svg" width={24} height={24} alt="" /> */}
                 </div>
+              )}
+
+              {profileData.user_type === UserType_enum.AUTH && (
+                <ChatBadge isLight={!headerAfterScroll && router.pathname === "/"} />
               )}
 
               {profileData.user_type === UserType_enum.AUTH && (

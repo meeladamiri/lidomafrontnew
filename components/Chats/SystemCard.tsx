@@ -1,0 +1,155 @@
+import Link from "next/link";
+import type { IChatMessage } from "@/api/chats";
+
+/**
+ * A reservation event, rendered as a card rather than a chat bubble.
+ *
+ * The backend sends structured `meta` alongside the sentence, so this does not
+ * parse anything back out of the text — it reads the `kind` and lays the
+ * details out. The plain sentence is the fallback for a kind this build does
+ * not know, which is what keeps an older client honest rather than blank.
+ */
+
+const faDate = new Intl.DateTimeFormat("fa-IR", { day: "numeric", month: "long" });
+
+function formatDate(value: unknown): string {
+  if (typeof value !== "string") return "";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "" : faDate.format(date);
+}
+
+interface Tone {
+  ring: string;
+  bg: string;
+  icon: string;
+  iconColor: string;
+  title: string;
+}
+
+const TONES: Record<string, Tone> = {
+  BOOKING_CREATED: {
+    ring: "border-gray-EFEFEF",
+    bg: "bg-white",
+    icon: "icon-Calendar",
+    iconColor: "text-primary-main",
+    title: "درخواست رزرو ثبت شد",
+  },
+  BOOKING_APPROVED: {
+    ring: "border-[#B7E4C7]",
+    bg: "bg-[#F1FAF4]",
+    icon: "icon-Confirmed",
+    iconColor: "text-[#1B8A4B]",
+    title: "رزرو تأیید شد",
+  },
+  BOOKING_COMPLETED: {
+    ring: "border-[#B7E4C7]",
+    bg: "bg-[#F1FAF4]",
+    icon: "icon-Confirmed",
+    iconColor: "text-[#1B8A4B]",
+    title: "رزرو تکمیل شد",
+  },
+  BOOKING_CANCELLED: {
+    ring: "border-[#F5C2C2]",
+    bg: "bg-[#FDF3F3]",
+    icon: "icon-Close",
+    iconColor: "text-[#C0392B]",
+    title: "رزرو لغو شد",
+  },
+  BOOKING_EXPIRED: {
+    ring: "border-[#F3DDB0]",
+    bg: "bg-[#FDF8EE]",
+    icon: "icon-Timer",
+    iconColor: "text-[#B07D1A]",
+    title: "مهلت رزرو تمام شد",
+  },
+  ADMIN_JOINED: {
+    ring: "border-gray-EFEFEF",
+    bg: "bg-gray-F5F5F7",
+    icon: "icon-Information",
+    iconColor: "text-gray-6C6A7D",
+    title: "پشتیبانی وارد گفتگو شد",
+  },
+};
+
+const CANCELLED_BY: Record<string, string> = {
+  HOST_CANCELLED: "لغو از سمت میزبان",
+  GUEST_CANCELLED: "لغو از سمت مهمان",
+};
+
+function SystemCard({ message }: { message: IChatMessage }) {
+  const meta = message.meta ?? {};
+  const kind = typeof meta.kind === "string" ? meta.kind : "";
+  const tone = TONES[kind];
+
+  // An unknown kind still says something true, in the shape of a quiet note.
+  if (!tone) {
+    return (
+      <div className="mx-auto my-12 max-w-[420px] rounded-12 bg-gray-F5F5F7 px-16 py-10 text-center text-12 leading-20 font-r text-gray-6C6A7D">
+        {message.body}
+      </div>
+    );
+  }
+
+  const start = formatDate(meta.startDate);
+  const end = formatDate(meta.endDate);
+  const residenceId = typeof meta.residenceId === "number" ? meta.residenceId : null;
+
+  return (
+    <div className="my-12 flex justify-center">
+      <div
+        className={`w-full max-w-[440px] rounded-16 border-1 border-solid px-16 py-12 ${tone.ring} ${tone.bg}`}
+      >
+        <div className="flex items-center gap-x-8">
+          <i aria-hidden="true" className={`${tone.icon} text-20 ${tone.iconColor}`} />
+          <p className="text-14 leading-22 font-m text-black">{tone.title}</p>
+        </div>
+
+        {kind === "BOOKING_CREATED" && (
+          <div className="mt-8 text-13 leading-22 font-r text-gray-6C6A7D">
+            {residenceId && typeof meta.residenceName === "string" ? (
+              <Link
+                href={`/rentals/${residenceId}`}
+                prefetch={false}
+                className="text-primary-main hover:underline"
+              >
+                {meta.residenceName}
+              </Link>
+            ) : (
+              <span>{String(meta.residenceName ?? "")}</span>
+            )}
+            <div className="mt-6 flex flex-wrap items-center gap-x-12 gap-y-4">
+              {start && end && (
+                <span>
+                  {start} تا {end}
+                </span>
+              )}
+              {typeof meta.guestsCount === "number" && <span>{meta.guestsCount} مهمان</span>}
+              {typeof meta.reference === "string" && (
+                <span className="text-gray-B0AFBC">{meta.reference}</span>
+              )}
+            </div>
+          </div>
+        )}
+
+        {kind === "BOOKING_CANCELLED" && (
+          <div className="mt-6 text-13 leading-22 font-r text-gray-6C6A7D">
+            {typeof meta.cancelledBy === "string" && CANCELLED_BY[meta.cancelledBy] && (
+              <span>{CANCELLED_BY[meta.cancelledBy]}</span>
+            )}
+            {typeof meta.reason === "string" && meta.reason && (
+              <span className="block">دلیل: {meta.reason}</span>
+            )}
+          </div>
+        )}
+
+        {kind === "BOOKING_APPROVED" && (
+          <p className="mt-6 text-13 leading-22 font-r text-gray-6C6A7D">
+            برای قطعی‌شدن، مبلغ باقی‌مانده را پرداخت کنید.
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export default SystemCard;

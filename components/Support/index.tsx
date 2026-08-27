@@ -1,322 +1,253 @@
-import PageTitle from "components/General/PageTitle";
-import Image from "next/image";
-import { useEffect, useState } from "react";
-import { useUserProfile } from "@/providers/Profile";
-import SidebarWrapper, { THandleSidebarClose } from "@/components/General/Sidebar/SidebarWrapper";
-import { SupportPageFAQs } from "./SupportPageFAQs";
-import { SidebarCommonHeader } from "../General/Sidebar/SidebarCommonHeader";
-import { SidebarCommonBody } from "../General/Sidebar/SidebarCommonBody";
-import BottomSheet, { THandleSmoothClose } from "../General/core/BottomSheet";
-import CallSupportBottomSheet from "./CallSupportBottomSheet";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useRouter } from "next/router";
+import { useCallback, useEffect, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "react-toastify";
 import {
-  getSupportPageMessages,
-  ISupportChatMessage,
-  submitNewMessageInSupportPage,
+  createSupportConversation,
+  getConversations,
+  type IMessagePage,
 } from "@/api/chats";
+import { useUserProfile } from "@/providers/Profile";
+import { useMediaQuery } from "@/utilities/useMediaQuery";
+import { useChatStream, type ChatStreamEvent } from "@/utilities/useChatStream";
+import PageTitle from "components/General/PageTitle";
+import { TinyLoader } from "../General/Loader/TinyLoader";
+import ChatThread from "../Chats/ChatThread";
+import ConversationList from "../Chats/ConversationList";
 
-import ChatMessagesSection from "../Chat/ChatMessagesSection";
-import exception from "@/utilities/exception";
-import { defaultError, EXCEPTIONTYPES } from "@/constants/enums/exception_types";
-import { useFormik } from "formik";
-// import ChatCart from "./ChatCart";
-import * as Yup from "yup";
-import SubmitChatMessageArea from "../Chat/SubmitChatMessageArea";
-import CallSupport from "./CallSupport";
+/**
+ * Support.
+ *
+ * The same thread UI as /chats, narrowed to SUPPORT conversations, plus the
+ * form that opens one. Users do not distinguish "a chat with my host" from "a
+ * chat with the site" in how they expect it to behave, so making the second
+ * one work differently would only be a second thing to learn.
+ *
+ * A ticket is a conversation like any other: the reply arrives live, the
+ * unread badge counts it, and there is no separate inbox to remember.
+ */
 
-const StaticItem = ({
-  image,
-  text,
-  onClick,
-}: {
-  image: JSX.Element;
-  text: string;
-  onClick: () => void;
-}) => {
-  return (
-    <div
-      onClick={() => {
-        if (!!onClick) onClick();
-      }}
-      className="py-8 px-8 flex items-center justify-center gap-x-8 cursor-pointer shadow-[0px_4px_15px_rgba(0,0,0,0.1)] rounded-12 bg-white"
-    >
-      {image}
+const FALLBACK_POLL_MS = 15_000;
 
-      <p className="text-14 leading-24 text-black font-r">{text}</p>
-    </div>
-  );
-};
-
-const yupSchema = {
-  messageTextInput: Yup.string(),
-  // .test(
-  //   `تبادل شماره تماس تا قبل از قطعی شدن رزرو، خلاف قوانین سایت می باشد و در صورت انجام این کار ، حساب کاربری شما مسدود خواهد شد.`,
-  //   (value) => !/\d{4,}/.test(value || "")
-  // ),
-};
-
-const formInit_V = { messageTextInput: "" };
+const SUBJECTS = [
+  "مشکل در پرداخت",
+  "مشکل در رزرو",
+  "لغو و بازپرداخت",
+  "گزارش تخلف",
+  "سؤال درباره اقامتگاه",
+  "موارد دیگر",
+];
 
 function Support() {
-  const [showFAQ_Sidebar, setShowFAQ_Sidebar] = useState<boolean>(false);
-  const [showCallSupportBottomSheet, setShowCallSupportBottomSheet] = useState<boolean>(false);
-  const profileData = useUserProfile();
-  const [chatInfo, setChatInfo] = useState<ISupportChatMessage[]>([]);
-
-  const [possibilityOfEnteringPhoneNumber, setPossibilityOfEnteringPhoneNumber] =
-    useState<boolean>(false);
-  const [isCompletePhoneNumber, setIsCompletePhoneNumber] = useState<boolean>(false);
-
+  const router = useRouter();
+  const queryClient = useQueryClient();
   const profile = useUserProfile();
+  const meId = profile?.id ?? 0;
+  const isDesktop = useMediaQuery("(min-width: 1024px)");
 
-  const { isSuccess, isLoading, data, refetch } = useQuery(
-    ["getSupportPageMessages"],
-    () => getSupportPageMessages(),
-    {
-      refetchOnReconnect: true,
-      refetchOnWindowFocus: true,
-      refetchInterval: 10000, // in ms
-    }
+  const [composing, setComposing] = useState(false);
+  const [subject, setSubject] = useState(SUBJECTS[0]);
+  const [body, setBody] = useState("");
+  const [polling, setPolling] = useState(false);
+
+  const selectedId = typeof router.query.c === "string" ? router.query.c : null;
+
+  const select = useCallback(
+    (id: string | null) => {
+      const query = { ...router.query };
+      if (id) query.c = id;
+      else delete query.c;
+      router.push({ pathname: router.pathname, query }, undefined, { shallow: true });
+    },
+    [router]
   );
 
-  useEffect(() => {
-    if (!!data) {
-      if (data?.status === "success") {
-        const supportPageChatData: ISupportChatMessage[] = data?.params.messages;
-        setChatInfo(supportPageChatData);
-      } else {
-        exception.message([{ type: EXCEPTIONTYPES.ERROR, title: data?.err_msg || defaultError }]);
-      }
-    }
-  }, [data]);
-
-  const addNewMessageInSupportPageMutation = useMutation(
-    ({ text }: { text: string }) => {
-      return submitNewMessageInSupportPage({
-        text,
-        // order_id,
-      });
-    },
-    {
-      onSuccess: (data) => {
-        if (data?.data?.status === "success") {
-          formik.setFieldValue("messageTextInput", "");
-          refetch();
-        } else {
-          exception.message([{ type: EXCEPTIONTYPES.ERROR, title: data?.err_msg || defaultError }]);
-        }
-      },
-    }
-  );
-
-  const formik = useFormik({
-    initialValues: formInit_V,
-    validationSchema: Yup.object(yupSchema),
-    validateOnChange: true,
-    onSubmit: (values) => {
-      if (!values.messageTextInput || possibilityOfEnteringPhoneNumber) return;
-
-      addNewMessageInSupportPageMutation.mutate({
-        text: values.messageTextInput,
-      });
-    },
+  const { data, isLoading } = useQuery({
+    queryKey: ["conversations", "support"],
+    queryFn: () => getConversations({ type: "SUPPORT", take: 50 }),
+    refetchInterval: polling ? FALLBACK_POLL_MS : false,
   });
 
+  const items = data?.items ?? [];
+
+  const handleEvent = useCallback(
+    (event: ChatStreamEvent) => {
+      const conversationId = event.data?.conversation_id;
+      if (!conversationId || event.type !== "message") return;
+
+      queryClient.setQueryData<IMessagePage>(["messages", conversationId], (current) => {
+        if (!current) return current;
+        const message = event.data.message;
+        const seen = current.items.some(
+          (m) => m.id === message.id || (!!m.client_nonce && m.client_nonce === message.client_nonce)
+        );
+        if (seen) {
+          return {
+            ...current,
+            items: current.items.map((m) =>
+              m.client_nonce && m.client_nonce === message.client_nonce ? message : m
+            ),
+          };
+        }
+        return { ...current, items: [...current.items, message] };
+      });
+      queryClient.invalidateQueries({ queryKey: ["conversations"] });
+      queryClient.invalidateQueries({ queryKey: ["chat-unread"] });
+    },
+    [queryClient]
+  );
+
+  useChatStream(!!meId, handleEvent, setPolling);
+
+  // Nothing to show and nothing selected: go straight to the form rather than
+  // making someone find a button to reach the only thing this page does.
+  useEffect(() => {
+    if (!isLoading && items.length === 0 && !selectedId) setComposing(true);
+  }, [isLoading, items.length, selectedId]);
+
+  const create = useMutation({
+    mutationFn: () => createSupportConversation({ subject, body: body.trim() }),
+    onSuccess: (id) => {
+      if (!id) {
+        toast.error("ارسال پیام ممکن نشد. دوباره تلاش کنید.");
+        return;
+      }
+      setBody("");
+      setComposing(false);
+      queryClient.invalidateQueries({ queryKey: ["conversations"] });
+      select(id);
+    },
+    onError: () => toast.error("ارسال پیام ممکن نشد. دوباره تلاش کنید."),
+  });
+
+  const showThread = !!selectedId && !composing;
+  const showList = isDesktop || (!showThread && !composing);
+
   return (
-    <>
-      <div className="h-[calc(100vh-84px)] md:hidden">
-        <div className="flex flex-col h-full">
-          <PageTitle
-            title="پشتیبانی"
-            icon={<i className="icon-OnlineContact text-24 text-black" />}
-            containerClassname="mb-24"
-          />
-
-          <div className="grid grid-cols-12 gap-x-16 mb-16">
-            <div className="col-span-6">
-              {/* <Link href={`tel:${profile?.contact_phone}`} passHref> */}
-              <StaticItem
-                image={
-                  <Image
-                    src="/assets/non-icomoon-icons/Call_Icon.svg"
-                    width={25}
-                    height={25}
-                    alt=""
-                  />
-                }
-                text="تماس تلفنی"
-                onClick={() => setShowCallSupportBottomSheet(true)}
-              />
-              {/* </Link> */}
-            </div>
-            <div className="col-span-6">
-              <StaticItem
-                image={
-                  <Image
-                    src="/assets/non-icomoon-icons/support-message.svg"
-                    width={25}
-                    height={25}
-                    alt=""
-                  />
-                }
-                text="سوالات متداول"
-                onClick={() => setShowFAQ_Sidebar(true)}
-              />
-            </div>
-          </div>
-
-          <div className="w-full grow h-[calc(100%-192px)] absolute bottom-0 right-0 left-0 z-1 pb-80 md:pb-0">
-            <div className="h-full shadow-[0px_-8px_16px_rgba(24,39,58,0.03)] bg-white rounded-tr-[24px] rounded-tl-[24px] CustomContainer">
-              {/* header */}
-              <div className="py-12 border-b-1 border-gray-D2D2D7 border-solid text-center mb-16">
-                ارسال پیام به پشتیبانی
-              </div>
-
-              {/* body */}
-              <div className="h-[calc(100%-65px)] overflow-y-auto">
-                <ChatMessagesSection
-                  rightEndAvatar={"/assets/default-profile.svg"}
-                  leftEndAvatar={"/assets/default-profile.svg"}
-                  leftSideName={"admin"}
-                  rightSideName={profileData?.name}
-                  payamHa={
-                    chatInfo?.map((el) => ({
-                      id: el.id,
-                      seen: true,
-                      senderName: el.sender,
-                      text: el.text,
-                      time: el.date.split(" ")[1],
-                      date: el.date.split(" ")[0],
-                    })) || []
-                  }
-                />
-              </div>
-
-              <div className="fixed bottom-0 right-0 left-0 z-5">
-                <SubmitChatMessageArea
-                  formik={formik}
-                  possibilityOfEnteringPhoneNumber={possibilityOfEnteringPhoneNumber}
-                  isCompletePhoneNumber={isCompletePhoneNumber}
-                  hasBorderTop
-                  canAttachFiles
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="hidden md:block pb-80">
-        <PageTitle
-          title="پشتیبانی"
-          // icon={}
-          containerClassname="mb-24"
-        />
-
-        <div className="grid grid-cols-14 md:gap-x-16 h-[662px]">
-          <div className="col-span-6 h-full flex flex-col">
-            <div className="p-24 border-gray-CACFD3 border-solid border-1 rounded-20 mb-16">
-              <CallSupport />
-            </div>
-
-            <div className="p-24 grow border-gray-CACFD3 border-solid border-1 rounded-20">
-              <div className="h-[320px] overflow-y-auto">
-                <SupportPageFAQs />
-              </div>
-            </div>
-          </div>
-
-          <div className="relative h-[662px] flex flex-col col-span-8 px-24 py-16 border-gray-CACFD3 border-solid border-1 rounded-20">
-            <div className="pb-16 border-b-1 border-solid border-b-gray-CACFD3 mb-24">
-              {/* header */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-x-12">
-                  <div className="w-40 h-40 relative">
-                    <Image
-                      src="/assets/tmp/profile.jpeg"
-                      fill
-                      style={{ objectFit: "cover" }}
-                      alt="آواتار پشتیبانی"
-                      className="rounded-full"
-                    />
-
-                    <span
-                      style={{
-                        outline: "2px solid #fff",
-                      }}
-                      className="w-10 h-10 absolute bottom-0 right-0 rounded-full bg-success"
-                    ></span>
-                  </div>
-
-                  <div>
-                    <p className="text-14 leading-24 font-r text-black mb-4">سعید رضائی</p>
-                    <p className="text-10 leading-17 font-l text-black">پشتیبان لیدوماتریپ</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="pb-[80px] grow overflow-y-auto">
-              <ChatMessagesSection
-                rightEndAvatar={"/assets/default-profile.svg"}
-                leftEndAvatar={"/assets/default-profile.svg"}
-                leftSideName={"admin"}
-                rightSideName={profileData?.name}
-                payamHa={
-                  chatInfo?.map((el) => ({
-                    id: el.id,
-                    seen: true,
-                    senderName: el.sender,
-                    text: el.text,
-                    time: el.date.split(" ")[1],
-                    date: el.date.split(" ")[0],
-                  })) || []
-                }
-              />
-            </div>
-
-            <div className="absolute bottom-16 right-24 left-24 z-5">
-              <SubmitChatMessageArea
-                formik={formik}
-                possibilityOfEnteringPhoneNumber={possibilityOfEnteringPhoneNumber}
-                isCompletePhoneNumber={isCompletePhoneNumber}
-                hasBorderTop
-                canAttachFiles
-                containerClassname="!px-0 !pb-0"
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {!!showFAQ_Sidebar && (
-        <SidebarWrapper
-          isSidebarOpen={showFAQ_Sidebar}
-          setIsSidebarOpen={setShowFAQ_Sidebar}
-          content={({ handleSidebarClose }: { handleSidebarClose: THandleSidebarClose }) => (
-            <div className="h-full">
-              <SidebarCommonHeader
-                onClose={() => handleSidebarClose()}
-                headerText="سوالات متداول"
-              />
-
-              <SidebarCommonBody>
-                <SupportPageFAQs />
-              </SidebarCommonBody>
-            </div>
-          )}
-        />
-      )}
-
-      <BottomSheet
-        open={showCallSupportBottomSheet}
-        handleClose={() => setShowCallSupportBottomSheet(false)}
-        headerTitle="تماس با پشتیبانی"
-        body={({ handleSmoothClose }: { handleSmoothClose: THandleSmoothClose }) => {
-          return <CallSupportBottomSheet handleSmoothClose={handleSmoothClose} />;
-        }}
+    <div className="pb-40 md:pb-0">
+      <PageTitle
+        title="پشتیبانی"
+        icon={<i aria-hidden="true" className="icon-Information text-24" />}
+        containerClassname="mb-16"
       />
-    </>
+
+      <div className="grid h-[calc(100vh-240px)] min-h-[460px] grid-cols-1 overflow-hidden rounded-16 border-1 border-solid border-gray-EFEFEF bg-white md:h-[calc(100vh-260px)] md:grid-cols-[360px_1fr]">
+        {showList && (
+          <div className="flex min-h-0 flex-col border-l-0 border-solid border-gray-EFEFEF md:border-l-1">
+            <div className="border-b-1 border-solid border-gray-EFEFEF p-12">
+              <button
+                type="button"
+                onClick={() => {
+                  setComposing(true);
+                  select(null);
+                }}
+                className="flex w-full items-center justify-center gap-x-6 rounded-12 bg-primary-main px-16 py-10 text-13 leading-22 font-m text-white transition-opacity hover:opacity-90"
+              >
+                <i aria-hidden="true" className="icon-Plus text-16" />
+                پیام جدید به پشتیبانی
+              </button>
+            </div>
+
+            <div className="min-h-0 flex-1 overflow-y-auto">
+              {isLoading ? (
+                <div className="flex h-full items-center justify-center">
+                  <TinyLoader />
+                </div>
+              ) : (
+                <ConversationList items={items} selectedId={selectedId} onSelect={(id) => {
+                  setComposing(false);
+                  select(id);
+                }} />
+              )}
+            </div>
+          </div>
+        )}
+
+        {composing ? (
+          <section aria-label="پیام جدید به پشتیبانی" className="min-h-0 overflow-y-auto bg-gray-F5F5F7 p-16 md:p-24">
+            <form
+              onSubmit={(event) => {
+                event.preventDefault();
+                if (body.trim().length < 2 || create.isLoading) return;
+                create.mutate();
+              }}
+              className="mx-auto max-w-[560px] rounded-16 border-1 border-solid border-gray-EFEFEF bg-white p-16 md:p-24"
+            >
+              <h2 className="text-16 leading-26 font-m text-black">پشتیبانی چطور می‌تواند کمک کند؟</h2>
+              <p className="mt-4 text-12 leading-20 font-r text-gray-6C6A7D">
+                پاسخ همین‌جا و در همین صفحه به شما نمایش داده می‌شود.
+              </p>
+
+              <label htmlFor="support-subject" className="mt-16 block text-13 leading-22 font-m text-black">
+                موضوع
+              </label>
+              <select
+                id="support-subject"
+                value={subject}
+                onChange={(event) => setSubject(event.target.value)}
+                className="mt-6 w-full rounded-12 border-1 border-solid border-gray-EFEFEF bg-white px-12 py-10 text-14 leading-24 font-r text-black outline-none focus:border-primary-main"
+              >
+                {SUBJECTS.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+
+              <label htmlFor="support-body" className="mt-16 block text-13 leading-22 font-m text-black">
+                شرح پیام
+              </label>
+              <textarea
+                id="support-body"
+                rows={6}
+                value={body}
+                onChange={(event) => setBody(event.target.value)}
+                placeholder="هرچه دقیق‌تر بنویسید، سریع‌تر می‌توانیم کمک کنیم. اگر به رزرو مشخصی مربوط است، شماره پیگیری را هم بنویسید."
+                className="mt-6 w-full resize-y rounded-12 border-1 border-solid border-gray-EFEFEF bg-gray-F5F5F7 px-12 py-10 text-14 leading-24 font-r text-black outline-none transition-colors placeholder:text-gray-B0AFBC focus:border-primary-main focus:bg-white"
+              />
+
+              <div className="mt-16 flex items-center gap-x-8">
+                <button
+                  type="submit"
+                  disabled={body.trim().length < 2 || create.isLoading}
+                  className="rounded-12 bg-primary-main px-20 py-10 text-13 leading-22 font-m text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  {create.isLoading ? "در حال ارسال…" : "ارسال پیام"}
+                </button>
+
+                {items.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setComposing(false)}
+                    className="rounded-12 px-16 py-10 text-13 leading-22 font-r text-gray-6C6A7D hover:bg-gray-F5F5F7"
+                  >
+                    انصراف
+                  </button>
+                )}
+              </div>
+            </form>
+          </section>
+        ) : showThread ? (
+          <ChatThread
+            key={selectedId}
+            conversationId={selectedId as string}
+            meId={meId}
+            isDesktop={isDesktop}
+            typingFrom={null}
+            onBack={() => select(null)}
+          />
+        ) : (
+          isDesktop && (
+            <div className="flex flex-col items-center justify-center bg-gray-F5F5F7 px-24 text-center">
+              <i aria-hidden="true" className="icon-Information text-40 text-gray-CACFD3" />
+              <p className="mt-12 text-14 leading-24 font-m text-black">
+                یکی از پیام‌ها را انتخاب کنید
+              </p>
+            </div>
+          )
+        )}
+      </div>
+    </div>
   );
 }
 

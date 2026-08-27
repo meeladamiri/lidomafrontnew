@@ -1,31 +1,26 @@
-import ChatDetails from "@/components/Chat";
-import { PROJECTNAMEFA } from "configs/info";
 import type { GetServerSideProps, NextPage } from "next";
 
-const page = "جزئیات گفتگو";
+/**
+ * The old per-chat page.
+ *
+ * A thread is no longer its own route — it is a pane on /chats, selected with
+ * `?c=`, so that choosing one does not throw away the loaded messages and the
+ * open stream. This redirect keeps anything still pointing at the old shape
+ * working: an old bookmark, a link in a message someone saved.
+ *
+ * 307 rather than 301: the shape may well change again, and this is behind
+ * auth, so there is nothing here a crawler should be caching either way.
+ */
+const ChatRedirectPage: NextPage = () => null;
 
-const ChatDetailsPage: NextPage = () => {
-  return (
-    <>
-      <ChatDetails />
-    </>
-  );
-};
-
-export const getServerSideProps: GetServerSideProps = async () => {
-  // const queryClient = new QueryClient();
-
-  // const requests = [queryClient.prefetchQuery("getSettingSlogan", getSettingSlogan)];
-
-  // NOTE: Keep index zero item for the title tage of page always.
-  const metaTagsList = [`${page} | ${PROJECTNAMEFA}`];
-
+export const getServerSideProps: GetServerSideProps = async ({ params }) => {
+  const id = typeof params?.id === "string" ? params.id : "";
   return {
-    props: {
-      // dehydratedState: dehydrate(queryClient),
-      metaTagsList,
+    redirect: {
+      destination: id ? `/chats?c=${encodeURIComponent(id)}` : "/chats",
+      permanent: false,
     },
   };
 };
 
-export default ChatDetailsPage;
+export default ChatRedirectPage;
