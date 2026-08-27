@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import BottomSheet, { THandleSmoothClose } from "components/General/core/BottomSheet";
 import { TinyLoader } from "components/General/Loader/TinyLoader";
 import {
@@ -27,7 +27,7 @@ import { useRouter } from "next/router";
 import BottomActionsWrapper from "../../BottomActions/BottomActionsWrapper";
 import { Button } from "@/components/General/core/Button";
 import { submitStep } from "@/api/SubmitResidence";
-import { getResidenceSubmittedData } from "@/api/Residences/getResidenceSubmittedData";
+import { useResidenceDraft } from "../../useWizard";
 
 const ulid = monotonicFactory();
 
@@ -130,12 +130,7 @@ function Step9() {
     isLoading: getResidenceSubmittedDataIsLaoding,
     data: residenceSubmittedData,
     refetch,
-  } = useQuery(["getResidenceSubmittedData", router?.query?.step as string], () => {
-    return getResidenceSubmittedData({
-      step: Number(router?.query?.step as string),
-      productId: Number(router?.query?.productId as string),
-    });
-  });
+  } = useResidenceDraft();
 
   useEffect(() => {
     if (!!residenceSubmittedData) {
@@ -365,6 +360,7 @@ function Step9() {
           </div>
 
           <BottomActionsWrapper
+        isSaving={submitStep9Mutation.isLoading}
             onClickOfSubmitStep={() => onSubmitClick()}
             isSubmitBtnDisabled={
               // !mainImage ||
@@ -372,6 +368,8 @@ function Step9() {
             }
           >
             <Button
+              isLoading={submitStep9Mutation.isLoading}
+              loadingText="در حال ذخیره…"
               leftIcon={<i className="icon-FlashLeft text-24 text-white hidden md:block" />}
               isFullWidth
               onClick={onSubmitClick}

@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import BottomSheet, { THandleSmoothClose } from "components/General/core/BottomSheet";
 import { Switch } from "components/General/core/Switch";
 import Divider from "components/General/Divider";
@@ -15,7 +15,7 @@ import exception from "@/utilities/exception";
 import { EXCEPTIONTYPES, defaultError } from "@/constants/enums/exception_types";
 import { Button } from "@/components/General/core/Button";
 import BottomActionsWrapper from "../../BottomActions/BottomActionsWrapper";
-import { getResidenceSubmittedData } from "@/api/Residences/getResidenceSubmittedData";
+import { useResidenceDraft } from "../../useWizard";
 
 export interface IUploadedImagePreviewBottomSheetData {
   show: boolean;
@@ -58,12 +58,7 @@ function Step10() {
     isLoading: getResidenceSubmittedDataIsLaoding,
     data: residenceSubmittedData,
     refetch,
-  } = useQuery(["getResidenceSubmittedData", router?.query?.step], () => {
-    return getResidenceSubmittedData({
-      step: Number(router?.query?.step as string),
-      productId: Number(router?.query?.productId as string),
-    });
-  });
+  } = useResidenceDraft();
 
   useEffect(() => {
     if (!!residenceSubmittedData) {
@@ -359,10 +354,13 @@ function Step10() {
       </div>
 
       <BottomActionsWrapper
+        isSaving={submitStep10Mutation.isLoading}
         onClickOfSubmitStep={() => onSubmitClick()}
         // isSubmitBtnDisabled={!cartMelliImage}
       >
         <Button
+          isLoading={submitStep10Mutation.isLoading}
+          loadingText="در حال ذخیره…"
           leftIcon={<i className="icon-FlashLeft text-24 text-white hidden md:block" />}
           isFullWidth
           onClick={onSubmitClick}

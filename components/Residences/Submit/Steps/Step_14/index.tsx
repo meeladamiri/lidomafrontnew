@@ -84,10 +84,13 @@ function Step14() {
       </div>
 
       <BottomActionsWrapper
+        isSaving={submitStep14Mutation.isLoading}
         onClickOfSubmitStep={() => onSubmitClick()}
         isSubmitBtnDisabled={!hasReadRulesAndAgree}
       >
         <Button
+          isLoading={submitStep14Mutation.isLoading}
+          loadingText="در حال ذخیره…"
           leftIcon={<i className="icon-FlashLeft text-24 text-white hidden md:block" />}
           isFullWidth
           onClick={onSubmitClick}

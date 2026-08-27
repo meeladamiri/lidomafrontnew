@@ -1,6 +1,6 @@
 import { CancellationPolicy_enum } from "@/constants/enums/cancellation_policy";
 // import { ResidenceAmenity } from "@/interfaces/Residences/Submit";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { TinyLoader } from "components/General/Loader/TinyLoader";
 import { useEffect, useState } from "react";
 import CancelRuleItem from "../../../CancelRule/CancelRuleItem";
@@ -19,7 +19,7 @@ import * as Yup from "yup";
 import { submitStep } from "@/api/SubmitResidence";
 import { Button } from "@/components/General/core/Button";
 import BottomActionsWrapper from "../../BottomActions/BottomActionsWrapper";
-import { getResidenceSubmittedData } from "@/api/Residences/getResidenceSubmittedData";
+import { useResidenceDraft } from "../../useWizard";
 
 const reserveCommission = 10;
 const cancelCommission = 10;
@@ -64,12 +64,7 @@ function Step13() {
     isLoading: getResidenceSubmittedDataIsLaoding,
     data: residenceSubmittedData,
     refetch,
-  } = useQuery(["getResidenceSubmittedData", router?.query?.step], () => {
-    return getResidenceSubmittedData({
-      step: Number(router?.query?.step as string),
-      productId: Number(router?.query?.productId as string),
-    });
-  });
+  } = useResidenceDraft();
 
   useEffect(() => {
     if (!!residenceSubmittedData) {
@@ -299,10 +294,13 @@ function Step13() {
       </div>
 
       <BottomActionsWrapper
+        isSaving={submitStep13Mutation.isLoading}
         onClickOfSubmitStep={() => onSubmitClick()}
         isSubmitBtnDisabled={!selectedCancelPolicy}
       >
         <Button
+          isLoading={submitStep13Mutation.isLoading}
+          loadingText="در حال ذخیره…"
           leftIcon={<i className="icon-FlashLeft text-24 text-white hidden md:block" />}
           isFullWidth
           onClick={onSubmitClick}

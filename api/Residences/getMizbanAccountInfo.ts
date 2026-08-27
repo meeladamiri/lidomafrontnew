@@ -1,5 +1,5 @@
 import { IProduct_SearchResidences } from "@/interfaces/Search/SearchResp";
-import { residenceTypeSlug, residenceTypeLabel } from "@/utilities/residenceType";
+import { residenceTypeSlug } from "@/utilities/residenceType";
 import apiBuilder from "../apiBuilder";
 import { I_Residence_display_type } from "@/interfaces/Residences";
 import { mapCard } from "../Search/search";

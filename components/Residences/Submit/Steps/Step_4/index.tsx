@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { Textarea } from "components/General/core/Textarea";
 import { TextField } from "components/General/core/TextField";
 import { TinyLoader } from "components/General/Loader/TinyLoader";
@@ -14,7 +14,7 @@ import { EXCEPTIONTYPES, defaultError } from "@/constants/enums/exception_types"
 import exception from "@/utilities/exception";
 import { Button } from "@/components/General/core/Button";
 import BottomActionsWrapper from "../../BottomActions/BottomActionsWrapper";
-import { getResidenceSubmittedData } from "@/api/Residences/getResidenceSubmittedData";
+import { useResidenceDraft } from "../../useWizard";
 
 const residenceSpecsInitV: IResidenceSpecsInitV = {
   resName: "",
@@ -36,15 +36,7 @@ function Step4() {
   const router = useRouter();
   const [residenceSpecsV, setResidenceSpecsV] = useState<IResidenceSpecsInitV>(residenceSpecsInitV);
 
-  const { isLoading: getResidenceSubmittedDataIsLaoding, data: residenceSubmittedData } = useQuery(
-    ["getResidenceSubmittedData", router?.query?.productId],
-    () => {
-      return getResidenceSubmittedData({
-        step: Number(router?.query?.step as string),
-        productId: Number(router?.query?.productId as string),
-      });
-    }
-  );
+  const { isLoading: getResidenceSubmittedDataIsLaoding, data: residenceSubmittedData } = useResidenceDraft();
 
   useEffect(() => {
     if (!!residenceSubmittedData) {
@@ -181,9 +173,11 @@ function Step4() {
         </form>
       </div>
 
-      <BottomActionsWrapper onClickOfSubmitStep={() => onSubmitClick()}>
+      <BottomActionsWrapper isSaving={submitStep4Mutation.isLoading} onClickOfSubmitStep={() => onSubmitClick()}>
         <Button
           isFullWidth
+          isLoading={submitStep4Mutation.isLoading}
+          loadingText="در حال ذخیره…"
           onClick={onSubmitClick}
           leftIcon={<i className="icon-FlashLeft text-24 text-white hidden md:block" />}
         >

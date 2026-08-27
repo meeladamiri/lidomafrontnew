@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { TextField } from "components/General/core/TextField";
 import Divider from "components/General/Divider";
 import { TinyLoader } from "components/General/Loader/TinyLoader";
@@ -15,7 +15,7 @@ import { EXCEPTIONTYPES, defaultError } from "@/constants/enums/exception_types"
 import { useRouter } from "next/router";
 import BottomActionsWrapper from "../../BottomActions/BottomActionsWrapper";
 import { Button } from "@/components/General/core/Button";
-import { getResidenceSubmittedData } from "@/api/Residences/getResidenceSubmittedData";
+import { useResidenceDraft } from "../../useWizard";
 
 const residenceGeneralPricingYupSchema = {
   basePrice: Yup.number()
@@ -56,12 +56,7 @@ function Step11() {
     isLoading: getResidenceSubmittedDataIsLaoding,
     data: residenceSubmittedData,
     refetch,
-  } = useQuery(["getResidenceSubmittedData", router?.query?.step], () => {
-    return getResidenceSubmittedData({
-      step: Number(router?.query?.step as string),
-      productId: Number(router?.query?.productId as string),
-    });
-  });
+  } = useResidenceDraft();
 
   useEffect(() => {
     if (!!residenceSubmittedData) {
@@ -229,8 +224,10 @@ function Step11() {
         </form>
       </div>
 
-      <BottomActionsWrapper onClickOfSubmitStep={() => onSubmitClick()}>
+      <BottomActionsWrapper isSaving={submitStep11Mutation.isLoading} onClickOfSubmitStep={() => onSubmitClick()}>
         <Button
+          isLoading={submitStep11Mutation.isLoading}
+          loadingText="در حال ذخیره…"
           leftIcon={<i className="icon-FlashLeft text-24 text-white hidden md:block" />}
           isFullWidth
           onClick={onSubmitClick}

@@ -4,9 +4,11 @@ import { useRouter } from "next/router";
 function BottomActionsDesktop({
   onClickOfSubmitStep,
   isSubmitBtnDisabled,
+  isSaving,
 }: {
   onClickOfSubmitStep: () => void;
   isSubmitBtnDisabled?: boolean;
+  isSaving?: boolean;
 }) {
   const router = useRouter();
 
@@ -26,6 +28,7 @@ function BottomActionsDesktop({
         color="grey"
         className="!pr-8 !pl-16 !py-6"
         onClick={handleStepBackward}
+        disabled={isSaving}
       >
         مرحله قبل
       </Button>
@@ -34,7 +37,9 @@ function BottomActionsDesktop({
         leftIcon={<i className="icon-FlashLeft text-20 text-white" />}
         className="!pl-8 !pr-16 !py-6"
         onClick={onClickOfSubmitStep}
-        disabled={isSubmitBtnDisabled}
+        disabled={isSubmitBtnDisabled || isSaving}
+        isLoading={isSaving}
+        loadingText="در حال ذخیره…"
       >
         {router?.query?.step === "14" ? "ذخیره و اتمام" : "ذخیره و ادامه"}
       </Button>

@@ -12,8 +12,8 @@ import { submitStep } from "@/api/SubmitResidence";
 import exception from "@/utilities/exception";
 import { EXCEPTIONTYPES, defaultError } from "@/constants/enums/exception_types";
 import { THandleSidebarClose } from "@/components/General/Sidebar/SidebarWrapper";
-import { getResidenceSubmittedData } from "@/api/Residences/getResidenceSubmittedData";
 import { getAllowedValues } from "@/api/Residences/getAllowedValues";
+import { useResidenceDraft } from "../../useWizard";
 const ProjectMap = dynamic(() => import("components/Map"), {
   ssr: false,
 });
@@ -42,12 +42,7 @@ function Step8() {
     isLoading: getResidenceSubmittedDataIsLaoding,
     data: residenceSubmittedData,
     refetch,
-  } = useQuery(["getResidenceSubmittedData", router?.query?.step], () => {
-    return getResidenceSubmittedData({
-      step: Number(router?.query?.step as string),
-      productId: Number(router?.query?.productId as string),
-    });
-  });
+  } = useResidenceDraft();
 
   useEffect(() => {
     if (!!residenceSubmittedData) {
@@ -159,7 +154,7 @@ function Step8() {
             )}
           </div>
 
-          <BottomActionsWrapper onClickOfSubmitStep={() => onSubmitClick()}>
+          <BottomActionsWrapper isSaving={submitStep8Mutation.isLoading} onClickOfSubmitStep={() => onSubmitClick()}>
             <div className="w-full grid grid-cols-4 gap-x-10">
               <div
                 className={`
@@ -176,6 +171,8 @@ function Step8() {
   `}
               >
                 <Button
+                  isLoading={submitStep8Mutation.isLoading}
+                  loadingText="در حال ذخیره…"
                   leftIcon={<i className="icon-FlashLeft text-24 text-white hidden md:block" />}
                   isFullWidth
                   onClick={onSubmitClick}

@@ -9,26 +9,6 @@ import apiBuilder from "./apiBuilder";
 
 const WIZARD_STEP_COUNT = 14;
 
-async function bumpStep(productId: number, step: number) {
-  return apiBuilder
-    .setUrl(`/api/host/residences/${productId}`)
-    .setCallMethod("PATCH")
-    .setParams({ step })
-    .call();
-}
-
-async function resolveCityId(cityName: string | undefined): Promise<number | undefined> {
-  if (!cityName) return undefined;
-  const resp = await apiBuilder
-    .setUrl(`/api/search/cities`)
-    .setCallMethod("GET")
-    .setParams({ q: cityName })
-    .call();
-  if (resp?.status !== "success") return undefined;
-  const match = (resp.data?.cities || []).find((c: any) => c.name === cityName) || resp.data?.cities?.[0];
-  return match?.id;
-}
-
 const CANCELLATION_POLICY_PRESETS: Record<
   string,
   {
@@ -135,10 +115,10 @@ const submitStep = async ({
               traditionalBed: r.traditional_bed || 0,
               description: r.extras || undefined,
             })),
+            step: 5,
           })
           .call();
         if (resp?.status !== "success") return { status: "error", err_msg: resp?.message };
-        await bumpStep(productId as number, 5);
         return { status: "success", params: { product_id: productId } };
       }
 
@@ -152,21 +132,23 @@ const submitStep = async ({
               extraFeatures: a.extra_features || undefined,
             })),
             other: data.others,
+            step: 6,
           })
           .call();
         if (resp?.status !== "success") return { status: "error", err_msg: resp?.message };
-        await bumpStep(productId as number, 6);
         return { status: "success", params: { product_id: productId } };
       }
 
-      case 7: {
-        const cityId = await resolveCityId(data.city);
+      case 7:
+        // The city goes by name: the backend resolves it. Looking the id up
+        // here first put a second serial round trip in front of every address
+        // save, on the step where a host is already typing the most.
         return finish(
           await apiBuilder
             .setUrl(`/api/host/residences/${productId}`)
             .setCallMethod("PATCH")
             .setParams({
-              cityId,
+              cityName: data.city || undefined,
               neighborhood: data.neighborhood,
               address: data.address,
               step: 7,
@@ -174,7 +156,6 @@ const submitStep = async ({
             .call(),
           productId
         );
-      }
 
       case 8:
         return finish(
@@ -194,10 +175,12 @@ const submitStep = async ({
         const resp = await apiBuilder
           .setUrl(`/api/host/residences/${productId}/images/order`)
           .setCallMethod("POST")
-          .setParams({ imageIds: (data.image_ids || []).filter((id: any) => !!id) })
+          .setParams({
+            imageIds: (data.image_ids || []).filter((id: any) => !!id),
+            step: 9,
+          })
           .call();
         if (resp?.status !== "success") return { status: "error", err_msg: resp?.message };
-        await bumpStep(productId as number, 9);
         return { status: "success", params: { product_id: productId } };
       }
 
@@ -215,10 +198,10 @@ const submitStep = async ({
             extraPrice: data.extra_price,
             weeklyDiscount: data.weekly_discount,
             monthlyDiscount: data.monthly_discount,
+            step: 11,
           })
           .call();
         if (resp?.status !== "success") return { status: "error", err_msg: resp?.message };
-        await bumpStep(productId as number, 11);
         return { status: "success", params: { product_id: productId } };
       }
 
@@ -236,10 +219,10 @@ const submitStep = async ({
             checkout: data.checkout,
             minReservableDays: data.min_reservable_days,
             rulesDesc: data.desc,
+            step: 12,
           })
           .call();
         if (resp?.status !== "success") return { status: "error", err_msg: resp?.message };
-        await bumpStep(productId as number, 12);
         return { status: "success", params: { product_id: productId } };
       }
 
@@ -262,10 +245,10 @@ const submitStep = async ({
             hostShareFutureNights: isCustom
               ? data.host_share_future_nights
               : preset?.hostShareFutureNights,
+            step: 13,
           })
           .call();
         if (resp?.status !== "success") return { status: "error", err_msg: resp?.message };
-        await bumpStep(productId as number, 13);
         return { status: "success", params: { product_id: productId } };
       }
 
@@ -273,10 +256,9 @@ const submitStep = async ({
         const resp = await apiBuilder
           .setUrl(`/api/host/residences/${productId}/state`)
           .setCallMethod("PATCH")
-          .setParams({ action: "submit" })
+          .setParams({ action: "submit", step: WIZARD_STEP_COUNT })
           .call();
         if (resp?.status !== "success") return { status: "error", err_msg: resp?.message };
-        await bumpStep(productId as number, WIZARD_STEP_COUNT);
         return { status: "success", params: { product_id: productId } };
       }
 

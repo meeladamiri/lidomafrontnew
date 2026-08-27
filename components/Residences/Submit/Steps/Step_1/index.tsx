@@ -1,68 +1,35 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { TinyLoader } from "components/General/Loader/TinyLoader";
 import { ResType } from "interfaces/Residences/Submit";
-import Image from "next/image";
-import { useRouter } from "next/router";
-import { submitStep } from "@/api/SubmitResidence";
+import { allowedValuesFor } from "@/api/Residences/getAllowedValues";
 import StepTitle from "../../StepTitle";
-import { getAllowedValues } from "@/api/Residences/getAllowedValues";
+import OptionTile from "../../OptionTile";
+import { useSaveStep } from "../../useWizard";
 
+/**
+ * Step 1 — the kind of place.
+ *
+ * The first request the wizard makes is the one that creates the residence,
+ * so this step genuinely has to wait for the server before it can move on:
+ * every later step is keyed by the id it returns. What it no longer does is
+ * wait in silence.
+ */
 function Step1() {
-  const router = useRouter();
+  const options = allowedValuesFor({ step: 1 })?.params?.values as ResType[] | undefined;
+  const { save, pendingKey, isSaving } = useSaveStep(1);
 
-  const { isLoading: getAllowedValuesIsLoading, data: allowedValuesData } = useQuery(
-    ["getAllowedValues", router?.query?.step],
-    () => getAllowedValues({ step: Number(router?.query?.step as string) })
-  );
-
-  const submitStep1Mutation = useMutation(
-    ({ resType }: { resType: ResType["name"] }) => {
-      return submitStep({
-        step: 1,
-        data: {
-          res_type: resType,
-        },
-      });
-    },
-    {
-      onSuccess: (data) => {
-        if (data?.status === "success") {
-          router.push(`?step=${2}&productId=${data?.params?.product_id}`);
-        }
-      },
-    }
-  );
-
-  return getAllowedValuesIsLoading ? (
-    <TinyLoader />
-  ) : (
+  return (
     <>
       <StepTitle wrapperClassname="mt-16 md:mt-0 mb-24" />
 
-      <div className="grid grid-cols-12 gap-x-10 gap-y-16">
-        {(allowedValuesData?.params?.values as ResType[])?.map((el, i) => (
-          <div
-            className="col-span-4 md:col-span-3 cursor-pointer"
-            key={el.id}
-            onClick={() => submitStep1Mutation.mutate({ resType: el.name })}
-          >
-            <div className="w-full aspect-square relative">
-              <Image
-                // src={"/assets/tmp/res-0.webp"}
-                src={el.image_url}
-                alt={el.name}
-                className="rounded-10"
-                fill
-                sizes="100vw"
-                style={{
-                  objectFit: "cover",
-                }}
-                placeholder="blur"
-                blurDataURL={el.image_url}
-              />
-            </div>
-            <p className="text-14 leading-24 text-black font-m mt-8 text-center">{el.name}</p>
-          </div>
+      <div className="grid grid-cols-2 gap-12 sm:grid-cols-3 md:grid-cols-4">
+        {(options ?? []).map((option) => (
+          <OptionTile
+            key={option.id}
+            label={option.name}
+            imageUrl={option.image_url}
+            pending={pendingKey === option.id}
+            dimmed={isSaving && pendingKey !== option.id}
+            onSelect={() => save({ key: option.id, data: { res_type: option.name } })}
+          />
         ))}
       </div>
     </>

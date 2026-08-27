@@ -15,8 +15,8 @@ import { submitStep } from "@/api/SubmitResidence";
 import exception from "@/utilities/exception";
 import { EXCEPTIONTYPES, defaultError } from "@/constants/enums/exception_types";
 import BottomActionsWrapper from "../../BottomActions/BottomActionsWrapper";
-import { getResidenceSubmittedData } from "@/api/Residences/getResidenceSubmittedData";
 import { getAmenities } from "@/api/Residences/getAmenities";
+import { useResidenceDraft } from "../../useWizard";
 
 const facilityDetailsBottomSheetInitV: {
   show: boolean;
@@ -50,12 +50,7 @@ function Step6() {
     isLoading: getResidenceSubmittedDataIsLaoding,
     data: residenceSubmittedData,
     refetch,
-  } = useQuery(["getResidenceSubmittedData", router?.query?.step], () => {
-    return getResidenceSubmittedData({
-      step: Number(router?.query?.step as string),
-      productId: Number(router?.query?.productId as string),
-    });
-  });
+  } = useResidenceDraft();
 
   useEffect(() => {
     if (!!residenceSubmittedData) {
@@ -264,9 +259,11 @@ function Step6() {
             )}
           </div>
 
-          <BottomActionsWrapper onClickOfSubmitStep={() => onSubmitClick()}>
+          <BottomActionsWrapper isSaving={submitStep6Mutation.isLoading} onClickOfSubmitStep={() => onSubmitClick()}>
             <Button
               isFullWidth
+              isLoading={submitStep6Mutation.isLoading}
+              loadingText="در حال ذخیره…"
               leftIcon={<i className="icon-FlashLeft text-24 text-white hidden md:block" />}
               onClick={onSubmitClick}
             >

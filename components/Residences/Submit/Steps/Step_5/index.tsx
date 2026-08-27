@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import Counter from "components/General/Counter";
 import Divider from "components/General/Divider";
 import { TinyLoader } from "components/General/Loader/TinyLoader";
@@ -18,7 +18,7 @@ import exception from "@/utilities/exception";
 import { EXCEPTIONTYPES, defaultError } from "@/constants/enums/exception_types";
 import BottomActionsWrapper from "../../BottomActions/BottomActionsWrapper";
 import { Button } from "@/components/General/core/Button";
-import { getResidenceSubmittedData } from "@/api/Residences/getResidenceSubmittedData";
+import { useResidenceDraft } from "../../useWizard";
 
 function Step5() {
   const router = useRouter();
@@ -39,12 +39,7 @@ function Step5() {
     isLoading: getResidenceSubmittedDataIsLaoding,
     data: residenceSubmittedData,
     refetch,
-  } = useQuery(["getResidenceSubmittedData", router?.query?.step], () => {
-    return getResidenceSubmittedData({
-      step: Number(router?.query?.step as string),
-      productId: Number(router?.query?.productId as string),
-    });
-  });
+  } = useResidenceDraft();
 
   useEffect(() => {
     if (!!residenceSubmittedData) {
@@ -239,9 +234,11 @@ function Step5() {
         </div>
       </div>
 
-      <BottomActionsWrapper onClickOfSubmitStep={() => onSubmitClick()}>
+      <BottomActionsWrapper isSaving={submitStep5Mutation.isLoading} onClickOfSubmitStep={() => onSubmitClick()}>
         <Button
           isFullWidth
+          isLoading={submitStep5Mutation.isLoading}
+          loadingText="در حال ذخیره…"
           onClick={onSubmitClick}
           leftIcon={<i className="icon-FlashLeft text-24 text-white hidden md:block" />}
         >

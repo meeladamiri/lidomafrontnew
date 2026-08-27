@@ -1,127 +1,42 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { Radio } from "components/General/core/Radio";
-import { TinyLoader } from "components/General/Loader/TinyLoader";
 import { RentType } from "interfaces/Residences/Submit";
-import { useEffect, useState } from "react";
-import { useRouter } from "next/router";
+import { allowedValuesFor } from "@/api/Residences/getAllowedValues";
 import StepTitle from "../../StepTitle";
-import { Button } from "@/components/General/core/Button";
-import { submitStep } from "@/api/SubmitResidence";
-import exception from "@/utilities/exception";
-import { EXCEPTIONTYPES, defaultError } from "@/constants/enums/exception_types";
-import BottomActionsWrapper from "../../BottomActions/BottomActionsWrapper";
-import { getResidenceSubmittedData } from "@/api/Residences/getResidenceSubmittedData";
-import { getAllowedValues } from "@/api/Residences/getAllowedValues";
+import OptionTile from "../../OptionTile";
+import { useResidenceDraft, useSaveStep } from "../../useWizard";
 
+/**
+ * Step 3 — whole place or per room.
+ *
+ * Was a radio list plus a "save and continue" button in a sticky bar: two taps
+ * to answer a two-option question, and the first tap produced nothing the host
+ * could act on. It saves on choice now, like the two steps before it, so the
+ * wizard behaves the same way three screens running.
+ */
 function Step3() {
-  const router = useRouter();
-  const [selectedRentType, setSelectedRentType] = useState<RentType["name"]>("");
+  const options = allowedValuesFor({ step: 3 })?.params?.values as RentType[] | undefined;
+  const { data: draft } = useResidenceDraft();
+  const { save, pendingKey, isSaving } = useSaveStep(3);
 
-  const { isLoading: getAllowedValuesIsLoading, data: allowedValuesData } = useQuery(
-    ["getAllowedValues", router?.query?.step],
-    () => getAllowedValues({ step: Number(router?.query?.step as string) })
-  );
+  const current = draft?.params?.residence_info?.rent_type as string | undefined;
 
-  const { isLoading: getResidenceSubmittedDataIsLaoding, data: residenceSubmittedData } = useQuery(
-    ["getResidenceSubmittedData", router?.query?.step],
-    () => {
-      return getResidenceSubmittedData({
-        step: Number(router?.query?.step as string),
-        productId: Number(router?.query?.productId as string),
-      });
-    }
-  );
-
-  useEffect(() => {
-    if (!!residenceSubmittedData) {
-      if (residenceSubmittedData?.status === "success") {
-        if (!!setSelectedRentType) {
-          setSelectedRentType(residenceSubmittedData?.params?.residence_info?.rent_type);
-        }
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [residenceSubmittedData]);
-
-  const submitStep3Mutation = useMutation(
-    ({ rentType, productId }: { rentType: RentType["name"]; productId: number }) => {
-      return submitStep({
-        step: 3,
-        productId,
-        data: {
-          rent_type: rentType,
-        },
-      });
-    },
-    {
-      onSuccess: (data) => {
-        if (data?.status === "success") {
-          router.push(`?step=${4}&productId=${data?.params?.product_id}`);
-        } else {
-          exception.message([{ type: EXCEPTIONTYPES.ERROR, title: data?.err_msg || defaultError }]);
-        }
-      },
-    }
-  );
-
-  function onSubmitClick() {
-    submitStep3Mutation.mutate({
-      productId: Number(router?.query?.productId as string),
-      rentType: selectedRentType,
-    });
-  }
-
-  return getAllowedValuesIsLoading || getResidenceSubmittedDataIsLaoding ? (
-    <TinyLoader />
-  ) : (
+  return (
     <>
-      <div className="pb-120 md:pb-[130px]">
-        <StepTitle wrapperClassname="mb-24 mt-16 md:mt-0" />
+      <StepTitle wrapperClassname="mb-24 mt-16 md:mt-0" />
 
-        <div>
-          {(allowedValuesData?.params?.values as RentType[])?.map((rentType) => {
-            return (
-              <div key={rentType.id} className="mb-24 last:mb-0">
-                <div className="flex items-center gap-x-8">
-                  <Radio
-                    label={rentType.name}
-                    name={rentType.name}
-                    value={rentType.name}
-                    disabled={false}
-                    checked={selectedRentType === rentType.name}
-                    look={"selected"}
-                    onChange={(e) => {
-                      if (!!setSelectedRentType) {
-                        setSelectedRentType(e.target.value);
-                      }
-                    }}
-                  />
-                  {/* <p className="text-14 leading-24 text-black font-r pr-24">{rentType.name}</p> */}
-                </div>
-                {!!rentType.description && (
-                  <p className="pr-32 text-12 leading-21 text-black font-l mt-8">
-                    {rentType.description}
-                  </p>
-                )}
-              </div>
-            );
-          })}
-        </div>
+      <div className="grid grid-cols-1 gap-12 sm:grid-cols-2 md:max-w-[560px] md:grid-cols-2">
+        {(options ?? []).map((option) => (
+          <OptionTile
+            key={option.id}
+            label={option.name}
+            description={option.description}
+            imageUrl={option.image_url}
+            selected={current === option.name}
+            pending={pendingKey === option.id}
+            dimmed={isSaving && pendingKey !== option.id}
+            onSelect={() => save({ key: option.id, data: { rent_type: option.name } })}
+          />
+        ))}
       </div>
-
-      <BottomActionsWrapper
-        onClickOfSubmitStep={() => onSubmitClick()}
-        isSubmitBtnDisabled={!selectedRentType}
-      >
-        <Button
-          isFullWidth
-          onClick={onSubmitClick}
-          leftIcon={<i className="icon-FlashLeft text-24 text-white hidden md:block" />}
-          disabled={!selectedRentType}
-        >
-          ذخیره و ادامه
-        </Button>
-      </BottomActionsWrapper>
     </>
   );
 }

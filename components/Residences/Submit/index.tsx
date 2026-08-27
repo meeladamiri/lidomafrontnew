@@ -1,21 +1,13 @@
 import dynamic from "next/dynamic";
 import { useRouter } from "next/router";
 import { useMediaQuery } from "@/utilities/useMediaQuery";
-const Step0 = dynamic(() => import("components/Residences/Submit/Steps/Step_0"), { ssr: true });
-const Step1 = dynamic(() => import("components/Residences/Submit/Steps/Step_1"), { ssr: true });
-const Step2 = dynamic(() => import("components/Residences/Submit/Steps/Step_2"), { ssr: true });
-const Step3 = dynamic(() => import("components/Residences/Submit/Steps/Step_3"), { ssr: true });
-const Step4 = dynamic(() => import("components/Residences/Submit/Steps/Step_4"), { ssr: true });
-const Step5 = dynamic(() => import("components/Residences/Submit/Steps/Step_5"), { ssr: true });
-const Step6 = dynamic(() => import("components/Residences/Submit/Steps/Step_6"), { ssr: true });
-const Step7 = dynamic(() => import("components/Residences/Submit/Steps/Step_7"), { ssr: true });
-const Step8 = dynamic(() => import("components/Residences/Submit/Steps/Step_8"), { ssr: true });
-const Step9 = dynamic(() => import("components/Residences/Submit/Steps/Step_9"), { ssr: true });
-const Step10 = dynamic(() => import("components/Residences/Submit/Steps/Step_10"), { ssr: true });
-const Step11 = dynamic(() => import("components/Residences/Submit/Steps/Step_11"), { ssr: true });
-const Step12 = dynamic(() => import("components/Residences/Submit/Steps/Step_12"), { ssr: true });
-const Step13 = dynamic(() => import("components/Residences/Submit/Steps/Step_13"), { ssr: true });
-const Step14 = dynamic(() => import("components/Residences/Submit/Steps/Step_14"), { ssr: true });
+import { STEP_LOADERS } from "./stepLoaders";
+import { usePrefetchNextStep } from "./useWizard";
+
+// Built from the same list the prefetcher walks, so a step can never be
+// registered in one place and forgotten in the other.
+const STEPS = STEP_LOADERS.map((load) => dynamic(load, { ssr: true }));
+
 const Header = dynamic(() => import("./Header/index"), {
   ssr: true,
 });
@@ -34,26 +26,12 @@ const PageTitle = dynamic(() => import("@/components/General/PageTitle"), {
 function SubmitResidence() {
   const isDesktop: boolean = useMediaQuery("(min-width: 1024px)");
   const router = useRouter();
+  const step = Number(router?.query?.step as string) || 0;
 
-  const Step_Component = [
-    Step0,
-    Step1,
-    Step2,
-    Step3,
-    Step4,
-    Step5,
-    Step6,
-    Step7,
-    Step8,
-    Step9,
-    Step10,
-    Step11,
-    Step12,
-    Step13,
-    Step14,
-  ];
+  // The next step's chunk downloads while the host is still on this one.
+  usePrefetchNextStep(step);
 
-  const ComponentToRender = Step_Component[Number(router?.query?.step as string) || 0];
+  const ComponentToRender = STEPS[step] ?? STEPS[0];
 
   return (
     <>

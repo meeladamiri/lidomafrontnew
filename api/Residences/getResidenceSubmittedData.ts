@@ -1,8 +1,14 @@
 // The old backend had one generic `/api/new_residence/get_info` endpoint that
 // returned a different `residence_info` shape depending on `step`. The new
 // backend just returns the full residence (`GET /api/host/residences/:id`),
-// so this file fetches that once and reshapes it per-step to match whatever
-// each Step_*/index.tsx component still expects to read.
+// so this file reshapes that per-step to match whatever each Step_*/index.tsx
+// component still expects to read.
+//
+// The fetch and the reshaping are separate on purpose. Every step used to call
+// this with its own step number, and react-query cached it under a key that
+// included that number — so walking the wizard refetched the same residence
+// once per step, eleven times over, each one blocking the screen. The draft is
+// one object; it is fetched once and reshaped in memory.
 
 import apiBuilder from "../apiBuilder";
 
@@ -17,21 +23,21 @@ function toRoomBed(room: any) {
   };
 }
 
-const getResidenceSubmittedData = async ({
-  step,
-  productId,
-}: {
-  step: number;
-  productId: number;
-}): Promise<any> => {
+/** The raw draft. One request per residence, not one per step. */
+const getResidenceDraft = async (productId: number): Promise<any> => {
   const resp = await apiBuilder
     .setUrl(`/api/host/residences/${productId}`)
     .setCallMethod("GET")
     .call();
 
-  if (resp?.status !== "success") return { status: "error", err_msg: resp?.message };
+  if (resp?.status !== "success") throw new Error(resp?.message || "دریافت اطلاعات اقامتگاه ناموفق بود");
+  return resp.data;
+};
 
-  const r = resp.data;
+/** Pure: the shape one step expects, out of the draft already in hand. */
+const shapeForStep = (r: any, step: number): any => {
+  if (!r) return { status: "success", params: { residence_info: {} } };
+
   let residence_info: any = {};
 
   switch (step) {
@@ -161,4 +167,4 @@ const getResidenceSubmittedData = async ({
   return { status: "success", params: { residence_info } };
 };
 
-export { getResidenceSubmittedData };
+export { getResidenceDraft, shapeForStep };

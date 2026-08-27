@@ -22,8 +22,8 @@ import BottomActionsWrapper from "../../BottomActions/BottomActionsWrapper";
 import { submitStep } from "@/api/SubmitResidence";
 import exception from "@/utilities/exception";
 import { EXCEPTIONTYPES, defaultError } from "@/constants/enums/exception_types";
-import { getResidenceSubmittedData } from "@/api/Residences/getResidenceSubmittedData";
 import { getAmenities } from "@/api/Residences/getAmenities";
+import { useResidenceDraft } from "../../useWizard";
 
 function Step12() {
   const router = useRouter();
@@ -40,12 +40,7 @@ function Step12() {
     isLoading: getResidenceSubmittedDataIsLaoding,
     data: residenceSubmittedData,
     refetch,
-  } = useQuery(["getResidenceSubmittedData", router?.query?.step], () => {
-    return getResidenceSubmittedData({
-      step: Number(router?.query?.step as string),
-      productId: Number(router?.query?.productId as string),
-    });
-  });
+  } = useResidenceDraft();
 
   useEffect(() => {
     if (!!residenceSubmittedData) {
@@ -301,8 +296,10 @@ function Step12() {
         </div>
       </div>
 
-      <BottomActionsWrapper onClickOfSubmitStep={() => onSubmitClick()}>
+      <BottomActionsWrapper isSaving={submitStep12Mutation.isLoading} onClickOfSubmitStep={() => onSubmitClick()}>
         <Button
+          isLoading={submitStep12Mutation.isLoading}
+          loadingText="در حال ذخیره…"
           leftIcon={<i className="icon-FlashLeft text-24 text-white hidden md:block" />}
           isFullWidth
           onClick={onSubmitClick}

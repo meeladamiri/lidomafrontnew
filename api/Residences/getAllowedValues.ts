@@ -23,7 +23,15 @@ const RENT_TYPES = [
   { id: 2, name: "اجاره اتاقی", description: "اتاق‌های اقامتگاه به‌صورت جداگانه رزرو می‌شوند", image_url: PLACEHOLDER_IMG },
 ];
 
-const getAllowedValues = async ({ step }: { step: number }): Promise<any> => {
+/**
+ * Synchronous, because there is nothing to wait for.
+ *
+ * These lists live in this file. Wrapping them in `useQuery` made three of
+ * the wizard's first four screens render a full-page spinner for a tick, on
+ * data that was already in the bundle — the wizard looked slowest exactly
+ * where a host decides whether it is worth continuing.
+ */
+const allowedValuesFor = ({ step }: { step: number }): any => {
   switch (step) {
     case 1:
       return { status: "success", params: { values: RES_TYPES } };
@@ -38,4 +46,8 @@ const getAllowedValues = async ({ step }: { step: number }): Promise<any> => {
   }
 };
 
-export { getAllowedValues };
+/** Kept async for callers that still await it. */
+const getAllowedValues = async ({ step }: { step: number }): Promise<any> =>
+  allowedValuesFor({ step });
+
+export { allowedValuesFor, getAllowedValues };
