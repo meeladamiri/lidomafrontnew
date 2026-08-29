@@ -81,6 +81,7 @@ function OneNightPriceFilter({
 
         {!!oneNightPrice && !!oneNightPrice[1] && (
           <CloseBtn
+            aria-label="حذف فیلتر بازه قیمت"
             onClose={(e) => {
               e.preventDefault();
               e.stopPropagation();

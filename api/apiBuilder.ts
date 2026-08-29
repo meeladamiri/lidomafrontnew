@@ -47,30 +47,37 @@ class ApiBuilder {
   onSuccess: any;
   onError: any;
 
+  /**
+   * The request body, sent as-is.
+   *
+   * This used to convert the body to FormData unless `call_method` was the
+   * literal string "json":
+   *
+   *   const isMultipart = (call_method || "").toLowerCase() !== "json";
+   *
+   * No caller passes "json" — they pass "POST", "PATCH", "PUT" — so every
+   * body went out as multipart/form-data. The backend mounts only
+   * express.json() and express.urlencoded(), neither of which parses
+   * multipart, so `req.body` arrived empty and validation rejected the
+   * request.
+   *
+   * That silently broke every write in api/chats.ts: sending a message,
+   * marking a thread read, the typing indicator, muting, and opening a
+   * support ticket. The rest of the app was unaffected only because it
+   * happens to use setParams(), which `call()` forwards as a plain object.
+   *
+   * A FormData passed in deliberately is left alone — though nothing does
+   * that today; the one file upload calls the axios client directly. Note the
+   * old code could not have handled that case anyway: Object.entries() on a
+   * FormData yields nothing, so the body would have been silently emptied.
+   */
   setBody(body: any) {
     if (!body) {
       this.send_data.data = undefined;
       return this;
     }
 
-    const isMultipart = (this.send_data.call_method || "").toLowerCase() !== "json";
-
-    if (isMultipart) {
-      const data: any = typeof window !== "undefined" ? new FormData() : {};
-
-      Object.entries(body).forEach(([key, value]) => {
-        if (typeof window !== "undefined") {
-          data.append(key, value as any);
-        } else {
-          data[key] = value;
-        }
-      });
-      this.send_data.data = data;
-    } else {
-      this.send_data.call_method = "POST";
-      this.send_data.data = body;
-    }
-
+    this.send_data.data = body;
     return this;
   }
 

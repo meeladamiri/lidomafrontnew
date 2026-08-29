@@ -69,6 +69,7 @@ function PeopleNumberFilter({
 
         {!!numberOfPeople && (
           <CloseBtn
+            aria-label="حذف فیلتر تعداد نفرات"
             onClose={(e) => {
               e.preventDefault();
               e.stopPropagation();

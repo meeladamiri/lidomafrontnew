@@ -51,6 +51,7 @@ function GeneralFilters({
         </div>
         {isThereAnyGeneralFiltersApplied && (
           <CloseBtn
+            aria-label="حذف همه فیلترها"
             onClose={(e) => {
               e.preventDefault();
               e.stopPropagation();

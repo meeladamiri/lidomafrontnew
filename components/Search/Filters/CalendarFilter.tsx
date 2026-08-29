@@ -142,6 +142,7 @@ function CalendarFilter({
 
           {!!selectedRanges?.[0]?.[0] && !!selectedRanges?.[0]?.[1] && (
             <CloseBtn
+              aria-label="حذف فیلتر تاریخ"
               onClose={(e) => {
                 e.preventDefault();
                 e.stopPropagation();

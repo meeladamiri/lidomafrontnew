@@ -17,7 +17,10 @@ import { MouseEvent } from "react";
 function CloseBtn({
   onClose,
   closeIconClassname,
-  "aria-label": ariaLabel = "حذف فیلتر",
+  // "بستن", not "حذف فیلتر": this button is used outside the search filters
+  // too — the login page has one — where announcing "remove filter" is simply
+  // wrong. Callers that clear a filter pass their own specific label.
+  "aria-label": ariaLabel = "بستن",
 }: {
   onClose: (e: MouseEvent<HTMLElement, globalThis.MouseEvent>) => void;
   closeIconClassname?: string;
