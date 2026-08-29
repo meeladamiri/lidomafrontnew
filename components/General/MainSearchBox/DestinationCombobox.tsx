@@ -21,6 +21,8 @@ interface Option extends DestinationChoice {
   id: string;
   kind: "city" | "province" | "residence";
   count?: number;
+  /** Only the curated popular cities have one. Keyword matches do not. */
+  image?: string;
 }
 
 /**
@@ -97,6 +99,7 @@ function DestinationCombobox({
         slug: c.title_en || c.name,
         label: c.name,
         count: c.count,
+        image: c.image || undefined,
       }));
     }
 
@@ -271,16 +274,41 @@ function DestinationCombobox({
                     choose(option);
                   }}
                   onMouseEnter={() => setActiveIndex(index)}
-                  className={`px-20 py-10 flex items-center gap-x-12 cursor-pointer transition-colors ${
+                  className={`px-20 py-8 flex items-center gap-x-12 cursor-pointer transition-colors ${
                     index === activeIndex ? "bg-gray-F0F0F0" : ""
                   }`}
                 >
-                  <i
-                    aria-hidden="true"
-                    className={`text-20 text-gray-959FA7 ${
-                      option.kind === "residence" ? "icon-Home" : "icon-Location"
-                    }`}
-                  />
+                  {/*
+                    The city photograph, where there is one. These arrived with
+                    scripts/migrate-odoo-location-images.ts — before it every
+                    location had imageUrl null, so this list was a column of
+                    identical grey pins with no way to tell one destination from
+                    another at a glance. Keyword matches have no image, and the
+                    pin still stands in for them.
+
+                    A plain <img>, not next/image: these are 40px thumbnails in
+                    a dropdown that most visitors never open, and routing twelve
+                    of them through the optimiser on every home page load costs
+                    more than it saves. loading="lazy" keeps them off the
+                    critical path.
+                  */}
+                  {option.image ? (
+                    <img
+                      src={option.image}
+                      alt=""
+                      loading="lazy"
+                      width={40}
+                      height={40}
+                      className="w-40 h-40 rounded-8 object-cover shrink-0 bg-gray-F0F0F0"
+                    />
+                  ) : (
+                    <i
+                      aria-hidden="true"
+                      className={`text-20 text-gray-959FA7 ${
+                        option.kind === "residence" ? "icon-Home" : "icon-Location"
+                      }`}
+                    />
+                  )}
                   <span className="text-14 leading-20 text-black font-r truncate">
                     {option.label}
                   </span>
