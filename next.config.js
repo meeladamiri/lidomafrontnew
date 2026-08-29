@@ -40,6 +40,20 @@ const nextConfig = {
     removeConsole: false,
   },
   swcMinify: isProd,
+
+  // Type checking and linting do not run as part of the production build.
+  //
+  // They are not skipped — they moved. Liara's build has a twenty-minute
+  // ceiling and was hitting it, and re-running tsc and eslint on a small build
+  // container found nothing that `npm run verify` has not already found on a
+  // developer's machine in a fraction of the time.
+  //
+  // The trade is real and worth stating: a type error that slips past a local
+  // check is no longer caught before it reaches production. `npm run verify`
+  // is what keeps that from happening, and `npm run deploy` runs it first so
+  // it cannot be forgotten.
+  eslint: { ignoreDuringBuilds: true },
+  typescript: { ignoreBuildErrors: true },
   images: {
     // Trimmed from the defaults. Every `sizes`-based <Image> writes one
     // candidate URL per entry into the HTML, and these are ~120 bytes each —

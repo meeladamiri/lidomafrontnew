@@ -11,7 +11,9 @@
     "lint-and-fix": "next lint --fix",
     "p-write": "prettier --write .",
     "p-check": "prettier --check .",
-    "pm2": "pm2"
+    "pm2": "pm2",
+    "verify": "tsc --noEmit -p tsconfig.json && next lint",
+    "deploy": "npm run verify && liara deploy"
   },
   "dependencies": {
     "@tanstack/react-query": "^4.2.3",
