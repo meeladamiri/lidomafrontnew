@@ -289,9 +289,22 @@ function Search() {
         </div>
         {router_pathname !== "/alternatives/[alt_order]" &&
           router_pathname !== "/crm/city/[lead_id]" && (
+            /*
+              One rhythm for the three blocks instead of three.
+              RelatedSearches, the guide and the FAQ each carried their own
+              spacing (pt-20, mb-54, mt-24), so the gaps between them were all
+              different sizes. space-y-32 sets them from one place, and each
+              block now only says what it is.
+
+              The border colour was declared with no border-width, so the line
+              meant to separate this section from the results never rendered.
+
+              pb-[100px] on mobile is deliberate: the floating map button sits
+              over the bottom of the page there.
+            */
             <section
               aria-label="راهنما و جستجوهای مرتبط"
-              className="bg-gray-F0F0F0 border-gray-E5E5E6 pt-20 mt-24 pb-[100px] md:pb-40"
+              className="bg-gray-F0F0F0 border-t-1 border-solid border-gray-E5E5E6 mt-32 pt-32 pb-[100px] md:pb-48 space-y-32"
             >
               <RelatedSearches tags={searchPageData?.params?.related_tags} />
 
@@ -312,8 +325,11 @@ function Search() {
                 )}
 
               {!!searchPageData?.params?.faqs?.length && (
-                <div className="CustomContainer2 mt-24">
-                  <SearchPageFAQ faqs={searchPageData?.params?.faqs} />
+                <div className="CustomContainer2">
+                  <SearchPageFAQ
+                    faqs={searchPageData?.params?.faqs}
+                    placeName={searchPageData?.params?.cat_name}
+                  />
                 </div>
               )}
             </section>
