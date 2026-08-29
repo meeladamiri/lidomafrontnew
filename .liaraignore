@@ -1,0 +1,44 @@
+# What not to upload to Liara.
+#
+# There was no such file, so `liara deploy` was sending the whole directory —
+# 1.73 GB, of which 1.68 GB was build output and dependencies the build server
+# throws away and regenerates anyway:
+#
+#   .next        816 MB   a local production build
+#   node_modules 443 MB   31,678 files, reinstalled from yarn.lock on the server
+#   .next-perf   427 MB   leftovers from an old performance experiment
+#
+# The source and public assets that actually matter are about 57 MB. Uploading
+# thirty times that, over a home connection, is most of why the build hit
+# Liara's twenty-minute ceiling before webpack had finished.
+#
+# Everything the build needs stays: pages, components, public, next.config.js,
+# package.json, yarn.lock, tsconfig.json, and .npmrc — which is what points
+# sharp's installer at a mirror it can actually reach.
+
+node_modules/
+.next/
+.next-perf/
+.git/
+.github/
+
+# Documentation and its dated archives — read by people, not by the build.
+docs/
+
+# Local process manager state and logs.
+.pm2/
+*.log
+npm-debug.log*
+yarn-error.log*
+
+# .env is deliberately NOT excluded. next.config.js reads BACKEND_API_URL from
+# it for the /api/* rewrite, and if that variable is not also set in the Liara
+# panel, dropping the file would break the deploy in a way that looks like a
+# routing bug. Worth moving to panel variables and excluding this — but as its
+# own change, verified against the panel, not folded into a build-time fix.
+
+# Editor and OS noise.
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
