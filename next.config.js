@@ -114,7 +114,28 @@ const nextConfig = {
   async rewrites() {
     // Proxies the frontend's own-origin `/api/*` calls to the real backend server-side,
     // so the browser never needs to know the backend's actual URL (no CORS, cookies stay same-site).
-    const backendUrl = process.env.BACKEND_API_URL || "http://localhost:4000";
+    //
+    // This function runs at BUILD time, not per request. Next serialises whatever
+    // it returns into `.next/routes-manifest.json`, and the production server
+    // reads the routes from that file — it never calls this function again. So a
+    // BACKEND_API_URL set in the Liara panel, which only exists at runtime, can
+    // never reach the proxy.
+    //
+    // That is not theoretical. The panel read `http://lidoma:3000` while the
+    // deployed front went on proxying to a port inside its own container:
+    //
+    //   Failed to proxy http://localhost:4000/api/favourites ECONNREFUSED
+    //
+    // Every browser-side call went down with it — login, the residence calendar,
+    // favourites, and the header's city search — while the pages themselves kept
+    // rendering, because server-side data fetching reads the runtime env directly
+    // and was never affected. That split is what made it look like four bugs.
+    //
+    // Hence a production default that is already correct with no env at all. A
+    // local `.env` still wins when present, so `npm run build && npm start` on a
+    // developer machine keeps pointing at the local backend.
+    const backendUrl =
+      process.env.BACKEND_API_URL || (isProd ? "http://lidoma:3000" : "http://localhost:4000");
     return [
       {
         source: "/api/:slug*",

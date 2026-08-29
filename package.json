@@ -13,7 +13,8 @@
     "p-check": "prettier --check .",
     "pm2": "pm2",
     "verify": "tsc --noEmit -p tsconfig.json && next lint",
-    "deploy": "npm run verify && liara deploy"
+    "smoke": "node scripts/smoke.mjs",
+    "deploy": "npm run verify && liara deploy && npm run smoke"
   },
   "dependencies": {
     "@tanstack/react-query": "^4.2.3",
