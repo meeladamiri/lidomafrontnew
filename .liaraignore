@@ -13,8 +13,7 @@
 # Liara's twenty-minute ceiling before webpack had finished.
 #
 # Everything the build needs stays: pages, components, public, next.config.js,
-# package.json, yarn.lock, tsconfig.json, and .npmrc — which is what points
-# sharp's installer at a mirror it can actually reach.
+# package.json, yarn.lock and tsconfig.json.
 
 node_modules/
 .next/
