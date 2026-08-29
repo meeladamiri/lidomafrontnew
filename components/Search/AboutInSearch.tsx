@@ -54,11 +54,22 @@ function AboutInSearch({ title, description }: { title: string; description: str
             and the resulting DOM no longer matched what React had rendered —
             hydration failed on every search page and the server HTML was thrown
             away in favour of a full client render. */}
+        {/*
+          No transition on max-height, and no measured pixel height to expand
+          to — expanded simply drops the cap.
+
+          The animated version got stuck: the transition reported playState
+          "running" indefinitely and the element stayed at its collapsed height,
+          so the text could not be read at all. Whatever stalled it (animations
+          are throttled in a backgrounded tab, and reduced-motion settings can
+          interfere), tying "can this person read the page" to an animation
+          completing is the wrong trade for 300ms of easing.
+        */}
         <div
           ref={bodyRef}
           id={bodyId}
-          className="text-14 leading-28 text-black font-l overflow-hidden transition-[max-height] duration-300 ease-in-out"
-          style={{ maxHeight: collapsed ? COLLAPSED_MAX_HEIGHT : bodyRef.current?.scrollHeight }}
+          className="text-14 leading-28 text-black font-l overflow-hidden"
+          style={{ maxHeight: collapsed ? COLLAPSED_MAX_HEIGHT : undefined }}
           dangerouslySetInnerHTML={{
             __html: sanitize(description),
           }}
