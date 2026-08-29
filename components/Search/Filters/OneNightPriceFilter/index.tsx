@@ -67,8 +67,15 @@ function OneNightPriceFilter({
         ref={oneNightPriceFilterWrapperRef}
       >
         <span className="text-12 leading-16 font-m text-black pl-8 text-nowrap">
+          {/*
+            Was `${oneNightPrice[1]} تا ${oneNightPrice[0]}` — the max first,
+            the min second, raw Latin digits, and no currency. It read as
+            "1000000 تا 500000", which is backwards and not a price.
+          */}
           {!!oneNightPrice && !!oneNightPrice[1]
-            ? `${oneNightPrice[1]} تا ${oneNightPrice[0]}`
+            ? `${oneNightPrice[0].toLocaleString("fa-IR")} تا ${oneNightPrice[1].toLocaleString(
+                "fa-IR"
+              )} تومان`
             : "قیمت برای یک شب"}
         </span>
 

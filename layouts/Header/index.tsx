@@ -491,9 +491,18 @@ function MainHeader({ setIsSideNavbarOpen }: { setIsSideNavbarOpen: (state: bool
         </div>
       </div>
 
+      {/*
+        z-[1000] puts this above the dimming overlay, which is z-[999].
+        Without it the overlay covered the destination dropdown: the list
+        rendered, but every click landed on the overlay instead of on a city,
+        and the overlay's own handler closed the whole box. So picking a city
+        from the header search box did nothing at all — the one thing that box
+        exists to do. The home page was unaffected because it has no overlay,
+        which is what made this look like it worked.
+      */}
       <div
         className={`
-        relative
+        relative z-[1000]
         ${
           !!showMainSearchBox ? "h-[94px] opacity-100" : "h-0 opacity-0 overflow-hidden"
         } transition-all duration-300 ease-in-out`}
