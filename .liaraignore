@@ -31,11 +31,21 @@ docs/
 npm-debug.log*
 yarn-error.log*
 
-# .env is deliberately NOT excluded. next.config.js reads BACKEND_API_URL from
-# it for the /api/* rewrite, and if that variable is not also set in the Liara
-# panel, dropping the file would break the deploy in a way that looks like a
-# routing bug. Worth moving to panel variables and excluding this — but as its
-# own change, verified against the panel, not folded into a build-time fix.
+# Environment files. These MUST NOT ship.
+#
+# Keeping .env out was not optional and I got it wrong once: .gitignore already
+# listed it, and the CLI reads .liaraignore OR .gitignore, never both — so
+# adding this file silently started uploading .env for the first time. It
+# carries BACKEND_API_URL=http://localhost:4000, which made the deployed front
+# proxy /api/* to its own container and took search down:
+#
+#   Failed to proxy http://localhost:4000/api/search/residences ECONNREFUSED
+#
+# Production values belong in the Liara panel, where they can differ from a
+# developer machine without anybody editing a file.
+.env
+.env.*
+!.env.example
 
 # Editor and OS noise.
 .vscode/
