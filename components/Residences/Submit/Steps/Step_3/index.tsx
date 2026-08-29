@@ -1,8 +1,6 @@
-import { RentType } from "interfaces/Residences/Submit";
-import { allowedValuesFor } from "@/api/Residences/getAllowedValues";
 import StepTitle from "../../StepTitle";
 import OptionTile from "../../OptionTile";
-import { useResidenceDraft, useSaveStep } from "../../useWizard";
+import { useResidenceDraft, useSaveStep, useWizardOptions } from "../../useWizard";
 
 /**
  * Step 3 — whole place or per room.
@@ -13,7 +11,7 @@ import { useResidenceDraft, useSaveStep } from "../../useWizard";
  * wizard behaves the same way three screens running.
  */
 function Step3() {
-  const options = allowedValuesFor({ step: 3 })?.params?.values as RentType[] | undefined;
+  const options = useWizardOptions("RENT_TYPE", 3);
   const { data: draft } = useResidenceDraft();
   const { save, pendingKey, isSaving } = useSaveStep(3);
 
@@ -24,12 +22,12 @@ function Step3() {
       <StepTitle wrapperClassname="mb-24 mt-16 md:mt-0" />
 
       <div className="grid grid-cols-1 gap-12 sm:grid-cols-2 md:max-w-[560px] md:grid-cols-2">
-        {(options ?? []).map((option) => (
+        {options.map((option) => (
           <OptionTile
             key={option.id}
             label={option.name}
-            description={option.description}
-            imageUrl={option.image_url}
+            description={option.description ?? undefined}
+            imageUrl={option.image_url ?? undefined}
             selected={current === option.name}
             pending={pendingKey === option.id}
             dimmed={isSaving && pendingKey !== option.id}

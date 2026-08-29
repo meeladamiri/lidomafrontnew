@@ -6,6 +6,13 @@ import { submitStep } from "@/api/SubmitResidence";
 import { defaultError, EXCEPTIONTYPES } from "@/constants/enums/exception_types";
 import exception from "@/utilities/exception";
 import { STEP_LOADERS } from "./stepLoaders";
+import { allowedValuesFor } from "@/api/Residences/getAllowedValues";
+import { Steps_Title } from "@/constants/Residences/Submit/Steps_Title";
+import {
+  getWizardContent,
+  type WizardOptionContent,
+  type WizardOptionKind,
+} from "@/api/Residences/getWizardContent";
 
 /**
  * The shared machinery behind the submission wizard.
@@ -206,4 +213,55 @@ export function usePrefetchNextStep(step: number) {
     }, 300);
     return () => clearTimeout(timer);
   }, [step]);
+}
+
+// --------------------------------------------------------- panel content ---
+
+/**
+ * Step titles, descriptions and option tiles, as configured in the panel.
+ *
+ * Cached for the whole session: it is a few kilobytes that change when an
+ * admin edits them, which is not something a host does mid-wizard.
+ */
+export function useWizardContent() {
+  return useQuery({
+    queryKey: ["wizardContent"],
+    queryFn: getWizardContent,
+    staleTime: 30 * 60 * 1000,
+    retry: 1,
+  });
+}
+
+/**
+ * What this step should say.
+ *
+ * Falls back to the constants the wizard shipped with. A panel that has never
+ * been opened, or an API that is having a bad minute, must not turn the wizard
+ * into a page of blank headings.
+ */
+export function useStepContent(step: number) {
+  const { data } = useWizardContent();
+  const configured = data?.steps.find((s) => s.step === step);
+
+  return {
+    title: configured?.title || Steps_Title[String(step)] || "",
+    description: configured?.description || null,
+    helpText: configured?.help_text || null,
+    iconUrl: configured?.icon_url || null,
+  };
+}
+
+/** The tiles for one of the first three steps, panel-first, constants after. */
+export function useWizardOptions(kind: WizardOptionKind, fallbackStep: number): WizardOptionContent[] {
+  const { data } = useWizardContent();
+  const configured = data?.options?.[kind];
+  if (configured?.length) return configured;
+
+  const legacy = allowedValuesFor({ step: fallbackStep })?.params?.values ?? [];
+  return legacy.map((v: any) => ({
+    id: v.id,
+    name: v.name,
+    description: v.description ?? null,
+    image_url: v.image_url ?? null,
+  }));
 }
