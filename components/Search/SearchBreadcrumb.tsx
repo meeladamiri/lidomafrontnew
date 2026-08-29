@@ -24,9 +24,14 @@ function SearchBreadcrumb({ crumbs }: { crumbs: Crumb[] }) {
   return (
     <nav
       aria-label="مسیر صفحه"
-      // Hugs the trail. Stretched to the full 1328px container it read as an
-      // empty bar with three small words pushed to one end.
-      className="inline-flex max-w-full rounded-16 border-1 border-solid border-gray-EFEFEF bg-white px-12 py-8"
+      // No card around it. The border and white fill made a small pill that
+      // read as a control rather than as a trail, and drew more attention than
+      // the thing it describes.
+      //
+      // The negative margin cancels the first link's own padding, so the trail
+      // starts on the same vertical line as the headings above it instead of
+      // ten pixels inside them.
+      className="-mr-10 inline-flex max-w-full"
     >
       <ol className="flex flex-wrap items-center gap-y-4">
         {items.map((crumb, i) => {

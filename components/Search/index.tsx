@@ -338,7 +338,14 @@ function Search() {
         {/* The trail sits at the foot of the page rather than above the
             results: up here it collided with the fixed filter bar, and down
             here it reads as the "where am I" summary after the listing. */}
-        <div className="CustomContainer2 pb-24">
+        {/*
+          pt-32 with no bottom padding. It had neither, so it sat flush against
+          the grey section above it — measured gap 0px — while the footer's own
+          mt-36 pushed 60px of empty space underneath. Now 32 above and the
+          footer's 36 below, which reads as one band rather than as something
+          that fell off the section above.
+        */}
+        <div className="CustomContainer2 pt-32">
           <SearchBreadcrumb
             crumbs={[
               { name: "لیدوماتریپ", href: "/" },
