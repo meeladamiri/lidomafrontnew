@@ -80,7 +80,29 @@ for (let attempt = 1; attempt <= ATTEMPTS; attempt++) {
   }
 }
 
-console.log(`\nsmoke check — ${origin}\n`);
+// Which build actually answered.
+//
+// A green run says the site is healthy, not that it is running your code — and
+// those look identical. This check passed nine out of nine directly after a
+// deploy that had failed in `yarn install`, because the old build was still up
+// and serving perfectly well. Printing the build id makes "did my deploy land"
+// answerable: if it has not changed since the previous run, it did not.
+async function buildId() {
+  try {
+    const html = await fetch(origin + "/", {
+      signal: AbortSignal.timeout(Number(process.env.SMOKE_TIMEOUT_MS || 30000)),
+    }).then((r) => r.text());
+    return JSON.parse(html.match(/<script id="__NEXT_DATA__"[^>]*>(.*?)<\/script>/s)?.[1] ?? "{}")
+      .buildId;
+  } catch {
+    return null;
+  }
+}
+
+const build = await buildId();
+
+console.log(`\nsmoke check — ${origin}`);
+console.log(`build: ${build ?? "unknown"}\n`);
 for (const r of results) {
   console.log(
     `  ${r.pass ? "PASS" : "FAIL"}  ${String(r.status).padEnd(5)} ${String(r.ms + "ms").padEnd(8)} ${r.name}` +
