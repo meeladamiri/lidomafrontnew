@@ -601,3 +601,18 @@ export function faDate(value: string | Date | null | undefined) {
     return "-";
   }
 }
+
+// Two lines, not one string: the clock time only matters when comparing rows
+// against each other, so it belongs under the date rather than beside it.
+export function faDateTime(value: string | Date | null | undefined): [string, string] {
+  if (!value) return ["-", ""];
+  try {
+    const d = new Date(value);
+    return [
+      new Intl.DateTimeFormat("fa-IR", { dateStyle: "short" }).format(d),
+      new Intl.DateTimeFormat("fa-IR", { timeStyle: "short" }).format(d),
+    ];
+  } catch {
+    return ["-", ""];
+  }
+}
