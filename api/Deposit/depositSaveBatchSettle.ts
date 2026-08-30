@@ -1,4 +1,4 @@
-import apiBuilder from "../apiBuilder";
+import { apiBuilder, toEnvelope } from "./_shared";
 
 export interface IDepositSaveBatchSettle {
   order_ids: number[];
@@ -7,27 +7,31 @@ export interface IDepositSaveBatchSettle {
   reference: string;
 }
 
+/**
+ * One bank transfer covering several bookings.
+ *
+ * The server spreads the amount across them oldest first and stops when it
+ * runs out, so a transfer that does not cover everything selected settles what
+ * it reaches instead of failing — which is what the money did.
+ */
 const depositSaveBatchSettle = async ({
   order_ids,
   amount,
   desc,
   reference,
 }: IDepositSaveBatchSettle) => {
-  const url = `/api/internal/save_batch_settle`;
-
-  const params = {
-    order_ids,
-    amount,
-    desc,
-    reference,
-  };
-
-  return apiBuilder
-    .setUrl(url)
+  const res = await apiBuilder
+    .setUrl("/api/deposit/batch-settle")
     .setCallMethod("POST")
-    .setJsonRpcMethod("call")
-    .setParams(params)
+    .setBody({
+      reservationIds: order_ids,
+      amount: Number(amount),
+      desc: desc || null,
+      reference: reference || null,
+    })
     .call();
+
+  return toEnvelope(res);
 };
 
 export { depositSaveBatchSettle };
