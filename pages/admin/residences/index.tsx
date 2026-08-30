@@ -26,6 +26,7 @@ import {
   adminImageUrl,
   faDate,
   faMoney,
+  faId,
   faNum,
   type ViewMode,
 } from "@/components/Admin/ui";
@@ -382,7 +383,7 @@ export default function AdminResidencesPage() {
                       </Link>
                     </td>
                     <td className="px-16 py-12 text-13 text-gray-6C6A7D whitespace-nowrap">
-                      {faNum(r.publicId)}
+                      {faId(r.publicId)}
                     </td>
                     <td className="px-16 py-12">
                       <Badge tone={TYPE_TONE[r.type]}>{TYPE_LABEL[r.type]}</Badge>
@@ -472,7 +473,7 @@ export default function AdminResidencesPage() {
 
                     <div className="flex items-center justify-between">
                       <span className="text-12 text-gray-6C6A7D bg-gray-F5F5F7 rounded-6 px-8 py-4">
-                        کد اقامتگاه: {faNum(r.publicId)}
+                        کد اقامتگاه: {faId(r.publicId)}
                       </span>
                       <Badge tone={STATE[r.state]?.tone ?? "gray"}>
                         {STATE[r.state]?.label ?? r.state}

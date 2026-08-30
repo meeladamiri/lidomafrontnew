@@ -20,6 +20,7 @@ import {
   adminImageUrl,
   faDate,
   faMoney,
+  faId,
   faNum,
 } from "@/components/Admin/ui";
 import CapacityTab from "@/components/Admin/Residence/CapacityTab";
@@ -178,7 +179,7 @@ export default function AdminResidenceDetailPage() {
       breadcrumb={
         <>
           <Link href="/admin">داشبورد</Link> / <Link href="/admin/residences">اقامتگاه‌ها</Link>
-          {!!data && <> / کد اقامتگاه {faNum(data.publicId)}</>}
+          {!!data && <> / کد اقامتگاه {faId(data.publicId)}</>}
         </>
       }
       toolbar={
@@ -339,7 +340,7 @@ export default function AdminResidenceDetailPage() {
             {/* status strip */}
             <Card className="px-16 py-12 flex items-center gap-x-16 flex-wrap gap-y-10 text-13">
               <span className="text-gray-6C6A7D">
-                کد اقامتگاه : <span className="text-black font-m">{faNum(data.publicId)}</span>
+                کد اقامتگاه : <span className="text-black font-m">{faId(data.publicId)}</span>
               </span>
               <span className="w-px h-16 bg-gray-E5E5E6" />
               <Stars value={data.averageRating} count={data.reviewsCount} />

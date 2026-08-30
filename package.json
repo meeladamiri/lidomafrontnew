@@ -14,7 +14,7 @@
     "pm2": "pm2",
     "verify": "tsc --noEmit -p tsconfig.json && next lint",
     "smoke": "node scripts/smoke.mjs",
-    "deploy": "npm run verify && liara deploy && npm run smoke"
+    "deploy": "npm run verify && liara deploy --no-app-logs && npm run smoke"
   },
   "dependencies": {
     "@tanstack/react-query": "^4.2.3",

@@ -591,6 +591,17 @@ export function adminImageUrl(url: string | null | undefined, w = 640) {
 }
 
 export const faNum = (n: number | null | undefined) => (n ?? 0).toLocaleString("fa-IR");
+
+/**
+ * A number that identifies something rather than counting it: a code, a year,
+ * an id. Persian digits, no thousands separator.
+ *
+ * `faNum` groups, which is right for money and wrong for everything that is
+ * not a quantity — it rendered residence code 38062 as ۳۸٬۰۶۲, which is not a
+ * code anyone can search for or read back over the phone.
+ */
+export const faId = (n: number | null | undefined) =>
+  n == null ? "—" : String(n).replace(/[0-9]/g, (d) => "۰۱۲۳۴۵۶۷۸۹"[Number(d)]);
 export const faMoney = (n: number | null | undefined) => `${(n ?? 0).toLocaleString("fa-IR")} تومان`;
 
 export function faDate(value: string | Date | null | undefined) {
