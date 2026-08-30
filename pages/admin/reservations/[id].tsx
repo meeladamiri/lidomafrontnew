@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useRouter } from "next/router";
 import { adminImageUrl } from "@/components/Admin/ui";
 import Link from "next/link";
@@ -403,6 +404,15 @@ export default function AdminReservationDetailPage() {
               )}
             </div>
 
+            {(data.state === "HOST_APPROVAL" || data.state === "SECOND_PAYMENT") && (
+              <ExpiryCard
+                id={data.id}
+                state={data.state}
+                expiryDate={data.expiryDate}
+                onChanged={() => mutate()}
+              />
+            )}
+
             <div className="card">
               <h3 style={{ marginTop: 0 }}>عملیات</h3>
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -490,6 +500,112 @@ function MoneyRow({
           </>
         )}
       </span>
+    </div>
+  );
+}
+
+/**
+ * مهلت این رزرو.
+ *
+ * The site-wide window sets the deadline when a booking is made; this moves it
+ * for one booking. Support needs it for the case the whole feature exists
+ * for — a host who has just called to say they are on their way, or a guest
+ * whose bank transfer is stuck — and the alternative today is watching the
+ * booking expire and taking a new one.
+ *
+ * Two ways to say the same thing, because those are the two ways people ask:
+ * a quick "another hour", or an exact time.
+ */
+function ExpiryCard({
+  id,
+  state,
+  expiryDate,
+  onChanged,
+}: {
+  id: number;
+  state: "HOST_APPROVAL" | "SECOND_PAYMENT";
+  expiryDate: string | null;
+  onChanged: () => void;
+}) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [exact, setExact] = useState("");
+
+  const left = expiryDate ? Math.round((new Date(expiryDate).getTime() - Date.now()) / 60000) : null;
+  const overdue = left != null && left <= 0;
+
+  async function send(body: Record<string, unknown>) {
+    setBusy(true);
+    setError(null);
+    try {
+      await apiFetch(`/api/admin/reservations/${id}/expiry`, {
+        method: "PATCH",
+        body: JSON.stringify(body),
+      });
+      setExact("");
+      onChanged();
+    } catch (e: any) {
+      setError(e?.message || "تغییر مهلت انجام نشد");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="card" style={{ marginBottom: 20 }}>
+      <h3 style={{ marginTop: 0 }}>
+        مهلت {state === "HOST_APPROVAL" ? "تایید میزبان" : "پرداخت مهمان"}
+      </h3>
+
+      {expiryDate ? (
+        <p style={{ margin: "0 0 10px", fontSize: 13 }}>
+          {new Date(expiryDate).toLocaleString("fa-IR", { dateStyle: "short", timeStyle: "short" })}
+          {" — "}
+          <span style={{ color: overdue ? "#C62828" : "#6b7280" }}>
+            {overdue
+              ? "گذشته؛ در اجرای بعدی زمان‌بند منقضی می‌شود"
+              : `${left!.toLocaleString("fa-IR")} دقیقه باقی مانده`}
+          </span>
+        </p>
+      ) : (
+        <p style={{ margin: "0 0 10px", fontSize: 13, color: "#6b7280" }}>
+          {/* Every booking made before deadlines existed has none, and without
+              one the sweep leaves it alone — so it waits forever rather than
+              expiring silently. */}
+          مهلتی ثبت نشده — این رزرو خودبه‌خود منقضی نمی‌شود.
+        </p>
+      )}
+
+      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 }}>
+        {[30, 60, 120, 720].map((m) => (
+          <button
+            key={m}
+            className="btn secondary"
+            disabled={busy}
+            onClick={() => send({ minutesFromNow: m })}
+          >
+            {m < 60 ? `${m.toLocaleString("fa-IR")} دقیقه` : `${(m / 60).toLocaleString("fa-IR")} ساعت`}
+          </button>
+        ))}
+      </div>
+
+      <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+        <input
+          type="datetime-local"
+          value={exact}
+          onChange={(e) => setExact(e.target.value)}
+          style={{ flex: 1, minWidth: 180 }}
+        />
+        <button
+          className="btn secondary"
+          disabled={busy || !exact}
+          onClick={() => send({ expiryDate: new Date(exact).toISOString() })}
+        >
+          ثبت
+        </button>
+      </div>
+
+      {!!error && <p style={{ color: "#C62828", fontSize: 13, marginBottom: 0 }}>{error}</p>}
     </div>
   );
 }

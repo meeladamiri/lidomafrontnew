@@ -21,6 +21,8 @@ interface Settings {
   guestCommissionPercent: number;
   releaseOnStartDate: boolean;
   minSettlement: number;
+  approvalWindowMinutes: number;
+  paymentWindowMinutes: number;
   hostOverrides: number;
 }
 
@@ -71,6 +73,8 @@ export default function ReservationSettingsPage() {
           guestCommissionPercent: form.guestCommissionPercent,
           releaseOnStartDate: form.releaseOnStartDate,
           minSettlement: Math.round(form.minSettlement),
+          approvalWindowMinutes: Math.max(1, Math.round(form.approvalWindowMinutes)),
+          paymentWindowMinutes: Math.max(1, Math.round(form.paymentWindowMinutes)),
         }),
       });
       setSaved(true);
@@ -147,6 +151,44 @@ export default function ReservationSettingsPage() {
                 </p>
               </Field>
             </div>
+          </Card>
+
+          <Card className="p-20">
+            <h2 className="text-16 leading-24 font-m text-black mb-4">مهلت‌ها</h2>
+            <p className="text-12 leading-20 text-gray-9B9BAA mb-16">
+              پس از پایان مهلت، رزرو <b>منقضی</b> می‌شود و تاریخ‌هایش دوباره برای فروش آزاد
+              می‌شوند. این‌ها فقط <b>پیش‌فرض</b>‌اند — مهلت هر رزرو در صفحه‌ی جزئیات همان رزرو
+              جداگانه قابل تغییر است.
+            </p>
+
+            <div className="grid sm:grid-cols-2 gap-14">
+              <Field label="مدت زمان تایید میزبان (دقیقه)">
+                <Input
+                  inputMode="numeric"
+                  value={String(form.approvalWindowMinutes)}
+                  onChange={(e) => set("approvalWindowMinutes", num(e.target.value))}
+                />
+                <p className="mt-6 text-11 leading-18 text-gray-9B9BAA">
+                  {describeMinutes(form.approvalWindowMinutes)} — از لحظه‌ی ثبت رزرو.
+                </p>
+              </Field>
+
+              <Field label="مدت زمان پرداخت مهمان (دقیقه)">
+                <Input
+                  inputMode="numeric"
+                  value={String(form.paymentWindowMinutes)}
+                  onChange={(e) => set("paymentWindowMinutes", num(e.target.value))}
+                />
+                <p className="mt-6 text-11 leading-18 text-gray-9B9BAA">
+                  {describeMinutes(form.paymentWindowMinutes)} — از لحظه‌ی تایید میزبان.
+                </p>
+              </Field>
+            </div>
+
+            <p className="mt-12 text-11 leading-18 text-gray-9B9BAA">
+              اودو یک فیلد برای هر دو داشت («مهلت تایید یا پرداخت») و مقادیر واقعی‌اش ۱۲۰،
+              ۶۰ و ۷۲۰ دقیقه بود.
+            </p>
           </Card>
 
           <Card className="p-20">
@@ -258,4 +300,28 @@ function Shell({ children }: { children: React.ReactNode }) {
       {children}
     </AdminLayout>
   );
+}
+
+/**
+ * "۱۲۰" in a box is a number; "۲ ساعت" is a decision. The field stays in
+ * minutes because that is what the backend stores, and the reading is put
+ * underneath rather than converting the input — a unit that changes as you
+ * type is worse than one that never does.
+ */
+function describeMinutes(minutes: number): string {
+  if (!Number.isFinite(minutes) || minutes <= 0) return "—";
+  if (minutes < 60) return `${faNum(minutes)} دقیقه`;
+
+  const hours = Math.floor(minutes / 60);
+  const rest = minutes % 60;
+
+  if (hours < 24) {
+    return rest === 0
+      ? `${faNum(hours)} ساعت`
+      : `${faNum(hours)} ساعت و ${faNum(rest)} دقیقه`;
+  }
+
+  const days = Math.floor(hours / 24);
+  const restHours = hours % 24;
+  return restHours === 0 ? `${faNum(days)} روز` : `${faNum(days)} روز و ${faNum(restHours)} ساعت`;
 }
