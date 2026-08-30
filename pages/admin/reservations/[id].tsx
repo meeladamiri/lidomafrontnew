@@ -3,6 +3,7 @@ import CancelReservationModal from "@/components/Admin/CancelReservationModal";
 import ReservationStatePanel from "@/components/Admin/ReservationStatePanel";
 import ActivityTimeline from "@/components/Admin/ActivityTimeline";
 import ReservationActions from "@/components/Admin/ReservationActions";
+import ReservationCalendarPanel from "@/components/Admin/ReservationCalendarPanel";
 import { useRouter } from "next/router";
 import { adminImageUrl } from "@/components/Admin/ui";
 import Link from "next/link";
@@ -404,6 +405,15 @@ export default function AdminReservationDetailPage() {
                 onChanged={() => mutate()}
               />
             )}
+
+            <ReservationCalendarPanel
+              reservationId={data.id}
+              reference={data.reference}
+              residenceId={data.residence.id}
+              startDate={data.startDate}
+              endDate={data.endDate}
+              onRepriced={() => mutate()}
+            />
 
             <ReservationStatePanel reservationId={data.id} onChanged={() => mutate()} />
 
