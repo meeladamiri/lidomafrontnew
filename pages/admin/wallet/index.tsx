@@ -2,6 +2,7 @@ import { useState } from "react";
 import useSWR from "swr";
 import AdminLayout from "@/components/Admin/Layout";
 import { apiFetch } from "@/api/Admin/adminApi";
+import DepositsPanel from "@/components/Admin/DepositsPanel";
 import {
   Badge,
   Button,
@@ -57,7 +58,17 @@ const STATUS_LABEL: Record<Tab, string> = {
   REJECTED: "رد شده",
 };
 
+/**
+ * Two jobs, kept as two sections rather than one merged list.
+ *
+ * «درخواست‌های تسویه» is hosts asking to be paid. «واریز به میزبان» is the site
+ * paying, booking by booking, whether or not anyone asked. Odoo kept them in
+ * separate models for the same reason: merged, one payout gets recorded twice.
+ */
+type Section = "settlements" | "deposits";
+
 export default function AdminWalletPage() {
+  const [section, setSection] = useState<Section>("settlements");
   const [tab, setTab] = useState<Tab>("REQUESTED");
   const [rejecting, setRejecting] = useState<SettlementRow | null>(null);
   const [reason, setReason] = useState("");
@@ -92,6 +103,68 @@ export default function AdminWalletPage() {
 
   return (
     <AdminLayout title="کیف پول و تسویه">
+      <div className="mb-16">
+        <TabPills
+          tabs={[
+            { key: "settlements", label: "درخواست‌های تسویه" },
+            { key: "deposits", label: "واریز به میزبان" },
+          ]}
+          value={section}
+          onChange={(k) => setSection(k as Section)}
+        />
+      </div>
+
+      {section === "deposits" ? (
+        <DepositsPanel />
+      ) : (
+        <SettlementQueue
+          tab={tab}
+          setTab={setTab}
+          rows={rows}
+          pendingTotal={pendingTotal}
+          isLoading={isLoading}
+          error={error}
+          busy={busy}
+          act={act}
+          rejecting={rejecting}
+          setRejecting={setRejecting}
+          reason={reason}
+          setReason={setReason}
+        />
+      )}
+    </AdminLayout>
+  );
+}
+
+function SettlementQueue({
+  tab,
+  setTab,
+  rows,
+  pendingTotal,
+  isLoading,
+  error,
+  busy,
+  act,
+  rejecting,
+  setRejecting,
+  reason,
+  setReason,
+}: {
+  tab: Tab;
+  setTab: (t: Tab) => void;
+  rows: SettlementRow[];
+  pendingTotal: number;
+  isLoading: boolean;
+  error: unknown;
+  busy: number | null;
+  act: (id: number, action: "approve" | "paid" | "reject", body?: unknown) => Promise<void>;
+  rejecting: SettlementRow | null;
+  setRejecting: (r: SettlementRow | null) => void;
+  reason: string;
+  setReason: (r: string) => void;
+}) {
+  return (
+    <>
       <div className="mb-16 grid grid-cols-1 gap-12 md:grid-cols-2">
         <StatTile label={`تعداد در «${STATUS_LABEL[tab]}»`} value={faNum(rows.length)} />
         <StatTile label="مجموع مبلغ نمایش‌داده‌شده" value={faMoney(pendingTotal)} />
@@ -221,6 +294,6 @@ export default function AdminWalletPage() {
           </Button>
         </div>
       </Modal>
-    </AdminLayout>
+    </>
   );
 }

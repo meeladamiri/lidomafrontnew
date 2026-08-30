@@ -5,8 +5,8 @@ import { requestSettlement } from "@/api/Wallet";
 import { Button } from "components/General/core/Button";
 import { THandleSmoothClose } from "../General/core/BottomSheet";
 
-/** Mirrors MIN_SETTLEMENT in the backend, which is what actually enforces it. */
-const MIN_SETTLEMENT = 50_000;
+/** Used only until the wallet responds; the server sends the real floor. */
+const FALLBACK_MIN_SETTLEMENT = 50_000;
 
 /**
  * Asking for a payout.
@@ -17,16 +17,18 @@ const MIN_SETTLEMENT = 50_000;
  */
 export default function TasfieBottomSheet({
   credit_balance,
+  minSettlement = FALLBACK_MIN_SETTLEMENT,
   handleSmoothClose,
 }: {
   handleSmoothClose: THandleSmoothClose;
   credit_balance: number;
+  minSettlement?: number;
 }) {
   const queryClient = useQueryClient();
   const [amount, setAmount] = useState<string>(String(credit_balance || ""));
 
   const value = Number(amount.replace(/[^\d]/g, "")) || 0;
-  const tooSmall = value < MIN_SETTLEMENT;
+  const tooSmall = value < minSettlement;
   const tooLarge = value > credit_balance;
 
   const submit = useMutation({
@@ -68,7 +70,7 @@ export default function TasfieBottomSheet({
         {tooLarge
           ? "مبلغ درخواستی از موجودی قابل برداشت بیشتر است."
           : tooSmall
-            ? `حداقل مبلغ تسویه ${MIN_SETTLEMENT.toLocaleString("fa-IR")} تومان است.`
+            ? `حداقل مبلغ تسویه ${minSettlement.toLocaleString("fa-IR")} تومان است.`
             : "پس از تأیید، مبلغ به حساب بانکی ثبت‌شده واریز می‌شود."}
       </p>
 

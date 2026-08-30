@@ -321,6 +321,7 @@ function Wallet() {
             return (
               <TasfieBottomSheet
                 credit_balance={walletData?.credit_balance || 0}
+                minSettlement={walletData?.min_settlement}
                 handleSmoothClose={handleSmoothClose}
               />
             );

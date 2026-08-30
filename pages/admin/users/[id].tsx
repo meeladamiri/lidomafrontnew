@@ -42,6 +42,7 @@ interface UserDetail {
   isHost: boolean;
   isActive: boolean;
   isSpecialHost: boolean;
+  commissionPercent: number | null;
   role: "USER" | "ADMIN";
   createdAt: string;
   city: { name: string; province: { name: string } | null } | null;
@@ -198,6 +199,8 @@ export default function AdminUserDetailPage() {
               </div>
             </div>
           </Card>
+
+          {data.isHost && <HostCommissionCard user={data} onSaved={() => mutate()} />}
 
           {/* stats */}
           <section className="grid grid-cols-2 lg:grid-cols-4 gap-16">
@@ -657,5 +660,112 @@ function PasswordForm({
         </Button>
       </div>
     </form>
+  );
+}
+
+/**
+ * کمیسیون میزبان — the site's cut of this host's bookings.
+ *
+ * Empty and "0" are deliberately different things, and the difference is
+ * money: empty means "whatever the site charges", zero means "this host pays
+ * nothing". A single input cannot say both, so clearing the field is its own
+ * action with its own button.
+ *
+ * The rate applies to bookings made from now on. The ones already taken keep
+ * the rate they were made under, which is why this says so out loud.
+ */
+function HostCommissionCard({ user, onSaved }: { user: UserDetail; onSaved: () => void }) {
+  const [value, setValue] = useState(
+    user.commissionPercent == null ? "" : String(user.commissionPercent)
+  );
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const { data: settings } = useSWR<{ commissionPercent: number }>(
+    "/api/admin/settings/reservation",
+    (p: string) => apiFetch<{ commissionPercent: number }>(p)
+  );
+
+  const custom = value.trim() !== "";
+  const parsed = Number(value.replace(/[^\d.]/g, ""));
+  const invalid = custom && (!Number.isFinite(parsed) || parsed < 0 || parsed > 100);
+  const effective = custom && !invalid ? parsed : settings?.commissionPercent;
+
+  async function save(next: number | null) {
+    setSaving(true);
+    setError(null);
+    try {
+      await apiFetch(`/api/admin/users/${user.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ commissionPercent: next }),
+      });
+      onSaved();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "ذخیره نشد");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <Card className="p-20">
+      <div className="flex items-start justify-between gap-x-12 flex-wrap gap-y-8 mb-14">
+        <div>
+          <h3 className="text-16 leading-24 font-m text-black">کمیسیون میزبان</h3>
+          <p className="text-12 leading-20 text-gray-9B9BAA mt-2">
+            درصدی از مبلغ اجاره که سهم سایت است و از سهم این میزبان کسر می‌شود.
+          </p>
+        </div>
+        <Badge tone={user.commissionPercent == null ? "gray" : "blue"}>
+          {user.commissionPercent == null
+            ? `نرخ عمومی سایت${settings ? ` (${faNum(settings.commissionPercent)}٪)` : ""}`
+            : `نرخ اختصاصی ${faNum(user.commissionPercent)}٪`}
+        </Badge>
+      </div>
+
+      <div className="flex items-end gap-x-12 flex-wrap gap-y-12">
+        <div className="w-[180px]">
+          <Field label="درصد کمیسیون">
+            <Input
+              inputMode="decimal"
+              value={value}
+              placeholder={settings ? `${settings.commissionPercent}` : "نرخ عمومی"}
+              onChange={(e) => setValue(e.target.value)}
+            />
+          </Field>
+        </div>
+
+        <Button disabled={saving || invalid} onClick={() => save(custom ? parsed : null)}>
+          ذخیره
+        </Button>
+
+        {user.commissionPercent != null && (
+          <Button
+            variant="secondary"
+            disabled={saving}
+            onClick={() => {
+              setValue("");
+              save(null);
+            }}
+          >
+            بازگشت به نرخ عمومی
+          </Button>
+        )}
+      </div>
+
+      {invalid && <p className="mt-10 text-13 text-[#C62828]">درصد باید بین ۰ تا ۱۰۰ باشد.</p>}
+      {!!error && <p className="mt-10 text-13 text-[#C62828]">{error}</p>}
+
+      {effective != null && !invalid && (
+        <p className="mt-12 text-12 leading-20 text-gray-6C6A7D">
+          با نرخ {faNum(effective)}٪، از یک رزرو {faNum(5_000_000)} تومانی سهم سایت{" "}
+          <b>{faNum(Math.round((5_000_000 * effective) / 100))}</b> تومان می‌شود.
+          <span className="text-gray-9B9BAA">
+            {" "}
+            این نرخ روی رزروهای جدید اعمال می‌شود؛ رزروهای ثبت‌شده نرخ خودشان را نگه می‌دارند.
+          </span>
+        </p>
+      )}
+    </Card>
   );
 }

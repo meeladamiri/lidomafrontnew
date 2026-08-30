@@ -44,6 +44,8 @@ export interface IWalletSummary {
   blocked_balance: number;
   gift_balance: number;
   bank_account: IBankAccount;
+  /** The server-side floor for a payout request. */
+  min_settlement: number;
 }
 
 export interface ISettlement {

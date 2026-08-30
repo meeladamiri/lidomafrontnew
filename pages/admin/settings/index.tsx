@@ -92,6 +92,12 @@ export default function AdminSettingsPage() {
           ))}
           {/* Own pages rather than tabs — each carries a lot of state. */}
           <Link
+            href="/admin/settings/reservations"
+            className="px-14 py-8 rounded-10 text-13 leading-20 font-m whitespace-nowrap text-gray-6C6A7D hover:bg-gray-F0F0F0"
+          >
+            تنظیمات رزرواسیون
+          </Link>
+          <Link
             href="/admin/settings/locations"
             className="px-14 py-8 rounded-10 text-13 leading-20 font-m whitespace-nowrap text-gray-6C6A7D hover:bg-gray-F0F0F0"
           >

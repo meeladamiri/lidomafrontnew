@@ -34,6 +34,12 @@ interface ReservationDetail {
   remainingAmount: number;
   hostShare: number | null;
   websiteShare: number | null;
+  vatAmount: number | null;
+  guestCommission: number | null;
+  settledAmount: number;
+  commissionPercent: number | null;
+  vatPercent: number | null;
+  guestCommissionPercent: number | null;
   voucherCode: string | null;
   cancelledBy: "HOST_CANCELLED" | "LIDOMA_CANCELLED" | "GUEST_CANCELLED" | null;
   cancelReason: string | null;
@@ -339,11 +345,53 @@ export default function AdminReservationDetailPage() {
           <div>
             <div className="card" style={{ marginBottom: 20 }}>
               <h3 style={{ marginTop: 0 }}>مبلغ</h3>
-              <p>مبلغ کل: {data.totalAmount.toLocaleString("fa-IR")} تومان</p>
-              <p>پرداخت‌شده: {data.paidAmount.toLocaleString("fa-IR")} تومان</p>
-              <p>باقی‌مانده: {data.remainingAmount.toLocaleString("fa-IR")} تومان</p>
-              {data.hostShare != null && <p>سهم میزبان: {data.hostShare.toLocaleString("fa-IR")} تومان</p>}
-              {data.websiteShare != null && <p>سهم لیدوما: {data.websiteShare.toLocaleString("fa-IR")} تومان</p>}
+
+              {/* The split, in the order the money actually moves: what the
+                  stay costs, what the guest pays for it, what the site keeps,
+                  and what is left for the host. Percentages are the ones this
+                  booking was made under, not today's — they are stored on the
+                  reservation for exactly that reason. */}
+              <MoneyRow label="مبلغ کل اجاره" value={data.totalAmount} strong />
+              <MoneyRow label="جمع مبلغ پرداختی مهمان" value={data.paidAmount} />
+              {data.remainingAmount > 0 && (
+                <MoneyRow label="باقی‌مانده پرداخت مهمان" value={data.remainingAmount} tone="red" />
+              )}
+
+              <div style={{ height: 1, background: "#eee", margin: "10px 0" }} />
+
+              <MoneyRow
+                label="کارمزد میزبان وبسایت"
+                hint={data.commissionPercent != null ? `${data.commissionPercent.toLocaleString("fa-IR")}٪ از اجاره` : undefined}
+                value={data.websiteShare}
+                negative
+              />
+              <MoneyRow
+                label="کارمزد مهمان وبسایت"
+                hint={
+                  data.guestCommissionPercent != null
+                    ? `${data.guestCommissionPercent.toLocaleString("fa-IR")}٪، افزوده به پرداختی مهمان`
+                    : undefined
+                }
+                value={data.guestCommission}
+              />
+              <MoneyRow
+                label="ارزش افزوده"
+                hint={data.vatPercent != null ? `${data.vatPercent.toLocaleString("fa-IR")}٪ از کارمزد` : undefined}
+                value={data.vatAmount}
+                negative
+              />
+
+              <div style={{ height: 1, background: "#eee", margin: "10px 0" }} />
+
+              <MoneyRow label="مقدار اصلی سهم میزبان بابت کل رزرو" value={data.hostShare} strong />
+              <MoneyRow label="واریز شده به میزبان" value={data.settledAmount} />
+              <MoneyRow
+                label="مقدار مانده سهم میزبان بابت واریزی سایت"
+                value={(data.hostShare ?? 0) - data.settledAmount}
+                strong
+                tone={(data.hostShare ?? 0) - data.settledAmount > 0 ? "red" : "green"}
+              />
+
               {data.voucherCode && <p>کد تخفیف: {data.voucherCode}</p>}
               {(data.residence.hostShareTotalAmount != null ||
                 data.residence.hostSharePastNights != null ||
@@ -382,5 +430,66 @@ export default function AdminReservationDetailPage() {
         </div>
       )}
     </AdminLayout>
+  );
+}
+
+/**
+ * One line of the money breakdown.
+ *
+ * A missing figure prints "ثبت نشده" rather than zero. Bookings migrated from
+ * Odoo have no guest fee at all, and a zero there would read as "we charged
+ * nothing" instead of "nobody recorded it".
+ */
+function MoneyRow({
+  label,
+  value,
+  hint,
+  strong,
+  negative,
+  tone,
+}: {
+  label: string;
+  value: number | null;
+  hint?: string;
+  strong?: boolean;
+  negative?: boolean;
+  tone?: "red" | "green";
+}) {
+  const color = tone === "red" ? "#C62828" : tone === "green" ? "#2E7D32" : strong ? "#111" : "#374151";
+
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "baseline",
+        justifyContent: "space-between",
+        gap: 12,
+        padding: "3px 0",
+      }}
+    >
+      <span style={{ fontSize: 13, color: "#6b7280" }}>
+        {label}
+        {hint && <span style={{ fontSize: 11, color: "#9ca3af" }}> · {hint}</span>}
+      </span>
+      <span
+        style={{
+          fontSize: 14,
+          whiteSpace: "nowrap",
+          color,
+          fontWeight: strong ? 600 : 400,
+        }}
+      >
+        {value == null ? (
+          <span style={{ color: "#9ca3af" }}>ثبت نشده</span>
+        ) : (
+          <>
+            {/* Written-out sign: on an RTL line a leading "−" lands where
+                nobody is looking for it. */}
+            {negative && value > 0 ? "− " : ""}
+            {Math.abs(value).toLocaleString("fa-IR")} تومان
+          </>
+        )}
+      </span>
+    </div>
   );
 }
