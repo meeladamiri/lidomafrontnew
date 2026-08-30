@@ -1,7 +1,7 @@
-import { guestCancelsReserve } from "@/api/MyTrips";
+import { getCancelQuote, guestCancelsReserve } from "@/api/MyTrips";
 import { defaultError, EXCEPTIONTYPES } from "@/constants/enums/exception_types";
 import exception from "@/utilities/exception";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { THandleSmoothClose } from "components/General/core/BottomSheet";
 import { Button } from "components/General/core/Button";
 import { useRouter } from "next/router";
@@ -66,6 +66,10 @@ function GuestWantsToCancelBottomSheet({
   const router = useRouter();
   const queryClient = useQueryClient();
 
+  // Fetched as soon as the sheet opens, so the number is on screen while the
+  // guest is still choosing — not after they have committed.
+  const { data: quote } = useQuery(["cancelQuote", reserveId], () => getCancelQuote(reserveId));
+
   const [selectedReasons, setSelectedReasons] = useState<{ text: string; id: number }[]>([]);
   const [customReason, setCustomReason] = useState<string>("");
 
@@ -109,6 +113,28 @@ function GuestWantsToCancelBottomSheet({
 
   return (
     <div className="relative pb-74 max-h-[480px] overflow-y-auto">
+      {!!quote && (
+        <div className="mb-12 rounded-12 border-1 border-solid border-gray-CACFD3 p-12">
+          <p className="text-13 leading-20 font-m text-black mb-6">صورتحساب لغو</p>
+          <div className="flex items-center justify-between text-12 leading-22 text-gray-6C6A7D">
+            <span>مبلغ پرداختی شما</span>
+            <span className="text-black">{quote.paidAmount.toLocaleString("fa-IR")} تومان</span>
+          </div>
+          <div className="flex items-center justify-between text-12 leading-22 text-gray-6C6A7D">
+            <span>کسر طبق مقررات</span>
+            <span className="text-[#C62828]">− {quote.penalty.toLocaleString("fa-IR")} تومان</span>
+          </div>
+          <div className="flex items-center justify-between text-13 leading-24 font-m border-t-1 border-solid border-gray-CACFD3 mt-6 pt-6">
+            <span className="text-black">بازگشت به کیف پول شما</span>
+            <span className="text-[#2E7D32]">{quote.refund.toLocaleString("fa-IR")} تومان</span>
+          </div>
+          {quote.explanation.map((line, i) => (
+            <p key={i} className="mt-4 text-11 leading-18 text-gray-9B9BAA">
+              · {line}
+            </p>
+          ))}
+        </div>
+      )}
       <div>
         {guest_reasons_to_cancel.map((guest_reason, i: number) => {
           return (

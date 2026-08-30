@@ -115,3 +115,32 @@ const guestCancelsReserve = async ({ order_id, reason }: { order_id: number; rea
 };
 
 export { getMyTrips, guestCancelsReserve };
+
+/**
+ * What the guest gets back if they cancel now.
+ *
+ * The site's own cancellation policy promises this: «مبلغ صورتحساب لغو بصورت
+ * خودکار محاسبه می شود و در هنگام لغو رزرو برای کاربر به نمایش درمی آید». It
+ * never was — the sheet asked for a reason and cancelled, and the guest found
+ * out what it cost afterwards.
+ */
+export interface ICancelQuote {
+  band: string;
+  bandLabel: string;
+  totalAmount: number;
+  paidAmount: number;
+  penalty: number;
+  refund: number;
+  explanation: string[];
+}
+
+const getCancelQuote = async (order_id: number): Promise<ICancelQuote | null> => {
+  const res = await apiBuilder
+    .setUrl(`/api/reservations/${order_id}/cancel-quote`)
+    .setCallMethod("GET")
+    .call();
+
+  return res?.status === "success" ? (res.data as ICancelQuote) : null;
+};
+
+export { getCancelQuote };

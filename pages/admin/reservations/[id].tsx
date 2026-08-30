@@ -1,4 +1,5 @@
 import { useState } from "react";
+import CancelReservationModal from "@/components/Admin/CancelReservationModal";
 import { useRouter } from "next/router";
 import { adminImageUrl } from "@/components/Admin/ui";
 import Link from "next/link";
@@ -137,6 +138,7 @@ function ScoreRow({ label, score }: { label: string; score: number }) {
 export default function AdminReservationDetailPage() {
   const router = useRouter();
   const id = router.query.id as string | undefined;
+  const [showCancel, setShowCancel] = useState(false);
 
   const { data, mutate, isLoading } = useSWR(id ? `/api/admin/reservations/${id}` : null, (path: string) =>
     apiFetch<ReservationDetail>(path)
@@ -170,6 +172,16 @@ export default function AdminReservationDetailPage() {
     <AdminLayout>
       <h1>جزئیات رزرو</h1>
       {isLoading && <p>در حال بارگذاری...</p>}
+
+      {data && (
+        <CancelReservationModal
+          reservationId={data.id}
+          reference={data.reference}
+          open={showCancel}
+          onClose={() => setShowCancel(false)}
+          onCancelled={() => mutate()}
+        />
+      )}
       {data && (
         <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 20 }}>
           <div>
@@ -426,8 +438,8 @@ export default function AdminReservationDetailPage() {
                     تکمیل دستی (تایید پرداخت)
                   </button>
                 )}
-                {(data.state === "HOST_APPROVAL" || data.state === "SECOND_PAYMENT") && (
-                  <button className="btn secondary" onClick={() => runAction("cancel")}>
+                {data.state !== "CANCEL" && data.state !== "EXPIRED" && (
+                  <button className="btn secondary" onClick={() => setShowCancel(true)}>
                     لغو رزرو
                   </button>
                 )}
