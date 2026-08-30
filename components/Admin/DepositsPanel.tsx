@@ -99,6 +99,8 @@ export default function DepositsPanel() {
 
   return (
     <div className="flex flex-col gap-y-16">
+      <SchedulerCard />
+
       <Card className="px-16 py-12 flex items-center justify-between gap-x-16 gap-y-12 flex-wrap">
         <div className="flex items-center gap-x-12 flex-wrap gap-y-8">
           <TabPills
@@ -390,3 +392,99 @@ function DepositModal({
     </Modal>
   );
 }
+
+interface SchedulerJob {
+  name: string;
+  everyMinutes: number;
+  running: boolean;
+  runs: number;
+  failures: number;
+  skipped: number;
+  lastRunAt: string | null;
+  lastOkAt: string | null;
+  lastError: string | null;
+  lastResult: { checked?: number; released?: number } | null;
+}
+
+interface SchedulerStatus {
+  enabled: boolean;
+  started: boolean;
+  locking: boolean;
+  jobs: SchedulerJob[];
+}
+
+const JOB_LABELS: Record<string, string> = {
+  "release-matured": "آزادسازی سهم میزبان",
+};
+
+/**
+ * Whether the money is moving on its own.
+ *
+ * Worth a card rather than a line, because the failure it reports is silent:
+ * a scheduler that stopped looks exactly like a week with no matured stays.
+ * The last successful run is the number that distinguishes them, so it is the
+ * one shown largest.
+ */
+function SchedulerCard() {
+  const { data, mutate } = useSWR<SchedulerStatus>(
+    "/api/admin/wallet/scheduler",
+    (p: string) => apiFetch<SchedulerStatus>(p),
+    { refreshInterval: 60_000 }
+  );
+
+  const [busy, setBusy] = useState(false);
+  const [note, setNote] = useState<string | null>(null);
+
+  if (!data) return null;
+
+  const job = data.jobs.find((j) => j.name === "release-matured");
+  const off = !data.enabled || !data.started;
+
+  async function runNow() {
+    setBusy(true);
+    setNote(null);
+    try {
+      const r = await apiFetch<{ released?: number; checked?: number }>(
+        "/api/admin/wallet/release-matured",
+        { method: "POST" }
+      );
+      setNote(
+        r?.released
+          ? `${faNum(r.released)} رزرو آزاد شد`
+          : "رزروی برای آزادسازی نبود"
+      );
+      mutate();
+    } catch (e) {
+      setNote(e instanceof Error ? e.message : "اجرا نشد");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Card className="px-16 py-12 flex items-center justify-between gap-x-16 gap-y-10 flex-wrap">
+      <div className="flex items-center gap-x-12 flex-wrap gap-y-6">
+        <Badge tone={off ? "red" : "green"}>{off ? "زمان‌بند خاموش" : "زمان‌بند فعال"}</Badge>
+        <span className="text-13 leading-20 text-gray-6C6A7D">
+          {JOB_LABELS[job?.name ?? ""] ?? job?.name}
+          {job && <> · هر {faNum(job.everyMinutes)} دقیقه</>}
+          {job?.lastOkAt ? (
+            <> · آخرین اجرای موفق {faDate(job.lastOkAt)}</>
+          ) : (
+            <> · هنوز اجرا نشده</>
+          )}
+        </span>
+        {job?.running && <Badge tone="blue">در حال اجرا</Badge>}
+        {!!job?.failures && <Badge tone="red">{faNum(job.failures)} خطا</Badge>}
+      </div>
+
+      <div className="flex items-center gap-x-10">
+        {note && <span className="text-12 text-gray-6C6A7D">{note}</span>}
+        <Button variant="secondary" disabled={busy} onClick={runNow}>
+          {busy ? "در حال اجرا..." : "اجرای دستی"}
+        </Button>
+      </div>
+    </Card>
+  );
+}
+
