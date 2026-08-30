@@ -1,6 +1,8 @@
 import { useState } from "react";
 import CancelReservationModal from "@/components/Admin/CancelReservationModal";
 import ReservationStatePanel from "@/components/Admin/ReservationStatePanel";
+import ActivityTimeline from "@/components/Admin/ActivityTimeline";
+import ReservationActions from "@/components/Admin/ReservationActions";
 import { useRouter } from "next/router";
 import { adminImageUrl } from "@/components/Admin/ui";
 import Link from "next/link";
@@ -145,29 +147,6 @@ export default function AdminReservationDetailPage() {
     apiFetch<ReservationDetail>(path)
   );
 
-  async function runAction(action: "cancel" | "forceApprove" | "markDone") {
-    if (!id) return;
-
-    let reason: string | undefined;
-    let desc: string | undefined;
-    if (action === "cancel") {
-      reason = prompt("دلیل لغو رزرو (برای مهمان/میزبان نمایش داده می‌شود):") || undefined;
-      if (reason === undefined) return; // user pressed cancel on the prompt
-      desc = prompt("توضیح داخلی (اختیاری، فقط برای تیم پشتیبانی):") || undefined;
-    } else if (!confirm("انجام این عملیات مطمئنید؟")) {
-      return;
-    }
-
-    try {
-      await apiFetch(`/api/admin/reservations/${id}`, {
-        method: "PATCH",
-        body: JSON.stringify({ action, reason, desc }),
-      });
-      mutate();
-    } catch (e: any) {
-      alert(e?.message || "خطا در انجام عملیات");
-    }
-  }
 
   return (
     <AdminLayout>
@@ -428,30 +407,17 @@ export default function AdminReservationDetailPage() {
 
             <ReservationStatePanel reservationId={data.id} onChanged={() => mutate()} />
 
-            <div className="card">
-              <h3 style={{ marginTop: 0 }}>عملیات</h3>
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {data.state === "HOST_APPROVAL" && (
-                  <button className="btn secondary" onClick={() => runAction("forceApprove")}>
-                    تایید به‌جای میزبان
-                  </button>
-                )}
-                {data.state === "SECOND_PAYMENT" && (
-                  <button className="btn secondary" onClick={() => runAction("markDone")}>
-                    تکمیل دستی (تایید پرداخت)
-                  </button>
-                )}
-                {data.state !== "CANCEL" && data.state !== "EXPIRED" && (
-                  <button className="btn secondary" onClick={() => setShowCancel(true)}>
-                    لغو رزرو
-                  </button>
-                )}
-                {(data.state === "DONE" || data.state === "CANCEL" || data.state === "EXPIRED") && (
-                  <p style={{ color: "#6b7280" }}>این رزرو در وضعیت نهایی است — عملیاتی در دسترس نیست.</p>
-                )}
-              </div>
+            <div style={{ marginBottom: 20 }}>
+              <ActivityTimeline reservationId={data.id} />
             </div>
-          </div>
+
+            <ReservationActions
+              reservationId={data.id}
+              residenceId={data.residence.id}
+              canCancel={data.state !== "CANCEL" && data.state !== "EXPIRED"}
+              onCancel={() => setShowCancel(true)}
+              onActed={() => mutate()}
+            />          </div>
         </div>
       )}
     </AdminLayout>
