@@ -1376,6 +1376,7 @@ routes, schema, realtime, notify, bookingHooks)، `src/lib/pubsub.ts`،
 | [`COMMISSION.md`](COMMISSION.md) | کارمزد، ارزش افزوده و پنل واریز — قواعد استخراج‌شده از اودو |
 | [`DEPOSIT.md`](DEPOSIT.md) | پنل واریزی `/deposit` — هفت اندپوینت اودو و مهاجرت تاریخچه‌ی تسویه |
 | [`CANCELLATION.md`](CANCELLATION.md) | فرایند لغو رزرو — نردبان کسر، موجه/غیرموجه و نحوه‌ی اطلاع‌رسانی |
+| [`RESERVATION-STATES.md`](RESERVATION-STATES.md) | شش وضعیت رزرو، تغییر دستی با توضیح اجباری، و تاریخچه |
 | [`DEPLOY.md`](DEPLOY.md) | دیپلوی لیارا — چهار مانعی که خوردیم، و قاعده‌ی گیومه در متغیرها |
 | [`INCIDENT-2026-08-27-database.md`](INCIDENT-2026-08-27-database.md) | پاک‌شدن دیتابیس، علت، بازیابی، و قاعده‌ای که دیگر نباید شکسته شود |
 

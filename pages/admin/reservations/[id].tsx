@@ -1,5 +1,6 @@
 import { useState } from "react";
 import CancelReservationModal from "@/components/Admin/CancelReservationModal";
+import ReservationStatePanel from "@/components/Admin/ReservationStatePanel";
 import { useRouter } from "next/router";
 import { adminImageUrl } from "@/components/Admin/ui";
 import Link from "next/link";
@@ -424,6 +425,8 @@ export default function AdminReservationDetailPage() {
                 onChanged={() => mutate()}
               />
             )}
+
+            <ReservationStatePanel reservationId={data.id} onChanged={() => mutate()} />
 
             <div className="card">
               <h3 style={{ marginTop: 0 }}>عملیات</h3>
