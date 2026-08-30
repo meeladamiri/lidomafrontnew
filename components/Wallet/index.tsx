@@ -11,8 +11,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import { VALIDATION_MESSAGES } from "constants/enums/validation_messages";
-import { getWalletAndTransactions, IUpdateBankInfo, IWalletData, updateBankInfo } from "api/Wallet";
-import { miladiToJalaliWithTime2 } from "utilities/dateTools";
+import { getWallet, IUpdateBankInfo, IWalletSummary, updateBankInfo } from "api/Wallet";
 import exception from "@/utilities/exception";
 import { defaultError, EXCEPTIONTYPES } from "@/constants/enums/exception_types";
 import { WalletPageSkeleton } from "./Skeletons/WalletPageSkeleton";
@@ -35,9 +34,6 @@ const ShabaAccountOwnerNameBottomSheet = dynamic(
     ssr: true,
   }
 );
-const IncreaseWalletModal = dynamic(() => import("components/Wallet/IncreaseWalletModal"), {
-  ssr: true,
-});
 const TasfieBottomSheet = dynamic(() => import("./TasfieBottomSheet"), {
   ssr: true,
 });
@@ -85,28 +81,15 @@ function Wallet() {
 
   const [showTasfieBottomSheet, setShowTasfieBottomSheet] = useState<boolean>(false);
 
-  const [showIncreaseWalletModal, setShowIncreaseWalletModal] = useState(false);
+  const [walletData, setWalletData] = useState<IWalletSummary>();
 
-  const [walletData, setWalletData] = useState<IWalletData>();
-
-  const { isSuccess, isLoading, data, refetch } = useQuery(
-    ["getWalletAndTransactions"],
-    () => {
-      return getWalletAndTransactions();
-    },
-    {
-      onSuccess: (data) => {},
-    }
-  );
+  const { isLoading, data, refetch } = useQuery({
+    queryKey: ["wallet"],
+    queryFn: getWallet,
+  });
 
   useEffect(() => {
-    if (!!data) {
-      if (data?.status === "success") {
-        setWalletData(data?.params);
-      } else {
-        exception.message([{ type: EXCEPTIONTYPES.ERROR, title: data?.err_msg || defaultError }]);
-      }
-    }
+    if (data) setWalletData(data);
   }, [data]);
 
   const updateBankInfoMutation = useMutation(
@@ -119,19 +102,15 @@ function Wallet() {
       });
     },
     {
-      onSuccess: (data) => {
-        if (data?.status === "success") {
-          // Closing open bottom sheet
-          setShowCartNumberBottomSheet(false);
-          setShowCartOwnerNameBottomSheet(false);
-          setShowShabaBottomSheet(false);
-          setShowShabaAccountOwnerNameBottomSheet(false);
-
-          refetch();
-        } else {
-          exception.message([{ type: EXCEPTIONTYPES.ERROR, title: data?.err_msg || defaultError }]);
-        }
+      onSuccess: () => {
+        setShowCartNumberBottomSheet(false);
+        setShowCartOwnerNameBottomSheet(false);
+        setShowShabaBottomSheet(false);
+        setShowShabaAccountOwnerNameBottomSheet(false);
+        refetch();
       },
+      onError: () =>
+        exception.message([{ type: EXCEPTIONTYPES.ERROR, title: defaultError }]),
     }
   );
 
@@ -222,14 +201,10 @@ function Wallet() {
               </div>
 
               <div className="mb-24  md:px-0">
-                <Button
-                  isFullWidth
-                  className="mb-12"
-                  onClick={() => setShowIncreaseWalletModal(true)}
-                >
-                  افزایش موجودی کیف پول
-                </Button>
-
+                {/* No "افزایش موجودی" button. It called api/Payment, which talks to Odoo
+                    endpoints the new backend never implemented — there is no payment
+                    gateway yet. A button that cannot do its job is worse than its
+                    absence: it turns a missing feature into a broken one. */}
                 <Button isFullWidth color="grey" onClick={() => setShowTasfieBottomSheet(true)}>
                   درخواست تسویه کیف پول
                 </Button>
@@ -261,18 +236,7 @@ function Wallet() {
                   containerClassname="mb-16"
                 />
 
-                <TransactionsList
-                  transactions={
-                    walletData?.transactions.map((t, i) => ({
-                      isFailed: t.status !== "success",
-                      // failureReason: string, TODO: backend hanuz ino nadade
-                      price: t.amount,
-                      transferredTo: t.destination || "",
-                      reserveCode: t.reserve_code,
-                      date: miladiToJalaliWithTime2(t.date),
-                    })) || []
-                  }
-                />
+                <TransactionsList />
               </div>
             </div>
           </div>
@@ -347,14 +311,7 @@ function Wallet() {
         />
       )}
 
-      {!!showIncreaseWalletModal && (
-        <IncreaseWalletModal
-          setShowIncreaseWalletModal={setShowIncreaseWalletModal}
-          showIncreaseWalletModal={showIncreaseWalletModal}
-          balance={walletData?.credit_balance || 0}
-        />
-      )}
-
+      
       {!!showTasfieBottomSheet && (
         <BottomSheet
           open={showTasfieBottomSheet}
