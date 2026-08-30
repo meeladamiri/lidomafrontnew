@@ -1,5 +1,6 @@
 import Image from "next/image";
 import ChatBadge from "./ChatBadge";
+import NotificationBell from "./NotificationBell";
 import Link from "next/link";
 import { UserType_enum, useUserProfile } from "@/providers/Profile";
 import { useRouter } from "next/router";
@@ -377,14 +378,11 @@ function MainHeader({ setIsSideNavbarOpen }: { setIsSideNavbarOpen: (state: bool
 
               {profileData.user_type === UserType_enum.AUTH && (
                 <div className="relative hidden md:flex items-center ">
-                  <i
-                    className={`text-24 icon-Bell hover:text-primary-main cursor-pointer ${
-                      headerAfterScroll || router.pathname !== "/" ? "text-black" : "text-white"
-                    }`}
-                    ref={notificationsPaperBtnRef}
-                    onClick={() => {
-                      setShowNotificationsPaper((prev) => !prev);
-                    }}
+                  <NotificationBell
+                    isLight={!headerAfterScroll && router.pathname === "/"}
+                    isOpen={showNotificationsPaper}
+                    onToggle={() => setShowNotificationsPaper((prev) => !prev)}
+                    buttonRef={notificationsPaperBtnRef}
                   />
 
                   {!!showNotificationsPaper && (
