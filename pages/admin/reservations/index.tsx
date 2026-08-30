@@ -12,6 +12,7 @@ import {
   Toolbar,
   ToolbarIconButton,
   ToolbarPager,
+  ToolbarSearch,
   faDate,
   faDateTime,
   faNum,
@@ -88,11 +89,13 @@ function Person({ name, phone }: { name: string | null; phone: string }) {
 export default function AdminReservationsPage() {
   const [page, setPage] = useState(1);
   const [state, setState] = useState("");
+  const [q, setQ] = useState("");
 
   const query = new URLSearchParams({
     page: String(page),
     pageSize: String(PAGE_SIZE),
     ...(state ? { state } : {}),
+    ...(q ? { q } : {}),
   });
   const { data, isLoading, mutate } = useSWR(`/api/admin/reservations?${query.toString()}`, (path: string) =>
     apiFetchPaginated<ReservationRow>(path)
@@ -116,9 +119,19 @@ export default function AdminReservationsPage() {
       }
       toolbar={
         <Toolbar>
-          <span className="text-13 leading-20 text-gray-6C6A7D">
-            {data ? `${faNum(data.meta.total)} رزرو` : "…"}
-          </span>
+          <div className="flex items-center gap-x-10 flex-1 min-w-[240px]">
+            <ToolbarSearch
+              value={q}
+              onChange={(v) => {
+                setQ(v);
+                setPage(1);
+              }}
+              placeholder="کد رزرو، نام یا موبایل مهمان و میزبان..."
+            />
+            <span className="text-13 leading-20 text-gray-6C6A7D whitespace-nowrap">
+              {data ? `${faNum(data.meta.total)} رزرو` : "…"}
+            </span>
+          </div>
           <div className="flex items-center gap-x-8">
             <ToolbarIconButton icon="icon-Refresh" label="بارگذاری مجدد" onClick={() => mutate()} />
             {data && (
