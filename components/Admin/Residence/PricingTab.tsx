@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { apiFetch } from "@/api/Admin/adminApi";
-import { Button, Card } from "@/components/Admin/ui";
+import { Button, Card, parseNum } from "@/components/Admin/ui";
 
 // "نرخ اقامتگاه" tab. Prices are stored in تومان; discounts are percentages
 // (the unit dropdown mirrors the design — a fixed-amount discount would need
@@ -27,7 +27,10 @@ function MoneyField({
   onChange: (v: string) => void;
   highlight?: boolean;
 }) {
-  const digits = value.replace(/\D/g, "");
+  // The field shows its value in Persian digits, so the next keystroke comes
+  // back in Persian — and `\D` matches everything that is not an ASCII digit,
+  // which threw the whole number away and left one character behind.
+  const digits = String(parseNum(value) || "");
   return (
     <label className="block">
       <span
@@ -40,7 +43,7 @@ function MoneyField({
       <div className="relative">
         <input
           value={digits ? Number(digits).toLocaleString("fa-IR") : ""}
-          onChange={(e) => onChange(e.target.value.replace(/\D/g, ""))}
+          onChange={(e) => onChange(String(parseNum(e.target.value) || ""))}
           inputMode="numeric"
           placeholder="۰"
           className="w-full px-14 py-10 pl-56 rounded-10 border border-gray-E5E5E6 text-14 leading-22 outline-none focus:border-primary-main transition"
@@ -146,7 +149,7 @@ export default function PricingTab({
             <div className="flex items-center gap-x-8">
               <input
                 value={form.weeklyDiscount}
-                onChange={(e) => set("weeklyDiscount")(e.target.value.replace(/\D/g, ""))}
+                onChange={(e) => set("weeklyDiscount")(String(parseNum(e.target.value) || ""))}
                 inputMode="numeric"
                 placeholder="۰"
                 className="flex-1 px-14 py-10 rounded-10 border border-gray-E5E5E6 text-14 leading-22 outline-none focus:border-primary-main transition"
@@ -164,7 +167,7 @@ export default function PricingTab({
             <div className="flex items-center gap-x-8">
               <input
                 value={form.monthlyDiscount}
-                onChange={(e) => set("monthlyDiscount")(e.target.value.replace(/\D/g, ""))}
+                onChange={(e) => set("monthlyDiscount")(String(parseNum(e.target.value) || ""))}
                 inputMode="numeric"
                 placeholder="۰"
                 className="flex-1 px-14 py-10 rounded-10 border border-gray-E5E5E6 text-14 leading-22 outline-none focus:border-primary-main transition"
