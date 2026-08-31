@@ -28,6 +28,7 @@ import CapacityTab from "@/components/Admin/Residence/CapacityTab";
 import AmenitiesTab from "@/components/Admin/Residence/AmenitiesTab";
 import PricingTab from "@/components/Admin/Residence/PricingTab";
 import RulesTab from "@/components/Admin/Residence/RulesTab";
+import ReservationsTab from "@/components/Admin/Residence/ReservationsTab";
 
 // leaflet touches window on import
 const LocationPicker = dynamic(() => import("@/components/Admin/LocationPicker"), { ssr: false });
@@ -271,6 +272,8 @@ export default function AdminResidenceDetailPage() {
           <EmptyState text="این بخش هنوز پیاده‌سازی نشده" />
         </Card>
       )}
+
+      {data && tab === "reservations" && <ReservationsTab residenceId={data.id} />}
 
       {data && tab === "basic" && (
         <div className="flex gap-x-16 items-start">
