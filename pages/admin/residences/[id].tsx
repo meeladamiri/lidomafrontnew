@@ -469,6 +469,52 @@ export default function AdminResidenceDetailPage() {
               </div>
             </Card>
 
+            {/* rooms — beds and the host's own description of each. Entered on
+                the capacity tab and, until now, visible nowhere else: the page
+                showed a total capacity and nothing about what makes it up. */}
+            <Card className="p-20">
+              <div className="flex items-center justify-between gap-x-12 flex-wrap gap-y-8 mb-12">
+                <h3 className="text-16 leading-24 font-m text-black">
+                  اتاق‌ها
+                  <span className="text-13 font-r text-gray-6C6A7D">
+                    {" "}
+                    — {faNum(data.rooms.length)} اتاق
+                  </span>
+                </h3>
+                <Button variant="secondary" onClick={() => setTab("capacity")}>
+                  <i className="icon-Edit text-16" /> ویرایش ظرفیت و اتاق‌ها
+                </Button>
+              </div>
+
+              {data.rooms.length === 0 ? (
+                <EmptyState text="اتاقی ثبت نشده" />
+              ) : (
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-12">
+                  {data.rooms.map((r) => {
+                    const beds = [
+                      r.doubleBed ? `${faNum(r.doubleBed)} تخت دونفره` : null,
+                      r.singleBed ? `${faNum(r.singleBed)} تخت یک‌نفره` : null,
+                      r.traditionalBed ? `${faNum(r.traditionalBed)} رخت‌خواب سنتی` : null,
+                    ].filter(Boolean);
+
+                    return (
+                      <div key={r.id} className="rounded-12 border border-gray-E5E5E6 p-12">
+                        <p className="text-13 leading-20 font-m text-black mb-4">{r.name}</p>
+                        <p className="text-11 leading-18 text-gray-9B9BAA">
+                          {beds.length ? beds.join(" · ") : "تختی ثبت نشده"}
+                        </p>
+                        {r.description && (
+                          <p className="mt-8 text-12 leading-20 text-gray-6C6A7D whitespace-pre-line break-words">
+                            {r.description}
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </Card>
+
             {/* address */}
             <Card className="p-20">
               <h3 className="text-16 leading-24 font-m text-black mb-12">آدرس</h3>
