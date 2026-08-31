@@ -89,7 +89,11 @@ export default function RankCard({
     }
   }
 
-  if (isLoading || !data) return <Skeleton className="h-[220px]" />;
+  // A card is not worth crashing the page it sits on: an unexpected payload
+  // renders nothing rather than taking the whole listing down.
+  if (isLoading || !data || typeof data.importance !== "number") {
+    return <Skeleton className="h-[220px]" />;
+  }
 
 
   return (
@@ -158,9 +162,9 @@ export default function RankCard({
         عدد بزرگ‌تر یعنی بالاتر در «پیشنهاد لیدوما». در تساوی، امتیاز و بعد تازگی تعیین‌کننده است.
       </p>
 
-      {data.neighbours.length > 0 && (
+      {(data.neighbours ?? []).length > 0 && (
         <div className="rounded-12 border border-gray-E5E5E6 divide-y divide-gray-F0F0F0">
-          {data.neighbours.map((n) => (
+          {(data.neighbours ?? []).map((n) => (
             <div
               key={n.id}
               className={`flex items-center gap-x-10 px-12 py-8 ${
