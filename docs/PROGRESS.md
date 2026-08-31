@@ -1383,8 +1383,10 @@ routes, schema, realtime, notify, bookingHooks)، `src/lib/pubsub.ts`،
 | [`INCIDENT-2026-08-27-database.md`](INCIDENT-2026-08-27-database.md) | پاک‌شدن دیتابیس، علت، بازیابی، و قاعده‌ای که دیگر نباید شکسته شود |
 | [`PAYMENTS.md`](PAYMENTS.md) | دفتر پرداخت‌های مهمان — اقساط، ابطال، و مانده‌ی افتتاحیه |
 | [`RESERVATION-ADMIN.md`](RESERVATION-ADMIN.md) | صفحه‌ی جزئیات رزرو — نوار وضعیت، کارگاه قیمت، ویرایش مبالغ و اقامت، لاگ |
-| [`RESIDENCE-ADMIN.md`](RESIDENCE-ADMIN.md) | صفحه‌ی جزئیات اقامتگاه — دسته‌بندی، رتبه، میزبان، تصاویر، امکانات |
-| [`ADMIN-PITFALLS.md`](ADMIN-PITFALLS.md) | **ده تله‌ای که بی‌صدا خراب می‌شوند** — بریک‌پوینت، رقم فارسی، عرض تصویر، coercion |
+| [`RESIDENCE-ADMIN.md`](RESIDENCE-ADMIN.md) | صفحه‌ی جزئیات اقامتگاه — هر ده تب، غیرفعال‌سازی، نظرات، مدارک |
+| [`CALENDAR.md`](CALENDAR.md) | تقویم و نرخ — سه پنل روی یک draft، ذخیره و بازگردانی |
+| [`STATISTICS.md`](STATISTICS.md) | آمار — یک سرویس برای پنل و پنل میزبان، و شمارش بازدید |
+| [`ADMIN-PITFALLS.md`](ADMIN-PITFALLS.md) | **شانزده تله‌ای که بی‌صدا خراب می‌شوند** — بریک‌پوینت، رقم فارسی، include، کش، وقت تهران |
 
 ### نشست پانزدهم
 
