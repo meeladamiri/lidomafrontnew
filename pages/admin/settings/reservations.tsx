@@ -97,7 +97,7 @@ export default function ReservationSettingsPage() {
               گذشته اثری ندارد — سهم میزبانی که قبلاً محاسبه شده، دست‌نخورده می‌ماند.
             </p>
 
-            <div className="grid sm:grid-cols-2 gap-14">
+            <div className="grid md:grid-cols-2 gap-14">
               <Field label="کارمزد میزبان وبسایت (٪)">
                 <Input
                   inputMode="decimal"
@@ -161,7 +161,7 @@ export default function ReservationSettingsPage() {
               جداگانه قابل تغییر است.
             </p>
 
-            <div className="grid sm:grid-cols-2 gap-14">
+            <div className="grid md:grid-cols-2 gap-14">
               <Field label="مدت زمان تایید میزبان (دقیقه)">
                 <Input
                   inputMode="numeric"

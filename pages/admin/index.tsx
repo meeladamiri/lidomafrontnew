@@ -162,7 +162,7 @@ export default function AdminDashboardPage() {
           </section>
 
           {(data.pendingResidences > 0 || data.pendingReservations > 0) && (
-            <section className="grid sm:grid-cols-2 gap-16">
+            <section className="grid md:grid-cols-2 gap-16">
               {data.pendingResidences > 0 && (
                 <Card className="p-16 flex items-center justify-between">
                   <div>

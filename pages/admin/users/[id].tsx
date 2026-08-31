@@ -241,7 +241,7 @@ export default function AdminUserDetailPage() {
             {/* profile info */}
             <Card className="p-20 lg:col-span-2">
               <h3 className="text-16 leading-24 font-m text-black mb-12">اطلاعات کاربر</h3>
-              <div className="grid sm:grid-cols-2 gap-x-24">
+              <div className="grid md:grid-cols-2 gap-x-24">
                 <div>
                   <InfoRow label="نام و نام خانوادگی" value={data.name} />
                   <InfoRow label="شماره موبایل" value={data.phone} />
@@ -369,7 +369,7 @@ export default function AdminUserDetailPage() {
               <h3 className="text-16 leading-24 font-m text-black mb-12">
                 اقامتگاه‌ها ({faNum(data.residences.length)})
               </h3>
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-12">
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-12">
                 {data.residences.map((r) => (
                   <Link
                     key={r.id}
@@ -514,7 +514,7 @@ function EditUserModal({
 
   return (
     <Modal open={open} onClose={onClose} title="ویرایش اطلاعات کاربر" width="max-w-[640px]">
-      <form onSubmit={submit} className="grid sm:grid-cols-2 gap-12">
+      <form onSubmit={submit} className="grid md:grid-cols-2 gap-12">
         <Field label="نام و نام خانوادگی">
           <Input value={form.name} onChange={set("name")} />
         </Field>
@@ -536,10 +536,10 @@ function EditUserModal({
         <Field label="تحصیلات">
           <Input value={form.education} onChange={set("education")} />
         </Field>
-        <Field label="آدرس" className="sm:col-span-2">
+        <Field label="آدرس" className="md:col-span-2">
           <Input value={form.address} onChange={set("address")} />
         </Field>
-        <Field label="درباره کاربر" className="sm:col-span-2">
+        <Field label="درباره کاربر" className="md:col-span-2">
           <textarea
             value={form.description}
             onChange={set("description")}
@@ -548,9 +548,9 @@ function EditUserModal({
           />
         </Field>
 
-        {!!error && <p className="sm:col-span-2 text-13 text-[#C62828]">{error}</p>}
+        {!!error && <p className="md:col-span-2 text-13 text-[#C62828]">{error}</p>}
 
-        <div className="sm:col-span-2 flex items-center gap-x-10 justify-end">
+        <div className="md:col-span-2 flex items-center gap-x-10 justify-end">
           <Button type="button" variant="secondary" onClick={onClose}>
             انصراف
           </Button>

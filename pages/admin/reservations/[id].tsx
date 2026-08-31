@@ -585,7 +585,7 @@ function ResidenceCard({ data }: { data: ReservationDetail }) {
         {r.images[0]?.url ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={adminImageUrl(r.images[0].url, 320)}
+            src={adminImageUrl(r.images[0].url, 384)}
             alt=""
             className="w-[104px] h-[78px] rounded-12 object-cover shrink-0"
           />

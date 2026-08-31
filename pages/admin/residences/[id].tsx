@@ -63,7 +63,7 @@ interface ResidenceDetail {
   createdAt: string;
   updatedAt: string;
   reservationsCount: number;
-  city: { id: number; name: string; province: { name: string } | null } | null;
+  location: { id: number; name: string; parent: { name: string } | null } | null;
   host: {
     id: number;
     name: string | null;
@@ -75,7 +75,7 @@ interface ResidenceDetail {
   } | null;
   images: { id: number; url: string; isMain: boolean; title: string | null }[];
   distances: { id: number; placeName: string; distance: string | null; eta: string | null }[];
-  extraCities: { id: number; city: { id: number; name: string } }[];
+  extraLocations: { id: number; location: { id: number; name: string } }[];
   rooms: {
     id: number;
     name: string;
@@ -99,6 +99,8 @@ interface ResidenceDetail {
   checkout: string | null;
   minReservableDays: number | null;
   rulesDesc: string | null;
+  hostRulesText?: string;
+  hostRuleNotes?: Record<string, string>;
   cancellationPolicy: string | null;
   extraRules: Record<string, unknown> | null;
 }
@@ -254,6 +256,7 @@ export default function AdminResidenceDetailPage() {
             minReservableDays: data.minReservableDays,
             capacity: data.capacity,
             rulesDesc: data.rulesDesc,
+            hostRulesText: data.hostRulesText,
             cancellationPolicy: data.cancellationPolicy,
             extraRules: data.extraRules,
           }}
@@ -309,7 +312,7 @@ export default function AdminResidenceDetailPage() {
                     <div key={img.id} className="relative shrink-0">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
-                        src={adminImageUrl(img.url, 420)}
+                        src={adminImageUrl(img.url, 640)}
                         alt={img.title ?? data.name}
                         className="h-[130px] w-[200px] object-cover rounded-10"
                         loading="lazy"
@@ -346,7 +349,7 @@ export default function AdminResidenceDetailPage() {
               <Stars value={data.averageRating} count={data.reviewsCount} />
               <span className="w-px h-16 bg-gray-E5E5E6" />
               <span className="text-gray-6C6A7D">
-                اهمیت : <span className="text-black font-m">{faNum(data.importance)}</span>
+                اهمیت : <span className="text-black font-m">{faId(data.importance)}</span>
               </span>
               <span className="w-px h-16 bg-gray-E5E5E6" />
               <Badge tone={STATE[data.state]?.tone ?? "gray"}>
@@ -377,7 +380,7 @@ export default function AdminResidenceDetailPage() {
                     {data.host.avatarUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
-                        src={adminImageUrl(data.host.avatarUrl, 64)}
+                        src={adminImageUrl(data.host.avatarUrl, 96)}
                         alt=""
                         className="w-full h-full object-cover"
                       />
@@ -409,7 +412,7 @@ export default function AdminResidenceDetailPage() {
                   <Row label="نام پیشنهادی میزبان" value={data.hostSuggestedName} />
                   <Row
                     label="نام در صفحات لیست"
-                    value={[data.city?.province?.name, data.city?.name].filter(Boolean).join(" / ")}
+                    value={[data.location?.parent?.name, data.location?.name].filter(Boolean).join(" / ")}
                   />
                   <Row label="نوع ملک" value={TYPE_LABEL[data.type]} />
                   <Row label="منطقه اقامتگاه" value={data.region} />
@@ -419,8 +422,8 @@ export default function AdminResidenceDetailPage() {
                   <Row
                     label="دیگر شهرهای اقامتگاه"
                     value={
-                      data.extraCities.length
-                        ? data.extraCities.map((c) => c.city.name).join(" / ")
+                      data.extraLocations.length
+                        ? data.extraLocations.map((c) => c.location.name).join(" / ")
                         : "هیچ کدام"
                     }
                   />
@@ -455,8 +458,8 @@ export default function AdminResidenceDetailPage() {
             {/* address */}
             <Card className="p-20">
               <h3 className="text-16 leading-24 font-m text-black mb-12">آدرس</h3>
-              <Row label="استان" value={data.city?.province?.name} />
-              <Row label="شهر" value={data.city?.name} />
+              <Row label="استان" value={data.location?.parent?.name} />
+              <Row label="شهر" value={data.location?.name} />
               <Row label="محله" value={data.neighborhood} />
               <Row label="آدرس در فرانت" value={data.address} />
               <Row label="آدرس در فاکتور" value={data.invoiceAddress} />
@@ -490,7 +493,7 @@ export default function AdminResidenceDetailPage() {
               {data.distances.length > 0 && (
                 <div className="mt-16">
                   <h4 className="text-14 leading-22 font-m text-black mb-8">
-                    فاصله تا جاذبه‌های گردشگری {data.city?.name}
+                    فاصله تا جاذبه‌های گردشگری {data.location?.name}
                   </h4>
                   <ul className="flex flex-col gap-y-6">
                     {data.distances.map((d) => (
@@ -662,7 +665,7 @@ function EditSpecsModal({
 
   return (
     <Modal open={open} onClose={onClose} title="ویرایش اطلاعات اقامتگاه" width="max-w-[680px]">
-      <form onSubmit={submit} className="grid sm:grid-cols-2 gap-12">
+      <form onSubmit={submit} className="grid md:grid-cols-2 gap-12">
         <Field label="نام در صفحه اقامتگاه">
           <Input value={form.name} onChange={set("name")} required />
         </Field>
@@ -694,7 +697,7 @@ function EditSpecsModal({
         <Field label="طبقه">
           <Input value={form.floor} onChange={set("floor")} />
         </Field>
-        <Field label="درباره اقامتگاه" className="sm:col-span-2">
+        <Field label="درباره اقامتگاه" className="md:col-span-2">
           <textarea
             value={form.description}
             onChange={set("description")}
@@ -703,9 +706,9 @@ function EditSpecsModal({
           />
         </Field>
 
-        {!!error && <p className="sm:col-span-2 text-13 text-[#C62828]">{error}</p>}
+        {!!error && <p className="md:col-span-2 text-13 text-[#C62828]">{error}</p>}
 
-        <div className="sm:col-span-2 flex items-center gap-x-10 justify-end">
+        <div className="md:col-span-2 flex items-center gap-x-10 justify-end">
           <Button type="button" variant="secondary" onClick={onClose}>
             انصراف
           </Button>
@@ -786,14 +789,14 @@ function EditAddressModal({
 
   return (
     <Modal open={open} onClose={onClose} title="ویرایش آدرس" width="max-w-[680px]">
-      <form onSubmit={submit} className="grid sm:grid-cols-2 gap-12">
+      <form onSubmit={submit} className="grid md:grid-cols-2 gap-12">
         <Field label="محله">
           <Input value={form.neighborhood} onChange={set("neighborhood")} />
         </Field>
         <Field label="آدرس در فرانت">
           <Input value={form.address} onChange={set("address")} />
         </Field>
-        <Field label="آدرس در فاکتور" className="sm:col-span-2">
+        <Field label="آدرس در فاکتور" className="md:col-span-2">
           <Input value={form.invoiceAddress} onChange={set("invoiceAddress")} />
         </Field>
         <Field label="عرض جغرافیایی">
@@ -803,7 +806,7 @@ function EditAddressModal({
           <Input value={form.longitude} onChange={set("longitude")} inputMode="decimal" />
         </Field>
 
-        <div className="sm:col-span-2">
+        <div className="md:col-span-2">
           <div className="flex items-center justify-between mb-8">
             <span className="text-12 leading-18 text-gray-6C6A7D font-m">
               فاصله تا جاذبه‌های گردشگری
@@ -864,9 +867,9 @@ function EditAddressModal({
           </div>
         </div>
 
-        {!!error && <p className="sm:col-span-2 text-13 text-[#C62828]">{error}</p>}
+        {!!error && <p className="md:col-span-2 text-13 text-[#C62828]">{error}</p>}
 
-        <div className="sm:col-span-2 flex items-center gap-x-10 justify-end">
+        <div className="md:col-span-2 flex items-center gap-x-10 justify-end">
           <Button type="button" variant="secondary" onClick={onClose}>
             انصراف
           </Button>

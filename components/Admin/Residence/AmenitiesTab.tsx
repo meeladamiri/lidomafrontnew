@@ -218,7 +218,7 @@ export default function AmenitiesTab({
           {grouped.map(([category, items]) => (
             <section key={category} className="mb-20 last:mb-0">
               <h4 className="text-14 leading-22 font-m text-black mb-10">{category}</h4>
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-x-24 gap-y-10">
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-x-24 gap-y-10">
                 {items.map((a) => {
                   const state = selection[a.id];
                   const hasFeatures = a.features.length > 0;

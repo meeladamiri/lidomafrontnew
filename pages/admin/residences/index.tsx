@@ -431,7 +431,7 @@ export default function AdminResidencesPage() {
 
         {/* card view */}
         {rows.length > 0 && view === "cards" && (
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-16">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-16">
             {rows.map((r) => {
               const isSelected = selected.includes(r.id);
               return (

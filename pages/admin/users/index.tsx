@@ -289,7 +289,7 @@ export default function AdminUsersPage() {
         )}
 
         {data && data.items.length > 0 && view === "cards" && (
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-16">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-16">
             {data.items.map((u) => (
               <Card key={u.id} className="p-16 flex flex-col items-center text-center gap-y-10">
                 <span className="w-64 h-64 rounded-full bg-gray-F0F0F0 flex items-center justify-center text-20">
@@ -385,7 +385,7 @@ function CreateUserModal({
 
   return (
     <Modal open={open} onClose={onClose} title="ایجاد کاربر جدید">
-      <form onSubmit={submit} className="grid sm:grid-cols-2 gap-12">
+      <form onSubmit={submit} className="grid md:grid-cols-2 gap-12">
         <Field label="نام و نام خانوادگی">
           <Input value={form.name} onChange={set("name")} />
         </Field>
@@ -415,11 +415,11 @@ function CreateUserModal({
             placeholder="در صورت خالی بودن، ورود با کد یکبارمصرف"
           />
         </Field>
-        <Field label="آدرس محل" className="sm:col-span-2">
+        <Field label="آدرس محل" className="md:col-span-2">
           <Input value={form.address} onChange={set("address")} />
         </Field>
 
-        <label className="sm:col-span-2 flex items-center gap-x-10 text-14 text-black">
+        <label className="md:col-span-2 flex items-center gap-x-10 text-14 text-black">
           <Toggle
             checked={form.isHost}
             onChange={(next) => setForm((f) => ({ ...f, isHost: next }))}
@@ -427,9 +427,9 @@ function CreateUserModal({
           کاربر میزبان باشد
         </label>
 
-        {!!error && <p className="sm:col-span-2 text-13 text-[#C62828]">{error}</p>}
+        {!!error && <p className="md:col-span-2 text-13 text-[#C62828]">{error}</p>}
 
-        <div className="sm:col-span-2 flex items-center gap-x-10 justify-end mt-4">
+        <div className="md:col-span-2 flex items-center gap-x-10 justify-end mt-4">
           <Button type="button" variant="secondary" onClick={onClose}>
             انصراف
           </Button>

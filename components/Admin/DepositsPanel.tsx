@@ -361,7 +361,7 @@ function DepositModal({
             />
           </Field>
 
-          <div className="grid sm:grid-cols-2 gap-12 mt-12">
+          <div className="grid md:grid-cols-2 gap-12 mt-12">
             <Field label="شماره پیگیری تراکنش">
               <Input value={txnId} onChange={(e) => setTxnId(e.target.value)} placeholder="مثلاً ۱۴۰۵۰۶۰۸۱۲۳۴" />
             </Field>

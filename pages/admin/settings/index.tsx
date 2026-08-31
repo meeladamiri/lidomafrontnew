@@ -168,7 +168,7 @@ function AmenitiesSettings() {
       {[...grouped.entries()].map(([category, items]) => (
         <Card key={category} className="p-20">
           <h3 className="text-16 leading-24 font-m text-black mb-12">{category}</h3>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-10">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-10">
             {items.map((a) => (
               <button
                 key={a.id}
@@ -272,7 +272,7 @@ function AmenityModal({
       width="max-w-[640px]"
     >
       <form onSubmit={save} className="flex flex-col gap-y-12">
-        <div className="grid sm:grid-cols-2 gap-12">
+        <div className="grid md:grid-cols-2 gap-12">
           <Field label="نام">
             <Input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} required />
           </Field>
@@ -399,7 +399,7 @@ function RulesSettings() {
       <Card className="p-20">
         <h3 className="text-16 leading-24 font-m text-black mb-12">مقررات اقامتگاه</h3>
         {data?.length === 0 && <EmptyState text="قانونی ثبت نشده" />}
-        <div className="grid sm:grid-cols-2 gap-10">
+        <div className="grid md:grid-cols-2 gap-10">
           {data?.map((r) => (
             <button
               key={r.id}
@@ -612,7 +612,7 @@ function PeakDayModal({
         <Field label="عنوان (مثلاً نوروز ۱۴۰۵)">
           <Input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} required />
         </Field>
-        <div className="grid sm:grid-cols-2 gap-12">
+        <div className="grid md:grid-cols-2 gap-12">
           <Field label="از تاریخ (میلادی)">
             <Input
               type="date"

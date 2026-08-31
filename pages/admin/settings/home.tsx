@@ -1397,7 +1397,7 @@ function RailItemsEditor({ rail, onSaved }: { rail: Rail; onSaved: () => void })
               {i.imageUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
-                  src={adminImageUrl(i.imageUrl, 64)}
+                  src={adminImageUrl(i.imageUrl, 96)}
                   alt=""
                   className="w-40 h-28 object-cover rounded-6 bg-gray-F5F5F5 shrink-0"
                 />

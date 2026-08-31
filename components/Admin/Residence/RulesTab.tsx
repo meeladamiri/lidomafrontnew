@@ -25,6 +25,8 @@ export interface RulesValues {
   minReservableDays: number | null;
   capacity: number | null;
   rulesDesc: string | null;
+  /** The readable part of `rulesDesc`, unpacked by the server. */
+  hostRulesText?: string;
   cancellationPolicy: string | null;
   extraRules: Record<string, unknown> | null;
 }
@@ -135,8 +137,12 @@ export default function RulesTab({
   const [checkinFrom, setCheckinFrom] = useState(values.checkinFrom ?? "14:00");
   const [checkout, setCheckout] = useState(values.checkout ?? "12:00");
   const [policy, setPolicy] = useState(values.cancellationPolicy ?? "easy");
+  // Never `values.rulesDesc` directly: on 2,555 of the 2,557 migrated listings
+  // that have it, the column holds Odoo's JSON blob, and putting that in the
+  // box meant an agent saw a wall of escaped JSON — and saving wrote the wall
+  // back. The server unpacks it; see the backend's `hostRules.ts`.
   const [hostRules, setHostRules] = useState(
-    values.rulesDesc ?? (values.extraRules as { desc?: string })?.desc ?? ""
+    values.hostRulesText ?? (values.extraRules as { desc?: string })?.desc ?? ""
   );
   const [saving, setSaving] = useState(false);
   const [savedAt, setSavedAt] = useState<number | null>(null);
@@ -224,7 +230,7 @@ export default function RulesTab({
 
         <Card className="p-20">
           <h3 className="text-16 leading-24 font-m text-black mb-14">ساعت ورود و خروج مهمان</h3>
-          <div className="grid sm:grid-cols-2 gap-12">
+          <div className="grid md:grid-cols-2 gap-12">
             <label className="block">
               <span className="block mb-6 text-12 leading-18 text-gray-6C6A7D">ساعت ورود مهمان</span>
               <Select
