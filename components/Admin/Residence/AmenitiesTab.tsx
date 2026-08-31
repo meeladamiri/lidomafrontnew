@@ -30,7 +30,7 @@ export interface ResidenceAmenityRow {
   extraFeatures: { value?: string; extra?: Record<string, string> } | null;
 }
 
-type Selection = Record<number, { checked: boolean; extra: Record<string, string> }>;
+type Selection = Record<number, { checked: boolean; extra: Record<string, string>; value?: string }>;
 
 function FeatureModal({
   amenity,
@@ -139,7 +139,13 @@ export default function AmenitiesTab({
   const initial: Selection = useMemo(() => {
     const sel: Selection = {};
     for (const a of amenities) {
-      sel[a.amenity.id] = { checked: true, extra: a.extraFeatures?.extra ?? {} };
+      sel[a.amenity.id] = {
+        checked: true,
+        extra: a.extraFeatures?.extra ?? {},
+        // The migrated answer, kept as-is. Overwriting every amenity with
+        // «دارد» on save threw away values like «دربست» that came from Odoo.
+        value: a.extraFeatures?.value ?? "دارد",
+      };
     }
     return sel;
   }, [amenities]);
@@ -166,7 +172,7 @@ export default function AmenitiesTab({
   function toggle(id: number) {
     setSelection((s) => ({
       ...s,
-      [id]: { checked: !s[id]?.checked, extra: s[id]?.extra ?? {} },
+      [id]: { checked: !s[id]?.checked, extra: s[id]?.extra ?? {}, value: s[id]?.value },
     }));
   }
 
@@ -183,11 +189,16 @@ export default function AmenitiesTab({
               amenityId: Number(id),
               // keep the legacy shape: {value, extra}
               extraFeatures: {
-                value: "دارد",
+                value: v.value ?? "دارد",
                 ...(Object.keys(v.extra).length ? { extra: v.extra } : {}),
               },
             })),
           other: other || undefined,
+          // What this grid is responsible for. Without it the save replaced
+          // every amenity with what the grid holds — and the grid excludes
+          // «نوع اقامتگاه» and «منطقه اقامتگاه», so one click deleted both and
+          // dropped the listing off every SEO tag page built on them.
+          scopeIds: grouped.flatMap(([, list]) => list.map((a) => a.id)),
         }),
       });
       setSavedAt(Date.now());
