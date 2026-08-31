@@ -29,6 +29,8 @@ import AmenitiesTab from "@/components/Admin/Residence/AmenitiesTab";
 import PricingTab from "@/components/Admin/Residence/PricingTab";
 import RulesTab from "@/components/Admin/Residence/RulesTab";
 import ReservationsTab from "@/components/Admin/Residence/ReservationsTab";
+import RankCard from "@/components/Admin/Residence/RankCard";
+import ChangeHostModal from "@/components/Admin/Residence/ChangeHostModal";
 
 // leaflet touches window on import
 const LocationPicker = dynamic(() => import("@/components/Admin/LocationPicker"), { ssr: false });
@@ -155,6 +157,7 @@ export default function AdminResidenceDetailPage() {
   const [showEdit, setShowEdit] = useState(false);
   const [showAddress, setShowAddress] = useState(false);
   const [showImages, setShowImages] = useState(false);
+  const [showHost, setShowHost] = useState(false);
   const [confirmDeactivate, setConfirmDeactivate] = useState(false);
   const [tab, setTab] = useState<TabKey>("basic");
 
@@ -401,8 +404,17 @@ export default function AdminResidenceDetailPage() {
                 </span>
                 {data.host.isSpecialHost && <Badge tone="blue">میزبان ویژه</Badge>}
                 <Badge tone="gray">{faNum(data.host.residencesCount)} اقامتگاه</Badge>
+                <Button
+                  variant="secondary"
+                  className="mr-auto"
+                  onClick={() => setShowHost(true)}
+                >
+                  <i className="icon-Refresh text-16" /> تغییر میزبان
+                </Button>
               </Card>
             )}
+
+            <RankCard residenceId={data.id} onSaved={mutate} />
 
             {/* specs */}
             <Card className="p-20">
@@ -577,6 +589,13 @@ export default function AdminResidenceDetailPage() {
               mutate();
             }}
           />
+          <ChangeHostModal
+            open={showHost}
+            onClose={() => setShowHost(false)}
+            residenceId={data.id}
+            currentHostId={data.host?.id ?? null}
+            onSaved={mutate}
+          />
           <ResidenceImagesModal
             open={showImages}
             onClose={() => setShowImages(false)}
@@ -740,7 +759,22 @@ function EditAddressModal({
   onClose: () => void;
   onSaved: () => void;
 }) {
+  // The catalogue behind the city select — CITY rows only, with the province
+  // in the label so «رشت» in two provinces is still tellable apart.
+  const { data: locations } = useSWR<{ id: number; name: string; type: string; parentId: number | null }[]>(
+    open ? "/api/admin/locations" : null,
+    (path: string) => apiFetch<{ id: number; name: string; type: string; parentId: number | null }[]>(path)
+  );
+  const cities = (locations ?? [])
+    .filter((l) => l.type === "CITY")
+    .map((l) => ({
+      ...l,
+      parentName: (locations ?? []).find((p2) => p2.id === l.parentId)?.name ?? null,
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name, "fa"));
+
   const [form, setForm] = useState({
+    cityId: residence.location?.id ? String(residence.location.id) : "",
     neighborhood: residence.neighborhood ?? "",
     address: residence.address ?? "",
     invoiceAddress: residence.invoiceAddress ?? "",
@@ -757,7 +791,9 @@ function EditAddressModal({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
+  const set =
+    (k: keyof typeof form) =>
+    (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
     setForm((f) => ({ ...f, [k]: e.target.value }));
 
   async function submit(e: React.FormEvent) {
@@ -768,6 +804,9 @@ function EditAddressModal({
       await apiFetch(`/api/admin/residences/${residence.id}`, {
         method: "PATCH",
         body: JSON.stringify({
+          // The schema calls it cityId; the backend maps it onto location_id
+          // — see `updateSpecs`, which carries the same note.
+          cityId: form.cityId ? Number(form.cityId) : undefined,
           neighborhood: form.neighborhood || undefined,
           address: form.address || undefined,
           invoiceAddress: form.invoiceAddress || undefined,
@@ -798,6 +837,19 @@ function EditAddressModal({
   return (
     <Modal open={open} onClose={onClose} title="ویرایش آدرس" width="max-w-[680px]">
       <form onSubmit={submit} className="grid md:grid-cols-2 gap-12">
+        {/* The city comes from the locations catalogue in settings, and it was
+            the one address field the panel could not change — a listing filed
+            under the wrong city had to be fixed in the database. */}
+        <Field label="شهر">
+          <Select value={form.cityId} onChange={set("cityId")} className="w-full">
+            <option value="">— انتخاب شهر —</option>
+            {cities.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.parentName ? `${c.name} — ${c.parentName}` : c.name}
+              </option>
+            ))}
+          </Select>
+        </Field>
         <Field label="محله">
           <Input value={form.neighborhood} onChange={set("neighborhood")} />
         </Field>
