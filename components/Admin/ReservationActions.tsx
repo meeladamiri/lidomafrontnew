@@ -30,12 +30,19 @@ export default function ReservationActions({
   canCancel,
   onCancel,
   onActed,
+  showViewActions = true,
 }: {
   reservationId: number;
   residenceId: number;
   canCancel: boolean;
   onCancel: () => void;
   onActed: () => void;
+  /**
+   * Off when the page header already carries «چاپ فاکتور» and «تقویم و نرخ».
+   * Two buttons that do the same thing on one screen make the reader stop and
+   * work out whether they differ.
+   */
+  showViewActions?: boolean;
 }) {
   const [busy, setBusy] = useState<string | null>(null);
   const [done, setDone] = useState<string | null>(null);
@@ -60,24 +67,26 @@ export default function ReservationActions({
   }
 
   return (
-    <Card className="p-20 mb-20">
+    <Card className="p-20">
       <h3 className="text-16 leading-24 font-m text-black mb-12">عملیات</h3>
 
-      <div className="mb-14">
-        <p className="text-11 leading-18 text-gray-9B9BAA mb-6">مشاهده</p>
-        <div className="flex flex-wrap gap-8">
-          <a href={`/admin/reservations/${reservationId}/invoice`} target="_blank" rel="noreferrer">
-            <Button variant="secondary">
-              <i className="icon-Printer text-16" /> چاپ فاکتور
-            </Button>
-          </a>
-          <a href={`/admin/residences/${residenceId}/calendar`}>
-            <Button variant="secondary">
-              <i className="icon-CalendarFlash text-16" /> تقویم و نرخ
-            </Button>
-          </a>
+      {showViewActions && (
+        <div className="mb-14">
+          <p className="text-11 leading-18 text-gray-9B9BAA mb-6">مشاهده</p>
+          <div className="flex flex-wrap gap-8">
+            <a href={`/admin/reservations/${reservationId}/invoice`} target="_blank" rel="noreferrer">
+              <Button variant="secondary">
+                <i className="icon-Printer text-16" /> چاپ فاکتور
+              </Button>
+            </a>
+            <a href={`/admin/residences/${residenceId}/calendar`}>
+              <Button variant="secondary">
+                <i className="icon-CalendarFlash text-16" /> تقویم و نرخ
+              </Button>
+            </a>
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="mb-14">
         <p className="text-11 leading-18 text-gray-9B9BAA mb-6">

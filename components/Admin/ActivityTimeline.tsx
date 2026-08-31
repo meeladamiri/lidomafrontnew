@@ -44,17 +44,33 @@ export default function ActivityTimeline({
   userId,
   showFilters = true,
   compact = false,
+  callOpen,
+  onCallOpenChange,
 }: {
   reservationId?: number;
   userId?: number;
   showFilters?: boolean;
   compact?: boolean;
+  /**
+   * Optional control of the call form, so «ثبت تماس» can also live in the page
+   * header. Logging a call is the most frequent thing an agent does here and
+   * it should not require finding the panel first.
+   */
+  callOpen?: boolean;
+  onCallOpenChange?: (open: boolean) => void;
 }) {
   const [kind, setKind] = useState<"" | Kind>("");
   const [actorId, setActorId] = useState("");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
-  const [showCall, setShowCall] = useState(false);
+  const [ownCall, setOwnCall] = useState(false);
+
+  const controlled = callOpen !== undefined;
+  const showCall = controlled ? callOpen : ownCall;
+  const setShowCall = (next: boolean) => {
+    if (controlled) onCallOpenChange?.(next);
+    else setOwnCall(next);
+  };
 
   const query = new URLSearchParams({
     ...(reservationId ? { reservationId: String(reservationId) } : {}),
@@ -83,7 +99,7 @@ export default function ActivityTimeline({
       <div className="flex items-center justify-between gap-x-12 flex-wrap gap-y-8 mb-14">
         <h3 className="text-16 leading-24 font-m text-black">فعالیت‌ها و ارتباطات</h3>
         <div className="flex items-center gap-x-8">
-          <Button variant="secondary" onClick={() => setShowCall((s) => !s)}>
+          <Button variant="secondary" onClick={() => setShowCall(!showCall)}>
             <i className="icon-Call text-16" /> ثبت تماس
           </Button>
         </div>
@@ -102,7 +118,7 @@ export default function ActivityTimeline({
       )}
 
       {showFilters && (
-        <div className="grid sm:grid-cols-4 gap-10 mb-14">
+        <div className="grid md:grid-cols-4 gap-10 mb-14">
           <Field label="نوع">
             <Select value={kind} onChange={(e) => setKind(e.target.value as "" | Kind)}>
               <option value="">همه</option>
@@ -233,7 +249,7 @@ function CallForm({
 
   return (
     <div className="rounded-12 border border-gray-E5E5E6 p-14 mb-14">
-      <div className="grid sm:grid-cols-3 gap-10 mb-10">
+      <div className="grid md:grid-cols-3 gap-10 mb-10">
         <Field label="جهت تماس">
           <Select value={direction} onChange={(e) => setDirection(e.target.value as "INBOUND" | "OUTBOUND")}>
             <option value="OUTBOUND">خروجی (ما تماس گرفتیم)</option>

@@ -59,12 +59,56 @@ const SHORT: Record<State, string> = {
   EXPIRED: "منقضی",
 };
 
+/**
+ * The path on its own, so the page header can show where the booking stands
+ * without the reader scrolling to the panel that changes it.
+ *
+ * Reading the state and moving it are two different jobs — one is glanced at
+ * on every visit, the other is done occasionally and deliberately. Keeping
+ * them in one card put the most-read thing on the page in the least-visible
+ * column.
+ */
+export function StateFlow({ current, className = "" }: { current: State; className?: string }) {
+  const currentIndex = FLOW.indexOf(current);
+  const derailed = current === "CANCEL" || current === "EXPIRED";
+
+  return (
+    <div className={`flex items-center gap-x-4 ${derailed ? "opacity-40" : ""} ${className}`}>
+      {FLOW.map((s, i) => (
+        <div key={s} className="flex items-center gap-x-4 flex-1 last:flex-initial">
+          <div
+            className={`px-10 py-6 rounded-8 text-12 leading-18 whitespace-nowrap ${
+              s === current
+                ? "bg-primary-main text-white font-m"
+                : i < currentIndex
+                  ? "bg-primary-light text-primary-dark"
+                  : "bg-gray-F5F5F7 text-gray-9B9BAA"
+            }`}
+          >
+            {SHORT[s]}
+          </div>
+          {i < FLOW.length - 1 && (
+            <div
+              className={`h-2 flex-1 rounded-full ${
+                i < currentIndex ? "bg-primary-main" : "bg-gray-F0F0F0"
+              }`}
+            />
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function ReservationStatePanel({
   reservationId,
   onChanged,
+  showFlow = true,
 }: {
   reservationId: number;
   onChanged: () => void;
+  /** Off when the page header already draws it — see `StateFlow`. */
+  showFlow?: boolean;
 }) {
   const { data, mutate } = useSWR<StateInfo>(
     `/api/admin/reservations/${reservationId}/state`,
@@ -78,7 +122,6 @@ export default function ReservationStatePanel({
 
   if (!data) return null;
 
-  const currentIndex = FLOW.indexOf(data.current);
   const derailed = data.current === "CANCEL" || data.current === "EXPIRED";
 
   async function apply() {
@@ -102,7 +145,7 @@ export default function ReservationStatePanel({
   }
 
   return (
-    <Card className="p-20 mb-20">
+    <Card className="p-20">
       <div className="flex items-center justify-between gap-x-12 flex-wrap gap-y-8 mb-14">
         <h3 className="text-16 leading-24 font-m text-black">وضعیت رزرو</h3>
         <Badge tone={TONE[data.current]}>{data.current_label}</Badge>
@@ -111,30 +154,7 @@ export default function ReservationStatePanel({
       {/* The path, with the current step marked. A cancelled or expired
           booking left this path, so it is shown greyed rather than pretending
           one of the steps is still current. */}
-      <div className={`flex items-center gap-x-4 mb-16 ${derailed ? "opacity-40" : ""}`}>
-        {FLOW.map((s, i) => (
-          <div key={s} className="flex items-center gap-x-4 flex-1 last:flex-initial">
-            <div
-              className={`px-10 py-6 rounded-8 text-12 leading-18 whitespace-nowrap ${
-                s === data.current
-                  ? "bg-primary-main text-white font-m"
-                  : i < currentIndex
-                    ? "bg-primary-light text-primary-dark"
-                    : "bg-gray-F5F5F7 text-gray-9B9BAA"
-              }`}
-            >
-              {SHORT[s]}
-            </div>
-            {i < FLOW.length - 1 && (
-              <div
-                className={`h-2 flex-1 rounded-full ${
-                  i < currentIndex ? "bg-primary-main" : "bg-gray-F0F0F0"
-                }`}
-              />
-            )}
-          </div>
-        ))}
-      </div>
+      {showFlow && <StateFlow current={data.current} className="mb-16" />}
 
       {derailed && (
         <p className="mb-14 text-12 leading-20 text-gray-6C6A7D">

@@ -109,7 +109,7 @@ export function Field({
     <label className={`block ${className}`}>
       <span className="block mb-6 text-12 leading-18 text-gray-6C6A7D font-m">{label}</span>
       {children}
-      {!!hint && <span className="block mt-4 text-11 leading-18 text-gray-B0AFBC">{hint}</span>}
+      {!!hint && <span className="block mt-4 text-11 leading-18 text-gray-9B9BAA">{hint}</span>}
     </label>
   );
 }

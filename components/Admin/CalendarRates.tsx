@@ -293,7 +293,7 @@ export default function CalendarRates({
               </div>
             </div>
 
-            <div className="grid sm:grid-cols-[1fr_auto] gap-10 items-end">
+            <div className="grid md:grid-cols-[1fr_auto] gap-10 items-end">
               <Field label="نرخ این روزها (تومان)">
                 <Input
                   inputMode="numeric"

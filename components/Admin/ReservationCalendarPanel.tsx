@@ -22,6 +22,8 @@ export default function ReservationCalendarPanel({
   startDate,
   endDate,
   onRepriced,
+  open: openProp,
+  onOpenChange,
 }: {
   reservationId: number;
   reference: string;
@@ -29,8 +31,16 @@ export default function ReservationCalendarPanel({
   startDate: string;
   endDate: string;
   onRepriced: () => void;
+  /** Optional control, so the page header's «تقویم» button can open it. */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }) {
-  const [open, setOpen] = useState(false);
+  const [ownOpen, setOwnOpen] = useState(false);
+  const open = openProp !== undefined ? openProp : ownOpen;
+  const setOpen = (next: boolean) => {
+    if (openProp !== undefined) onOpenChange?.(next);
+    else setOwnOpen(next);
+  };
   const [ask, setAsk] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [others, setOthers] = useState<AffectedReservation[]>([]);
@@ -47,7 +57,7 @@ export default function ReservationCalendarPanel({
 
   if (!open) {
     return (
-      <Card className="p-20 mb-20">
+      <Card className="p-20">
         <div className="flex items-center justify-between gap-x-12 flex-wrap gap-y-8">
           <div>
             <h3 className="text-16 leading-24 font-m text-black">تقویم و نرخ اقامتگاه</h3>
@@ -64,7 +74,7 @@ export default function ReservationCalendarPanel({
   }
 
   return (
-    <div className="mb-20">
+    <div>
       <CalendarRates
         residenceId={residenceId}
         highlightRange={range}
