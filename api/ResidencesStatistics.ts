@@ -1,7 +1,14 @@
 import apiBuilder from "./apiBuilder";
 
-// Rating fields have no backend equivalent yet — reviews aren't modeled
-// (Phase 2). Reservation/income fields are real, computed server-side.
+/**
+ * آمار اقامتگاه‌های میزبان.
+ *
+ * This used to overwrite six rating fields and `reviews_count` with zeros on
+ * the way through, with a comment saying reviews were not modelled yet. They
+ * are — 9,427 of them, with all six sub-scores — so the page was rendering a
+ * whole "میانگین امتیاز" panel of zeros over real data. The backend now
+ * returns them and this passes them through.
+ */
 const getResidencesStatistics = async (product_id?: number | "all"): Promise<any> => {
   const resp = await apiBuilder
     .setUrl(`/api/host/residences/stats`)
@@ -11,19 +18,7 @@ const getResidencesStatistics = async (product_id?: number | "all"): Promise<any
 
   if (resp?.status !== "success") return { status: "error", err_msg: resp?.message };
 
-  return {
-    status: "success",
-    params: {
-      ...resp.data,
-      location_rate: 0,
-      cleaning_rate: 0,
-      quality_rate: 0,
-      integrity_rate: 0,
-      greeting_rate: 0,
-      delivery_rate: 0,
-      reviews_count: 0,
-    },
-  };
+  return { status: "success", params: resp.data };
 };
 
 export { getResidencesStatistics };

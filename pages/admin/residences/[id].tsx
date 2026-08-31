@@ -7,6 +7,7 @@ import AdminLayout from "@/components/Admin/Layout";
 import ResidenceImagesModal from "@/components/Admin/Residence/ImagesModal";
 import StateChangeModal from "@/components/Admin/Residence/StateChangeModal";
 import CalendarTab from "@/components/Admin/Residence/CalendarTab";
+import StatsTab from "@/components/Admin/Residence/StatsTab";
 import { apiFetch } from "@/api/Admin/adminApi";
 import {
   Badge,
@@ -273,9 +274,16 @@ export default function AdminResidenceDetailPage() {
           "reservations", so the "not implemented" card rendered on top of a
           tab that was in fact fully built. */}
       {data &&
-        !["basic", "capacity", "amenities", "pricing", "rules", "reservations", "calendar"].includes(
-          tab
-        ) && (
+        ![
+          "basic",
+          "capacity",
+          "amenities",
+          "pricing",
+          "rules",
+          "reservations",
+          "calendar",
+          "stats",
+        ].includes(tab) && (
           <Card>
             <EmptyState text="این بخش هنوز پیاده‌سازی نشده" />
           </Card>
@@ -284,6 +292,8 @@ export default function AdminResidenceDetailPage() {
       {data && tab === "reservations" && <ReservationsTab residenceId={data.id} />}
 
       {data && tab === "calendar" && <CalendarTab residenceId={data.id} />}
+
+      {data && tab === "stats" && <StatsTab residenceId={data.id} />}
 
       {data && tab === "basic" && (
         <div className="flex gap-x-16 items-start">
