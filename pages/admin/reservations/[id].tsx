@@ -5,11 +5,10 @@ import useSWR from "swr";
 import AdminLayout from "@/components/Admin/Layout";
 import { apiFetch } from "@/api/Admin/adminApi";
 import CancelReservationModal from "@/components/Admin/CancelReservationModal";
-import ReservationStatePanel, { StateFlow } from "@/components/Admin/ReservationStatePanel";
+import ReservationStatusBar from "@/components/Admin/ReservationStatusBar";
 import ReservationActions from "@/components/Admin/ReservationActions";
-import ReservationCalendarPanel from "@/components/Admin/ReservationCalendarPanel";
 import CallAndNotePanel from "@/components/Admin/CallAndNotePanel";
-import RepriceModal from "@/components/Admin/RepriceModal";
+import PricingWorkspace from "@/components/Admin/PricingWorkspace";
 import {
   Badge,
   Button,
@@ -178,7 +177,8 @@ export default function AdminReservationDetailPage() {
 
   const [showCancel, setShowCancel] = useState(false);
   const [showReprice, setShowReprice] = useState(false);
-  const [calendarOpen, setCalendarOpen] = useState(false);
+  /** Bumped whenever something writes to the log, so the list refetches. */
+  const [logVersion, setLogVersion] = useState(0);
 
   const { data, mutate, isLoading } = useSWR(
     id ? `/api/admin/reservations/${id}` : null,
@@ -198,20 +198,18 @@ export default function AdminReservationDetailPage() {
       actions={
         data && (
           <>
-            <Button
-              variant="secondary"
-              onClick={() => {
-                setCalendarOpen(true);
-                reveal("calendar");
-              }}
-            >
+            <Button variant="secondary" onClick={() => setShowReprice(true)}>
               <i className="icon-CalendarFlash text-16" /> تقویم و نرخ
             </Button>
             <a href={`/admin/reservations/${data.id}/invoice`} target="_blank" rel="noreferrer">
               <Button variant="secondary">
-                <i className="icon-Printer text-16" /> چاپ فاکتور
+                <i className="icon-Details text-16" /> چاپ فاکتور
               </Button>
             </a>
+            <ReservationActions
+              reservationId={data.id}
+              onActed={() => setLogVersion((v) => v + 1)}
+            />
             {canCancel && (
               <Button variant="danger" onClick={() => setShowCancel(true)}>
                 لغو رزرو
@@ -237,34 +235,33 @@ export default function AdminReservationDetailPage() {
             onClose={() => setShowCancel(false)}
             onCancelled={() => mutate()}
           />
-          <RepriceModal
-            reservationId={showReprice ? data.id : null}
-            reference={data.reference}
-            residenceId={data.residence.id}
+          <PricingWorkspace
             open={showReprice}
             onClose={() => setShowReprice(false)}
-            onDone={() => mutate()}
+            reservationId={data.id}
+            reference={data.reference}
+            residenceId={data.residence.id}
+            startDate={data.startDate}
+            endDate={data.endDate}
+            onSaved={() => {
+              mutate();
+              setLogVersion((v) => v + 1);
+            }}
           />
 
           <div className="flex flex-col gap-y-16">
-            {/* وضعیت — one strip, so the path is visible without opening the
-                panel that changes it. */}
-            <Card className="p-16">
-              <div className="flex items-center gap-x-16 flex-wrap gap-y-12">
-                <Badge tone={STATE_TONE[data.state] ?? "gray"}>
-                  {STATE_LABELS[data.state] ?? data.state}
-                </Badge>
-                {data.state === "CANCEL" && data.cancelledBy && (
-                  <Badge tone="red">لغو توسط {CANCELLED_BY_LABELS[data.cancelledBy]}</Badge>
-                )}
-                <div className="flex-1 min-w-[280px]">
-                  <StateFlow current={data.state} />
-                </div>
-                <span className="text-11 leading-18 text-gray-9B9BAA whitespace-nowrap">
-                  ثبت {faDate(data.createdAt)} · آخرین تغییر {faDate(data.updatedAt)}
-                </span>
-              </div>
-            </Card>
+            {/* وضعیت — read and changed in the same place, because they are
+                the same thought two seconds apart. */}
+            <ReservationStatusBar
+              reservationId={data.id}
+              createdAt={data.createdAt}
+              updatedAt={data.updatedAt}
+              onCancel={() => setShowCancel(true)}
+              onChanged={() => {
+                mutate();
+                setLogVersion((v) => v + 1);
+              }}
+            />
 
             {/* ── سه ستون بالای صفحه ──────────────────────────────── */}
             <div className="grid lg:grid-cols-12 gap-16 items-start">
@@ -291,7 +288,7 @@ export default function AdminReservationDetailPage() {
             </div>
 
             {/* ── تماس و یادداشت ─────────────────────────────────── */}
-            <CallAndNotePanel reservationId={data.id} />
+            <CallAndNotePanel reservationId={data.id} refreshKey={logVersion} />
 
             {data.state === "CANCEL" && (
               <Card className="p-20 border-r-4 border-r-[#E53935]">
@@ -313,34 +310,6 @@ export default function AdminReservationDetailPage() {
 
             {data.review && <ReviewCard review={data.review} />}
 
-            <div id="calendar">
-              <ReservationCalendarPanel
-                reservationId={data.id}
-                reference={data.reference}
-                residenceId={data.residence.id}
-                startDate={data.startDate}
-                endDate={data.endDate}
-                open={calendarOpen}
-                onOpenChange={setCalendarOpen}
-                onRepriced={() => mutate()}
-              />
-            </div>
-
-            <div className="grid lg:grid-cols-2 gap-16 items-start">
-              <ReservationStatePanel
-                reservationId={data.id}
-                showFlow={false}
-                onChanged={() => mutate()}
-              />
-              <ReservationActions
-                reservationId={data.id}
-                residenceId={data.residence.id}
-                showViewActions={false}
-                canCancel={false}
-                onCancel={() => setShowCancel(true)}
-                onActed={() => mutate()}
-              />
-            </div>
           </div>
         </>
       )}
@@ -350,23 +319,6 @@ export default function AdminReservationDetailPage() {
 
 /* ────────────────────────── کمکی‌ها ────────────────────────── */
 
-const HEADER_OFFSET = 72;
-
-/**
- * Bring a panel into view after opening it from the header.
- *
- * Not `scrollIntoView({ behavior: "smooth" })`: that is ignored outright in
- * some browsers and by anyone with reduced motion on, and a button that
- * sometimes fails to move the page is worse than one that always jumps.
- */
-function reveal(elementId: string) {
-  requestAnimationFrame(() => {
-    const el = document.getElementById(elementId);
-    if (!el) return;
-    const top = el.getBoundingClientRect().top + window.scrollY - HEADER_OFFSET;
-    window.scrollTo({ top: Math.max(top, 0) });
-  });
-}
 
 /**
  * «برچسب : مقدار» — the shape every one of these cards is made of.

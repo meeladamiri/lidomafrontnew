@@ -32,11 +32,11 @@ interface Entry {
 }
 
 const KIND: Record<Kind, { label: string; icon: string; tone: "blue" | "gray" | "green" | "yellow" | "purple" }> = {
-  CALL: { label: "تماس", icon: "icon-Call", tone: "blue" },
+  CALL: { label: "تماس", icon: "icon-PhoneFill", tone: "blue" },
   NOTE: { label: "یادداشت", icon: "icon-Edit", tone: "gray" },
   STATE_CHANGE: { label: "تغییر وضعیت", icon: "icon-Refresh", tone: "green" },
   FIELD_CHANGE: { label: "تغییر اطلاعات", icon: "icon-Filters", tone: "yellow" },
-  MESSAGE_SENT: { label: "پیام ارسالی", icon: "icon-Message", tone: "purple" },
+  MESSAGE_SENT: { label: "پیام ارسالی", icon: "icon-message", tone: "purple" },
 };
 
 export default function ActivityTimeline({
@@ -100,7 +100,7 @@ export default function ActivityTimeline({
         <h3 className="text-16 leading-24 font-m text-black">فعالیت‌ها و ارتباطات</h3>
         <div className="flex items-center gap-x-8">
           <Button variant="secondary" onClick={() => setShowCall(!showCall)}>
-            <i className="icon-Call text-16" /> ثبت تماس
+            <i className="icon-PhoneFill text-16" /> ثبت تماس
           </Button>
         </div>
       </div>

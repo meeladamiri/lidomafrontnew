@@ -69,7 +69,7 @@ const JALALI_MONTHS = [
   "اسفند",
 ];
 
-/** A year has no thousands separator — `faNum(1405)` would render ۱٬۴۰۵. */
+/** Persian digits, ungrouped — for years and day numbers alike. `faNum(1405)` would render ۱٬۴۰۵. */
 const faYear = (n: number) => String(n).replace(/[0-9]/g, (d) => "۰۱۲۳۴۵۶۷۸۹"[Number(d)]);
 
 const SOURCE_LABEL: Record<Day["source"], string> = {
@@ -239,7 +239,11 @@ export default function CalendarRates({
                         : "border-gray-E5E5E6 hover:border-gray-C4CAD3 bg-white"
                   } ${inRange ? "ring-2 ring-[#B26A00]" : ""}`}
                 >
-                  <span className="block text-12 leading-18 text-black">{jd.format("jD")}</span>
+                  {/* `format("jD")` gives Latin digits — a Persian calendar
+                      numbered 1..31 in Latin reads as somebody else's. */}
+                  <span className="block text-12 leading-18 text-black">
+                    {faYear(Number(jd.format("jD")))}
+                  </span>
                   <span className={`block text-10 leading-14 ${SOURCE_TONE[d.source]}`}>
                     {faNum(Math.round(d.effective_price / 1000))}k
                   </span>

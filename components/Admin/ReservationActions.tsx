@@ -1,18 +1,21 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { apiFetch } from "@/api/Admin/adminApi";
-import { Button, Card } from "@/components/Admin/ui";
+import { Button } from "@/components/Admin/ui";
 
 /**
- * The action bar — Odoo's buttons, grouped by what they do to the world.
+ * «ارسال پیام» — Odoo's send buttons, in the page header.
  *
- * Odoo put these in one undifferentiated row, so «چاپ فاکتور» sat beside «لغو
- * رزرو» and both looked equally safe to press. They are separated here by
- * consequence: things that only look at the booking, things that send a
- * message to someone, and the one that ends it.
+ * They were a card at the bottom of a column, which put the six things an
+ * agent sends during a call below everything they were reading during it.
+ * Now they live beside the other header actions.
+ *
+ * A menu rather than six more buttons: the header already carries print, the
+ * calendar and cancel, and nine buttons in a row stop being a toolbar and
+ * become a wall. Each item still says what it sends and to whom, so nothing
+ * is hidden behind a word like "actions".
  *
  * ⚠️ Sending is in-app notification only for now — `lib/sms.ts` is a stub. The
- * recipient, the text and the log entry are real; the transport is the part
- * that is pending.
+ * recipient, the text and the log entry are real; the transport is pending.
  */
 
 const SEND_ACTIONS = [
@@ -26,27 +29,34 @@ const SEND_ACTIONS = [
 
 export default function ReservationActions({
   reservationId,
-  residenceId,
-  canCancel,
-  onCancel,
   onActed,
-  showViewActions = true,
 }: {
   reservationId: number;
-  residenceId: number;
-  canCancel: boolean;
-  onCancel: () => void;
   onActed: () => void;
-  /**
-   * Off when the page header already carries «چاپ فاکتور» and «تقویم و نرخ».
-   * Two buttons that do the same thing on one screen make the reader stop and
-   * work out whether they differ.
-   */
-  showViewActions?: boolean;
 }) {
+  const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [done, setDone] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const wrapper = useRef<HTMLDivElement>(null);
+
+  // A menu that stays open after the pointer has moved on is a menu covering
+  // the thing the reader went back to look at.
+  useEffect(() => {
+    if (!open) return;
+    function onDocClick(e: MouseEvent) {
+      if (!wrapper.current?.contains(e.target as Node)) setOpen(false);
+    }
+    function onEsc(e: KeyboardEvent) {
+      if (e.key === "Escape") setOpen(false);
+    }
+    document.addEventListener("mousedown", onDocClick);
+    document.addEventListener("keydown", onEsc);
+    return () => {
+      document.removeEventListener("mousedown", onDocClick);
+      document.removeEventListener("keydown", onEsc);
+    };
+  }, [open]);
 
   async function send(kind: string, label: string) {
     setBusy(kind);
@@ -58,7 +68,9 @@ export default function ReservationActions({
         body: JSON.stringify({ kind }),
       });
       setDone(`${label} ارسال شد`);
+      setOpen(false);
       onActed();
+      setTimeout(() => setDone(null), 3000);
     } catch (e) {
       setError(e instanceof Error ? e.message : "ارسال نشد");
     } finally {
@@ -67,58 +79,37 @@ export default function ReservationActions({
   }
 
   return (
-    <Card className="p-20">
-      <h3 className="text-16 leading-24 font-m text-black mb-12">عملیات</h3>
+    <div ref={wrapper} className="relative">
+      <Button variant="secondary" onClick={() => setOpen((o) => !o)} aria-expanded={open}>
+        <i className="icon-SendMessage text-16" /> ارسال پیام
+        <i className={`icon-FlashDown text-14 transition ${open ? "rotate-180" : ""}`} />
+      </Button>
 
-      {showViewActions && (
-        <div className="mb-14">
-          <p className="text-11 leading-18 text-gray-9B9BAA mb-6">مشاهده</p>
-          <div className="flex flex-wrap gap-8">
-            <a href={`/admin/reservations/${reservationId}/invoice`} target="_blank" rel="noreferrer">
-              <Button variant="secondary">
-                <i className="icon-Printer text-16" /> چاپ فاکتور
-              </Button>
-            </a>
-            <a href={`/admin/residences/${residenceId}/calendar`}>
-              <Button variant="secondary">
-                <i className="icon-CalendarFlash text-16" /> تقویم و نرخ
-              </Button>
-            </a>
-          </div>
-        </div>
-      )}
-
-      <div className="mb-14">
-        <p className="text-11 leading-18 text-gray-9B9BAA mb-6">
-          ارسال پیام — هر ارسال در تاریخچه ثبت می‌شود
-        </p>
-        <div className="flex flex-wrap gap-8">
+      {open && (
+        <div className="absolute z-3 mt-6 left-0 w-[248px] bg-white rounded-12 border border-gray-E5E5E6 shadow-[0_6px_16px_0px_rgba(8,19,56,0.12)] p-6">
+          <p className="px-10 py-6 text-11 leading-18 text-gray-9B9BAA">
+            هر ارسال در تاریخچه ثبت می‌شود
+          </p>
           {SEND_ACTIONS.map((a) => (
-            <Button
+            <button
               key={a.kind}
-              variant="secondary"
+              type="button"
               disabled={busy === a.kind}
               onClick={() => send(a.kind, a.label)}
+              className="w-full text-right px-10 py-8 rounded-10 text-13 leading-20 text-gray-6C6A7D hover:bg-gray-F7F7F7 hover:text-black transition disabled:opacity-50"
             >
               {busy === a.kind ? "در حال ارسال..." : a.label}
-            </Button>
+            </button>
           ))}
-        </div>
-      </div>
-
-      {done && <p className="text-13 text-[#2E7D32] mb-8">{done}</p>}
-      {error && <p className="text-13 text-[#C62828] mb-8">{error}</p>}
-
-      {canCancel && (
-        <div className="pt-12 border-t border-gray-F0F0F0">
-          <p className="text-11 leading-18 text-gray-9B9BAA mb-6">
-            پایان‌دادن به رزرو — پول و تقویم را جابه‌جا می‌کند
-          </p>
-          <Button variant="danger" onClick={onCancel}>
-            لغو رزرو
-          </Button>
+          {error && <p className="px-10 py-6 text-12 text-[#C62828]">{error}</p>}
         </div>
       )}
-    </Card>
+
+      {done && (
+        <span className="absolute top-full right-0 mt-6 whitespace-nowrap rounded-8 bg-[#03D6BB14] text-[#015046] text-12 leading-20 px-10 py-4">
+          {done}
+        </span>
+      )}
+    </div>
   );
 }
