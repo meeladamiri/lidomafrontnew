@@ -6,16 +6,16 @@ import AdminLayout from "@/components/Admin/Layout";
 import { apiFetch } from "@/api/Admin/adminApi";
 import CancelReservationModal from "@/components/Admin/CancelReservationModal";
 import ReservationStatePanel, { StateFlow } from "@/components/Admin/ReservationStatePanel";
-import ActivityTimeline from "@/components/Admin/ActivityTimeline";
 import ReservationActions from "@/components/Admin/ReservationActions";
 import ReservationCalendarPanel from "@/components/Admin/ReservationCalendarPanel";
+import CallAndNotePanel from "@/components/Admin/CallAndNotePanel";
+import RepriceModal from "@/components/Admin/RepriceModal";
 import {
   Badge,
   Button,
   Card,
-  Input,
+  Modal,
   Skeleton,
-  StatTile,
   Stars,
   type Tone,
   adminImageUrl,
@@ -28,24 +28,14 @@ import {
 /**
  * صفحه‌ی جزئیات رزرو.
  *
- * The layout follows the order the questions are actually asked. An agent
- * opens this page with a phone already ringing, and in that order needs: which
- * booking is this and where has it got to; who do I talk to; what does the
- * money look like; then, only sometimes, everything else.
+ * Three columns across the top, in the order a booking gets talked about:
+ * who and where (right), how much (middle), and the decision that is waiting
+ * (left). Underneath, the one box an agent actually types into all day —
+ * calls and notes — and then the panels that are opened occasionally.
  *
- * So the page is three bands rather than two columns of cards:
- *
- *   1. Identity — code, state, and the path drawn once at the top.
- *   2. Four figures, because "how much" is asked on nearly every call and
- *      reading it out of a twelve-row table takes too long.
- *   3. A wide main column for what is read (parties, listing, calendar,
- *      history) and a narrow rail for what is *done* (the full breakdown,
- *      the deadline, the state, the send buttons).
- *
- * The previous version put the breakdown, the state panel, the calendar, the
- * timeline and every action into the narrow column and left the wide one to
- * static text. The timeline — the longest content on the page — had about a
- * third of the width available to it.
+ * The decision column is narrow on purpose. It holds two buttons and a clock,
+ * and it is the only part of the page that changes what happens next, so it
+ * is the only part that never shares space with something else.
  */
 
 interface Review {
@@ -63,6 +53,22 @@ interface Review {
 }
 
 type State = "DRAFT" | "HOST_APPROVAL" | "SECOND_PAYMENT" | "DONE" | "CANCEL" | "EXPIRED";
+
+interface PartyProfile {
+  id: number;
+  nationalCode: string | null;
+  nationalCardUrl: string | null;
+  verificationStatus: "NOT_CONFIRMED" | "CHECKING" | "CONFIRMED";
+  isSpecialHost: boolean;
+  isHost: boolean;
+  createdAt: string;
+  location: { name: string } | null;
+  walletBalance: number;
+  walletBlocked: number;
+  hostRating?: number;
+  hostReviewsCount?: number;
+  residencesCount?: number;
+}
 
 interface ReservationDetail {
   id: number;
@@ -95,6 +101,8 @@ interface ReservationDetail {
   updatedAt: string;
   guest: { id: number; name: string | null; phone: string; avatarUrl: string | null };
   host: { id: number; name: string | null; phone: string; avatarUrl: string | null };
+  guestProfile: PartyProfile | null;
+  hostProfile: PartyProfile | null;
   residence: {
     id: number;
     name: string;
@@ -102,8 +110,6 @@ interface ReservationDetail {
     type: "BOOMGARDI" | "SUIT";
     address: string | null;
     neighborhood: string | null;
-    latitude: number | null;
-    longitude: number | null;
     capacity: number | null;
     maxCapacity: number | null;
     averageRating: number;
@@ -112,8 +118,6 @@ interface ReservationDetail {
     checkinFrom: string | null;
     checkinTo: string | null;
     checkout: string | null;
-    beforeStartTime: number | null;
-    fullReturnTime: number | null;
     hostShareTotalAmount: number | null;
     hostSharePastNights: number | null;
     hostShareFutureNights: number | null;
@@ -143,16 +147,6 @@ const STATE_TONE: Record<string, Tone> = {
   EXPIRED: "gray",
 };
 
-/** A 4px band across the card top — the state, readable before any text is. */
-const STATE_ACCENT: Record<string, string> = {
-  DRAFT: "bg-gray-C4CAD3",
-  HOST_APPROVAL: "bg-[#FFB74D]",
-  SECOND_PAYMENT: "bg-[#FFB74D]",
-  DONE: "bg-[#03D6BB]",
-  CANCEL: "bg-[#E53935]",
-  EXPIRED: "bg-gray-C4CAD3",
-};
-
 const CANCELLED_BY_LABELS: Record<string, string> = {
   HOST_CANCELLED: "میزبان",
   LIDOMA_CANCELLED: "پشتیبانی لیدوما",
@@ -161,32 +155,29 @@ const CANCELLED_BY_LABELS: Record<string, string> = {
 
 const TYPE_LABELS: Record<string, string> = { BOOMGARDI: "بوم‌گردی", SUIT: "سوئیت" };
 
-/** Clears the sticky top bar, so the panel's heading is not hidden under it. */
-const HEADER_OFFSET = 72;
+const VERIFICATION_LABELS: Record<string, string> = {
+  CONFIRMED: "کارت ملی — تایید شده",
+  CHECKING: "کارت ملی — در حال بررسی",
+  NOT_CONFIRMED: "ثبت نشده",
+};
 
 /**
- * Bring a panel into view after opening it from the header.
- *
- * Not `scrollIntoView({ behavior: "smooth" })`: that is ignored outright in
- * some browsers and by anyone with reduced motion on, and a button that
- * sometimes fails to move the page is worse than one that always jumps. The
- * scroll waits a frame because opening a panel changes its height first.
+ * The forward step each state offers, and what to call it on a green button.
+ * `null` means there is no decision waiting and the column shows the state
+ * instead of pretending there is something to press.
  */
-function reveal(elementId: string) {
-  requestAnimationFrame(() => {
-    const el = document.getElementById(elementId);
-    if (!el) return;
-    const top = el.getBoundingClientRect().top + window.scrollY - HEADER_OFFSET;
-    window.scrollTo({ top: Math.max(top, 0) });
-  });
-}
+const DECISION: Partial<Record<State, { to: State; approve: string; reject: string; deadline: string }>> = {
+  DRAFT: { to: "HOST_APPROVAL", approve: "ارسال به میزبان", reject: "رد درخواست", deadline: "مهلت ثبت درخواست" },
+  HOST_APPROVAL: { to: "SECOND_PAYMENT", approve: "تایید درخواست", reject: "رد درخواست", deadline: "مهلت تایید یا رد" },
+  SECOND_PAYMENT: { to: "DONE", approve: "ثبت پرداخت مهمان", reject: "لغو رزرو", deadline: "مهلت پرداخت مهمان" },
+};
 
 export default function AdminReservationDetailPage() {
   const router = useRouter();
   const id = router.query.id as string | undefined;
 
   const [showCancel, setShowCancel] = useState(false);
-  const [callOpen, setCallOpen] = useState(false);
+  const [showReprice, setShowReprice] = useState(false);
   const [calendarOpen, setCalendarOpen] = useState(false);
 
   const { data, mutate, isLoading } = useSWR(
@@ -195,7 +186,6 @@ export default function AdminReservationDetailPage() {
   );
 
   const canCancel = !!data && data.state !== "CANCEL" && data.state !== "EXPIRED";
-  const hostRemainder = data ? (data.hostShare ?? 0) - data.settledAmount : 0;
 
   return (
     <AdminLayout
@@ -208,16 +198,6 @@ export default function AdminReservationDetailPage() {
       actions={
         data && (
           <>
-            {/* The three things done most often, in front of the reader
-                instead of three cards down the narrow column. */}
-            <Button
-              onClick={() => {
-                setCallOpen(true);
-                reveal("activity");
-              }}
-            >
-              <i className="icon-Call text-16" /> ثبت تماس
-            </Button>
             <Button
               variant="secondary"
               onClick={() => {
@@ -243,8 +223,7 @@ export default function AdminReservationDetailPage() {
     >
       {isLoading && (
         <div className="flex flex-col gap-16">
-          <Skeleton className="h-[132px]" />
-          <Skeleton className="h-[104px]" />
+          <Skeleton className="h-[64px]" />
           <Skeleton className="h-[420px]" />
         </div>
       )}
@@ -258,166 +237,109 @@ export default function AdminReservationDetailPage() {
             onClose={() => setShowCancel(false)}
             onCancelled={() => mutate()}
           />
+          <RepriceModal
+            reservationId={showReprice ? data.id : null}
+            reference={data.reference}
+            residenceId={data.residence.id}
+            open={showReprice}
+            onClose={() => setShowReprice(false)}
+            onDone={() => mutate()}
+          />
 
           <div className="flex flex-col gap-y-16">
-            {/* ── ۱. هویت رزرو ─────────────────────────────────────── */}
-            <Card className="overflow-hidden">
-              <div className={`h-4 ${STATE_ACCENT[data.state] ?? "bg-gray-C4CAD3"}`} />
-              <div className="p-20">
-                <div className="flex items-start justify-between gap-x-24 flex-wrap gap-y-12 mb-16">
-                  <div className="flex items-center gap-x-10 flex-wrap gap-y-8 min-w-0">
-                    <h2 className="text-20 leading-28 font-m text-black tracking-wide">
-                      {data.reference}
-                    </h2>
-                    <CopyButton text={data.reference} />
-                    <Badge tone={STATE_TONE[data.state] ?? "gray"}>
-                      {STATE_LABELS[data.state] ?? data.state}
-                    </Badge>
-                    {data.state === "CANCEL" && data.cancelledBy && (
-                      <Badge tone="red">لغو توسط {CANCELLED_BY_LABELS[data.cancelledBy]}</Badge>
-                    )}
-                    {data.voucherCode && <Badge tone="purple">کد تخفیف {data.voucherCode}</Badge>}
-                  </div>
-
-                  {/* Pushed to the far end rather than tucked under the code:
-                      it is metadata, and on a wide card the alternative is a
-                      third of the header sitting empty. */}
-                  <div className="text-left shrink-0">
-                    <Stamp label="ثبت" value={data.createdAt} />
-                    <Stamp label="آخرین تغییر" value={data.updatedAt} />
-                  </div>
+            {/* وضعیت — one strip, so the path is visible without opening the
+                panel that changes it. */}
+            <Card className="p-16">
+              <div className="flex items-center gap-x-16 flex-wrap gap-y-12">
+                <Badge tone={STATE_TONE[data.state] ?? "gray"}>
+                  {STATE_LABELS[data.state] ?? data.state}
+                </Badge>
+                {data.state === "CANCEL" && data.cancelledBy && (
+                  <Badge tone="red">لغو توسط {CANCELLED_BY_LABELS[data.cancelledBy]}</Badge>
+                )}
+                <div className="flex-1 min-w-[280px]">
+                  <StateFlow current={data.state} />
                 </div>
-
-                <StateFlow current={data.state} />
+                <span className="text-11 leading-18 text-gray-9B9BAA whitespace-nowrap">
+                  ثبت {faDate(data.createdAt)} · آخرین تغییر {faDate(data.updatedAt)}
+                </span>
               </div>
             </Card>
 
-            {/* ── ۲. چهار عددی که در تماس پرسیده می‌شود ──────────────── */}
-            <section className="grid grid-cols-2 md:grid-cols-4 gap-16">
-              <StatTile
-                tone="blue"
-                label="مبلغ کل اجاره"
-                value={faMoney(data.totalAmount)}
-                hint={`${faNum(data.daysCount)} شب`}
-                icon={<i className="icon-Cash text-18" />}
-              />
-              <StatTile
-                tone={data.remainingAmount > 0 ? "orange" : "green"}
-                label="پرداختی مهمان"
-                value={faMoney(data.paidAmount)}
-                hint={
-                  data.remainingAmount > 0
-                    ? `${faMoney(data.remainingAmount)} باقی‌مانده`
-                    : "تسویه‌ی کامل"
-                }
-                icon={<i className="icon-CardMenu text-18" />}
-              />
-              {/* A figure that was never recorded says so. Bookings migrated
-                  from Odoo have no site share at all, and "۰ تومان" there
-                  reads as "we took nothing" instead of "nobody wrote it
-                  down" — the difference between a fee waiver and a gap. */}
-              <StatTile
-                tone="purple"
-                label="سهم سایت"
-                value={data.websiteShare == null ? "ثبت نشده" : faMoney(data.websiteShare)}
-                hint={
-                  data.commissionPercent != null
-                    ? `${faNum(data.commissionPercent)}٪ کارمزد میزبان`
-                    : undefined
-                }
-                icon={<i className="icon-Amaar text-18" />}
-              />
-              <StatTile
-                tone={hostRemainder > 0 ? "red" : "teal"}
-                label="مانده سهم میزبان"
-                value={data.hostShare == null ? "ثبت نشده" : faMoney(hostRemainder)}
-                hint={
-                  data.hostShare == null
-                    ? `واریزشده ${faMoney(data.settledAmount)}`
-                    : `از ${faMoney(data.hostShare)} · واریزشده ${faMoney(data.settledAmount)}`
-                }
-                icon={<i className="icon-Homes text-18" />}
-              />
-            </section>
-
-            {/* ── ۳. ستون خواندن و ستون انجام‌دادن ────────────────────── */}
+            {/* ── سه ستون بالای صفحه ──────────────────────────────── */}
             <div className="grid lg:grid-cols-12 gap-16 items-start">
-              <div className="lg:col-span-8 flex flex-col gap-y-16 min-w-0">
-                <StayCard data={data} />
-                <PartiesCard data={data} />
+              {/* راست: مهمان، اقامتگاه، میزبان */}
+              <div className="lg:col-span-5 flex flex-col gap-y-16 min-w-0">
+                <GuestCard data={data} />
                 <ResidenceCard data={data} />
-
-                {data.state === "CANCEL" && (
-                  <Card className="p-20 border-r-4 border-r-[#E53935]">
-                    <h3 className="text-16 leading-24 font-m text-black mb-10">اطلاعات لغو</h3>
-                    <div className="grid md:grid-cols-2 gap-x-24 gap-y-8">
-                      <Fact
-                        label="لغوکننده"
-                        value={(data.cancelledBy && CANCELLED_BY_LABELS[data.cancelledBy]) ?? "—"}
-                      />
-                      <Fact label="دلیل" value={data.cancelReason || "—"} />
-                    </div>
-                    {data.cancelDesc && (
-                      <p className="mt-12 rounded-10 bg-gray-F7F7F7 p-12 text-13 leading-22 text-gray-6C6A7D whitespace-pre-wrap">
-                        {data.cancelDesc}
-                      </p>
-                    )}
-                  </Card>
-                )}
-
-                {data.review && <ReviewCard review={data.review} />}
-
-                <div id="calendar">
-                  <ReservationCalendarPanel
-                    reservationId={data.id}
-                    reference={data.reference}
-                    residenceId={data.residence.id}
-                    startDate={data.startDate}
-                    endDate={data.endDate}
-                    open={calendarOpen}
-                    onOpenChange={setCalendarOpen}
-                    onRepriced={() => mutate()}
-                  />
-                </div>
-
-                {/* The timeline is the longest thing on the page and now has
-                    the width to be read without every entry wrapping. */}
-                <div id="activity">
-                  <ActivityTimeline
-                    reservationId={data.id}
-                    callOpen={callOpen}
-                    onCallOpenChange={setCallOpen}
-                  />
-                </div>
+                <HostCard data={data} />
               </div>
 
-              <aside className="lg:col-span-4 flex flex-col gap-y-16 min-w-0">
-                <MoneyCard data={data} />
+              {/* وسط: پول */}
+              <div className="lg:col-span-4 min-w-0">
+                <PriceCard data={data} onEdit={() => setShowReprice(true)} />
+              </div>
 
-                {(data.state === "HOST_APPROVAL" || data.state === "SECOND_PAYMENT") && (
-                  <ExpiryCard
-                    id={data.id}
-                    state={data.state}
-                    expiryDate={data.expiryDate}
-                    onChanged={() => mutate()}
-                  />
-                )}
-
-                <ReservationStatePanel
-                  reservationId={data.id}
-                  showFlow={false}
+              {/* چپ: تصمیمی که منتظر است */}
+              <div className="lg:col-span-3 min-w-0">
+                <DecisionPanel
+                  data={data}
                   onChanged={() => mutate()}
+                  onReject={() => setShowCancel(true)}
                 />
+              </div>
+            </div>
 
-                <ReservationActions
-                  reservationId={data.id}
-                  residenceId={data.residence.id}
-                  showViewActions={false}
-                  canCancel={false}
-                  onCancel={() => setShowCancel(true)}
-                  onActed={() => mutate()}
-                />
-              </aside>
+            {/* ── تماس و یادداشت ─────────────────────────────────── */}
+            <CallAndNotePanel reservationId={data.id} />
+
+            {data.state === "CANCEL" && (
+              <Card className="p-20 border-r-4 border-r-[#E53935]">
+                <h3 className="text-16 leading-24 font-m text-black mb-10">اطلاعات لغو</h3>
+                <div className="grid md:grid-cols-2 gap-x-24">
+                  <Fact
+                    label="لغوکننده"
+                    value={(data.cancelledBy && CANCELLED_BY_LABELS[data.cancelledBy]) ?? "—"}
+                  />
+                  <Fact label="دلیل" value={data.cancelReason || "—"} />
+                </div>
+                {data.cancelDesc && (
+                  <p className="mt-12 rounded-10 bg-gray-F7F7F7 p-12 text-13 leading-22 text-gray-6C6A7D whitespace-pre-wrap">
+                    {data.cancelDesc}
+                  </p>
+                )}
+              </Card>
+            )}
+
+            {data.review && <ReviewCard review={data.review} />}
+
+            <div id="calendar">
+              <ReservationCalendarPanel
+                reservationId={data.id}
+                reference={data.reference}
+                residenceId={data.residence.id}
+                startDate={data.startDate}
+                endDate={data.endDate}
+                open={calendarOpen}
+                onOpenChange={setCalendarOpen}
+                onRepriced={() => mutate()}
+              />
+            </div>
+
+            <div className="grid lg:grid-cols-2 gap-16 items-start">
+              <ReservationStatePanel
+                reservationId={data.id}
+                showFlow={false}
+                onChanged={() => mutate()}
+              />
+              <ReservationActions
+                reservationId={data.id}
+                residenceId={data.residence.id}
+                showViewActions={false}
+                canCancel={false}
+                onCancel={() => setShowCancel(true)}
+                onActed={() => mutate()}
+              />
             </div>
           </div>
         </>
@@ -426,373 +348,411 @@ export default function AdminReservationDetailPage() {
   );
 }
 
-/* ────────────────────────── اجزای صفحه ────────────────────────── */
+/* ────────────────────────── کمکی‌ها ────────────────────────── */
 
-/** A timestamp in the hero: label, date, clock — one line, aligned to the end. */
-function Stamp({ label, value }: { label: string; value: string }) {
-  const [d, t] = faDateTime(value);
+const HEADER_OFFSET = 72;
+
+/**
+ * Bring a panel into view after opening it from the header.
+ *
+ * Not `scrollIntoView({ behavior: "smooth" })`: that is ignored outright in
+ * some browsers and by anyone with reduced motion on, and a button that
+ * sometimes fails to move the page is worse than one that always jumps.
+ */
+function reveal(elementId: string) {
+  requestAnimationFrame(() => {
+    const el = document.getElementById(elementId);
+    if (!el) return;
+    const top = el.getBoundingClientRect().top + window.scrollY - HEADER_OFFSET;
+    window.scrollTo({ top: Math.max(top, 0) });
+  });
+}
+
+/**
+ * «برچسب : مقدار» — the shape every one of these cards is made of.
+ *
+ * `nowrap` for values that are meaningless once broken: a date range split
+ * across two lines, or a price with «تومان» orphaned under it, both cost the
+ * reader a second look. Free text keeps wrapping.
+ */
+function Fact({
+  label,
+  value,
+  nowrap,
+}: {
+  label: string;
+  value: React.ReactNode;
+  nowrap?: boolean;
+}) {
   return (
-    <p className="text-12 leading-20 text-gray-9B9BAA whitespace-nowrap">
-      {label} <span className="text-gray-6C6A7D">{d}</span> ساعت{" "}
-      <span className="text-gray-6C6A7D">{t}</span>
-    </p>
+    <div className="flex items-baseline gap-x-8 py-4 text-13 leading-22">
+      <span className="text-gray-9B9BAA shrink-0">{label} :</span>
+      <span className={`text-black min-w-0 ${nowrap ? "whitespace-nowrap" : "break-words"}`}>
+        {value}
+      </span>
+    </div>
   );
 }
 
-/** One labelled value. Used wherever a card is a list of facts, not a form. */
-function Fact({ label, value }: { label: string; value: React.ReactNode }) {
+function CardTitle({ icon, children }: { icon: string; children: React.ReactNode }) {
   return (
-    <div className="flex items-baseline justify-between gap-x-12 py-4 border-b border-gray-F0F0F0 last:border-0">
-      <span className="text-12 leading-20 text-gray-9B9BAA shrink-0">{label}</span>
-      <span className="text-13 leading-20 text-black text-left min-w-0 break-words">{value}</span>
+    <div className="flex items-center gap-x-8 mb-12">
+      <i className={`${icon} text-16 text-gray-9B9BAA`} />
+      <h3 className="text-15 leading-24 font-m text-black">{children}</h3>
     </div>
   );
 }
 
 /**
- * Copying the code is the single most repeated action on this page — it gets
- * read into a phone, pasted into the gateway, searched in the old panel.
+ * A phone number, dialable and copyable.
+ *
+ * Both, because the two things done with it are calling it and pasting it
+ * somewhere else, and neither should mean selecting the digits by hand.
  */
-function CopyButton({ text }: { text: string }) {
+function Phone({ value }: { value: string }) {
   const [done, setDone] = useState(false);
 
   return (
-    <button
-      type="button"
-      onClick={() => {
-        navigator.clipboard?.writeText(text).then(
-          () => {
-            setDone(true);
-            setTimeout(() => setDone(false), 1400);
-          },
-          () => undefined
-        );
-      }}
-      className={`px-8 py-4 rounded-8 text-11 leading-18 border transition ${
-        done
-          ? "border-[#03D6BB] text-[#015046] bg-[#03D6BB14]"
-          : "border-gray-E5E5E6 text-gray-9B9BAA hover:border-gray-C4CAD3"
-      }`}
+    <span className="inline-flex items-center gap-x-6">
+      <a
+        href={`tel:${value}`}
+        dir="ltr"
+        className="text-13 leading-22 text-black hover:text-primary-main"
+      >
+        {value}
+      </a>
+      <button
+        type="button"
+        title="کپی شماره"
+        onClick={() => {
+          navigator.clipboard?.writeText(value).then(
+            () => {
+              setDone(true);
+              setTimeout(() => setDone(false), 1400);
+            },
+            () => undefined
+          );
+        }}
+        className={`px-6 py-2 rounded-6 text-10 leading-16 border transition ${
+          done
+            ? "border-[#03D6BB] text-[#015046] bg-[#03D6BB14]"
+            : "border-gray-E5E5E6 text-gray-9B9BAA hover:border-gray-C4CAD3"
+        }`}
+      >
+        {done ? "کپی شد" : "کپی"}
+      </button>
+    </span>
+  );
+}
+
+function Avatar({ url, name, size = 44 }: { url: string | null; name: string | null; size?: number }) {
+  return (
+    <span
+      className="rounded-full bg-gray-F0F0F0 overflow-hidden shrink-0 flex items-center justify-center text-14 text-gray-6C6A7D"
+      style={{ width: size, height: size }}
     >
-      {done ? "کپی شد" : "کپی"}
-    </button>
+      {url ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={adminImageUrl(url, 96)} alt="" className="w-full h-full object-cover" />
+      ) : (
+        (name?.[0] ?? "؟")
+      )}
+    </span>
   );
 }
 
-/**
- * ورود، خروج، شب، مهمان — four boxes rather than two sentences.
- *
- * These are compared against something the caller is holding (a message, a
- * voucher), and a sentence has to be read to be compared while a box does not.
- */
-function StayCard({ data }: { data: ReservationDetail }) {
-  const r = data.residence;
+/* ────────────────────────── ستون راست ────────────────────────── */
 
-  const cells = [
-    {
-      label: "تاریخ ورود",
-      value: faDate(data.startDate),
-      hint: r.checkinFrom ? `از ساعت ${r.checkinFrom}` : null,
-    },
-    {
-      label: "تاریخ خروج",
-      value: faDate(data.endDate),
-      hint: r.checkout ? `تا ساعت ${r.checkout}` : null,
-    },
-    {
-      label: "مدت اقامت",
-      value: `${faNum(data.daysCount)} شب`,
-      hint: r.minReservableDays ? `حداقل ${faNum(r.minReservableDays)} شب` : null,
-    },
-    {
-      label: "مهمانان",
-      value: `${faNum(data.guestsCount)} نفر`,
-      hint:
-        data.extraGuestsCount > 0
-          ? `${faNum(data.extraGuestsCount)} نفر اضافه`
-          : r.capacity
-            ? `ظرفیت ${faNum(r.capacity)}`
-            : null,
-    },
-  ];
+function GuestCard({ data }: { data: ReservationDetail }) {
+  const p = data.guestProfile;
 
   return (
     <Card className="p-20">
-      <h3 className="text-16 leading-24 font-m text-black mb-12">اقامت</h3>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-10">
-        {cells.map((c) => (
-          <div key={c.label} className="rounded-12 border border-gray-E5E5E6 p-12">
-            <span className="block text-11 leading-18 text-gray-9B9BAA mb-4">{c.label}</span>
-            <strong className="block text-15 leading-24 font-m text-black">{c.value}</strong>
-            {c.hint && (
-              <span className="block text-11 leading-18 text-gray-9B9BAA mt-2">{c.hint}</span>
-            )}
-          </div>
-        ))}
-      </div>
-    </Card>
-  );
-}
+      <CardTitle icon="icon-Profile">مشخصات مهمان</CardTitle>
 
-/** مهمان و میزبان side by side — the two people this call is about. */
-function PartiesCard({ data }: { data: ReservationDetail }) {
-  return (
-    <Card className="p-20">
-      <h3 className="text-16 leading-24 font-m text-black mb-12">طرفین رزرو</h3>
-      <div className="grid md:grid-cols-2 gap-12">
-        <Party
-          role="مهمان"
-          tone="blue"
-          userId={data.guest.id}
-          name={data.guest.name}
-          avatarUrl={data.guest.avatarUrl}
-          phone={data.guestPhoneOverride || data.guest.phone}
-          note={data.guestNameOverride ? `رزرو برای شخص دیگر: ${data.guestNameOverride}` : null}
-        />
-        <Party
-          role="میزبان"
-          tone="green"
-          userId={data.host.id}
-          name={data.host.name}
-          avatarUrl={data.host.avatarUrl}
-          phone={data.host.phone}
-          note={
-            data.commissionPercent != null
-              ? `کارمزد این رزرو ${faNum(data.commissionPercent)}٪`
-              : null
-          }
-        />
-      </div>
-    </Card>
-  );
-}
-
-function Party({
-  role,
-  tone,
-  userId,
-  name,
-  avatarUrl,
-  phone,
-  note,
-}: {
-  role: string;
-  tone: Tone;
-  userId: number;
-  name: string | null;
-  avatarUrl: string | null;
-  phone: string;
-  note: string | null;
-}) {
-  return (
-    <div className="rounded-12 border border-gray-E5E5E6 p-14">
-      <Badge tone={tone} className="mb-10">
-        {role}
-      </Badge>
-      <div className="flex items-center gap-x-12">
-        <span className="w-44 h-44 rounded-12 bg-gray-F0F0F0 overflow-hidden shrink-0 flex items-center justify-center text-16 text-gray-6C6A7D">
-          {avatarUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={adminImageUrl(avatarUrl, 96)} alt="" className="w-full h-full object-cover" />
-          ) : (
-            (name?.[0] ?? "؟")
-          )}
-        </span>
+      <div className="flex items-center gap-x-12 mb-12">
+        <Avatar url={data.guest.avatarUrl} name={data.guest.name} />
         <div className="min-w-0 flex-1">
-          <Link
-            href={`/admin/users/${userId}`}
-            className="block text-14 leading-22 font-m text-black hover:text-primary-main truncate"
-          >
-            {name || "بدون نام"}
-          </Link>
-          {/* A phone number that is a link is a phone number that gets dialled
-              instead of copied by hand and mistyped. */}
-          <a
-            href={`tel:${phone}`}
-            dir="ltr"
-            className="block text-13 leading-20 text-gray-6C6A7D hover:text-primary-main text-right"
-          >
-            {phone}
-          </a>
+          <div className="flex items-center gap-x-8 flex-wrap gap-y-6">
+            <Link
+              href={`/admin/users/${data.guest.id}`}
+              className="text-14 leading-22 font-m text-primary-dark hover:text-primary-main truncate"
+            >
+              {data.guest.name || "بدون نام"}
+            </Link>
+            {p?.isSpecialHost && <Badge tone="yellow">مهمان ویژه</Badge>}
+          </div>
+          <div className="mt-2">
+            <span className="text-12 text-gray-9B9BAA">شماره تماس </span>
+            <Phone value={data.guestPhoneOverride || data.guest.phone} />
+          </div>
         </div>
-        <CopyButton text={phone} />
       </div>
-      {note && <p className="mt-10 text-11 leading-18 text-gray-9B9BAA">{note}</p>}
-    </div>
+
+      <div className="grid md:grid-cols-2 gap-x-20">
+        <Fact
+          nowrap
+          label="تاریخ سفر"
+          value={`${faDate(data.startDate)} ← ${faDate(data.endDate)}`}
+        />
+        <Fact nowrap label="مدت اقامت" value={`${faNum(data.daysCount)} شب`} />
+        <Fact
+          nowrap
+          label="تعداد مهمانان"
+          value={`${faNum(data.guestsCount)} نفر${
+            data.extraGuestsCount > 0 ? ` + ${faNum(data.extraGuestsCount)} نفر اضافه` : ""
+          }`}
+        />
+        <Fact nowrap label="شهر مقصد" value={data.residence.city?.name ?? "—"} />
+        <Fact
+          nowrap
+          label="مدارک"
+          value={p ? (VERIFICATION_LABELS[p.verificationStatus] ?? "—") : "—"}
+        />
+        <Fact nowrap label="موجودی کیف پول" value={p ? faMoney(p.walletBalance) : "—"} />
+      </div>
+
+      {data.guestNameOverride && (
+        <p className="mt-8 text-11 leading-18 text-gray-9B9BAA">
+          رزرو برای شخص دیگر: {data.guestNameOverride}
+        </p>
+      )}
+
+      <div className="mt-12">
+        <Link href={`/admin/users/${data.guest.id}`}>
+          <Button variant="secondary">
+            <i className="icon-Edit text-16" /> ویرایش
+          </Button>
+        </Link>
+      </div>
+    </Card>
   );
 }
 
 function ResidenceCard({ data }: { data: ReservationDetail }) {
   const r = data.residence;
-  const place = [r.city?.name, r.city?.province?.name, r.neighborhood].filter(Boolean).join(" · ");
+  const place = [r.city?.name, r.city?.province?.name, r.neighborhood].filter(Boolean).join("، ");
 
   return (
     <Card className="p-20">
-      <h3 className="text-16 leading-24 font-m text-black mb-12">اقامتگاه</h3>
-      <div className="flex gap-x-14 flex-wrap gap-y-12">
-        {r.images[0]?.url && (
+      <CardTitle icon="icon-Homes">مشخصات اقامتگاه</CardTitle>
+
+      <div className="flex gap-x-14">
+        {r.images[0]?.url ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={adminImageUrl(r.images[0].url, 320)}
             alt=""
-            className="w-[132px] h-[99px] rounded-12 object-cover shrink-0"
+            className="w-[104px] h-[78px] rounded-12 object-cover shrink-0"
           />
+        ) : (
+          <span className="w-[104px] h-[78px] rounded-12 bg-gray-F0F0F0 shrink-0" />
         )}
+
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-x-8 flex-wrap gap-y-6">
+          <div className="flex items-center gap-x-8 flex-wrap gap-y-4">
             <Link
               href={`/admin/residences/${r.id}`}
-              className="text-15 leading-24 font-m text-black hover:text-primary-main"
+              className="text-14 leading-22 font-m text-primary-dark hover:text-primary-main"
             >
               {r.name}
             </Link>
+            <span className="text-12 text-gray-9B9BAA">( کد : {r.reference} )</span>
             <Badge tone="gray">{TYPE_LABELS[r.type] ?? r.type}</Badge>
-            <span className="text-12 text-gray-9B9BAA">کد {r.reference}</span>
           </div>
-          <p className="text-12 leading-20 text-gray-6C6A7D mt-4">{place || "—"}</p>
-          {r.address && <p className="text-12 leading-20 text-gray-9B9BAA mt-2">{r.address}</p>}
-          <div className="mt-8">
+
+          <p className="flex items-start gap-x-6 text-12 leading-20 text-gray-6C6A7D mt-4">
+            <i className="icon-Home text-14 text-gray-9B9BAA shrink-0 mt-2" />
+            <span>{[place, r.address].filter(Boolean).join("، ") || "—"}</span>
+          </p>
+
+          <div className="mt-6">
             <Stars value={r.averageRating} count={r.reviewsCount} />
           </div>
         </div>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-x-24 mt-14">
+      <div className="grid md:grid-cols-2 gap-x-20 mt-12">
+        <Fact nowrap label="ورود" value={`${r.checkinFrom ?? "—"} تا ${r.checkinTo ?? "—"}`} />
+        <Fact nowrap label="خروج" value={r.checkout ?? "—"} />
         <Fact
+          nowrap
           label="ظرفیت"
           value={`${faNum(r.capacity)} نفر${r.maxCapacity ? ` (حداکثر ${faNum(r.maxCapacity)})` : ""}`}
         />
-        <Fact label="ورود" value={`${r.checkinFrom ?? "—"} تا ${r.checkinTo ?? "—"}`} />
-        <Fact label="خروج" value={r.checkout ?? "—"} />
         <Fact
+          nowrap
           label="حداقل اقامت"
           value={r.minReservableDays ? `${faNum(r.minReservableDays)} شب` : "—"}
         />
       </div>
 
+      {data.rooms.length > 0 && (
+        <p className="mt-8 text-12 leading-20 text-gray-6C6A7D">
+          اتاق‌های رزروشده: {data.rooms.map((x) => x.room.name).join("، ")}
+        </p>
+      )}
+
       {r.rules.length > 0 && (
-        <p className="mt-12 text-12 leading-20 text-gray-9B9BAA">
+        <p className="mt-4 text-11 leading-18 text-gray-9B9BAA">
           قوانین: {r.rules.map((x) => x.rule.name).join("، ")}
         </p>
       )}
 
-      {data.rooms.length > 0 && (
-        <div className="mt-12">
-          <p className="text-12 leading-20 text-gray-6C6A7D mb-8">اتاق‌های رزروشده</p>
-          <div className="flex flex-wrap gap-8">
-            {data.rooms.map((x) => (
-              <span
-                key={x.room.id}
-                className="inline-flex items-center gap-x-8 rounded-10 border border-gray-E5E5E6 py-4 pr-4 pl-10"
-              >
-                {x.room.image && (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={adminImageUrl(x.room.image, 96)}
-                    alt=""
-                    className="w-28 h-28 rounded-8 object-cover"
-                  />
-                )}
-                <span className="text-12 leading-20 text-black">{x.room.name}</span>
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
+      <div className="mt-12">
+        <Link href={`/admin/residences/${r.id}/calendar`}>
+          <Button variant="secondary">
+            <i className="icon-CalendarFlash text-16" /> تقویم اقامتگاه
+          </Button>
+        </Link>
+      </div>
     </Card>
   );
 }
 
+function HostCard({ data }: { data: ReservationDetail }) {
+  const p = data.hostProfile;
+
+  return (
+    <Card className="p-20">
+      <CardTitle icon="icon-Profile">مشخصات میزبان</CardTitle>
+
+      <div className="flex items-center gap-x-12">
+        <Avatar url={data.host.avatarUrl} name={data.host.name} />
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-x-8 flex-wrap gap-y-6">
+            <Link
+              href={`/admin/users/${data.host.id}`}
+              className="text-14 leading-22 font-m text-primary-dark hover:text-primary-main truncate"
+            >
+              {data.host.name || "بدون نام"}
+            </Link>
+            {p?.isSpecialHost && <Badge tone="blue">میزبان ویژه</Badge>}
+          </div>
+          <div className="mt-2">
+            <span className="text-12 text-gray-9B9BAA">شماره تماس </span>
+            <Phone value={data.host.phone} />
+          </div>
+          {p?.hostRating !== undefined && (
+            <div className="mt-4">
+              <Stars value={p.hostRating} count={p.hostReviewsCount} />
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="grid md:grid-cols-2 gap-x-20 mt-10">
+        <Fact
+          nowrap
+          label="کارمزد سایت"
+          value={
+            data.commissionPercent != null ? `${faNum(data.commissionPercent)}٪ از این رزرو` : "—"
+          }
+        />
+        <Fact nowrap label="موجودی کیف پول" value={p ? faMoney(p.walletBalance) : "—"} />
+        <Fact
+          label="مدارک"
+          value={p ? (VERIFICATION_LABELS[p.verificationStatus] ?? "—") : "—"}
+        />
+        <Fact
+          nowrap
+          label="تعداد اقامتگاه"
+          value={p?.residencesCount !== undefined ? `${faNum(p.residencesCount)} اقامتگاه` : "—"}
+        />
+      </div>
+    </Card>
+  );
+}
+
+/* ────────────────────────── ستون وسط ────────────────────────── */
+
 /**
- * صورتحساب.
+ * The money, in the order it is read out over the phone: the code first, then
+ * the one number the guest cares about, then the split.
  *
- * Grouped by whose money it is — what the guest pays, what the site keeps,
- * what the host is owed — because that is the question being answered, and a
- * flat list of eight rows makes the reader group them mentally every time.
- *
- * Percentages are the ones this booking was made under, not today's; they are
- * stored on the reservation for exactly that reason.
+ * Every row here is a column we actually store. Odoo's screen carried «تخفیف
+ * سایت» and «پرداختی از کیف پول» as separate lines; we have no such columns,
+ * and printing them as zero would state something we do not know.
  */
-function MoneyCard({ data }: { data: ReservationDetail }) {
+function PriceCard({ data, onEdit }: { data: ReservationDetail; onEdit: () => void }) {
+  const due = data.totalAmount + (data.guestCommission ?? 0);
   const remainder = (data.hostShare ?? 0) - data.settledAmount;
 
   return (
     <Card className="p-20">
-      <h3 className="text-16 leading-24 font-m text-black mb-12">صورتحساب</h3>
+      <div className="rounded-12 border border-gray-E5E5E6 py-12 text-center mb-14">
+        <span className="text-13 leading-22 text-gray-6C6A7D">کد رزرو </span>
+        <b className="text-15 leading-24 font-m text-black tracking-wide">{data.reference}</b>
+      </div>
 
-      <MoneyGroup title="مهمان">
-        <MoneyRow label="مبلغ کل اجاره" value={data.totalAmount} strong />
-        <MoneyRow
-          label="کارمزد مهمان وبسایت"
-          hint={
-            data.guestCommissionPercent != null
-              ? `${faNum(data.guestCommissionPercent)}٪، افزوده به پرداختی`
-              : undefined
-          }
-          value={data.guestCommission}
-        />
-        <MoneyRow label="جمع پرداختی مهمان" value={data.paidAmount} />
-        {data.remainingAmount > 0 && (
-          <MoneyRow label="باقی‌مانده پرداخت" value={data.remainingAmount} tone="red" strong />
-        )}
-      </MoneyGroup>
+      <div className="rounded-12 bg-gray-F7F7F7 p-14 mb-14 text-center">
+        <p className="text-12 leading-20 text-gray-6C6A7D mb-2">مبلغ کل جهت پرداختی</p>
+        <strong className="text-18 leading-28 font-m text-black">{faMoney(due)}</strong>
+      </div>
 
-      <MoneyGroup title="سایت">
-        <MoneyRow
-          label="کارمزد میزبان وبسایت"
-          hint={
-            data.commissionPercent != null ? `${faNum(data.commissionPercent)}٪ از اجاره` : undefined
-          }
-          value={data.websiteShare}
-          negative
-        />
-        <MoneyRow
-          label="ارزش افزوده"
-          hint={data.vatPercent != null ? `${faNum(data.vatPercent)}٪ از کارمزد` : undefined}
-          value={data.vatAmount}
-          negative
-        />
-      </MoneyGroup>
+      <MoneyRow label="مبلغ رزرو" value={data.totalAmount} />
+      <MoneyRow
+        label="کارمزد مهمان"
+        hint={
+          data.guestCommissionPercent != null ? `${faNum(data.guestCommissionPercent)}٪` : undefined
+        }
+        value={data.guestCommission}
+      />
+      <MoneyRow label="پرداختی مسافر" value={data.paidAmount} />
+      {data.remainingAmount > 0 && (
+        <MoneyRow label="باقی‌مانده پرداخت" value={data.remainingAmount} tone="red" strong />
+      )}
 
-      <MoneyGroup title="میزبان" last>
-        <MoneyRow label="سهم میزبان بابت کل رزرو" value={data.hostShare} strong />
-        <MoneyRow label="واریز شده" value={data.settledAmount} />
-        <MoneyRow
-          label="مانده سهم میزبان"
-          value={remainder}
-          strong
-          tone={remainder > 0 ? "red" : "green"}
-        />
-      </MoneyGroup>
+      <Divider />
+
+      <MoneyRow
+        label="سهم میزبان"
+        value={data.hostShare}
+        strong
+      />
+      <MoneyRow
+        label="سود سایت"
+        hint={data.commissionPercent != null ? `${faNum(data.commissionPercent)}٪` : undefined}
+        value={data.websiteShare}
+      />
+      <MoneyRow
+        label="مالیات"
+        hint={data.vatPercent != null ? `${faNum(data.vatPercent)}٪ از کارمزد` : undefined}
+        value={data.vatAmount}
+      />
+      <MoneyRow label="کد تخفیف" value={null} text={data.voucherCode ?? "—"} />
+
+      <Divider />
+
+      <MoneyRow label="واریز شده به میزبان" value={data.settledAmount} />
+      <MoneyRow
+        label="مانده سهم میزبان"
+        value={data.hostShare == null ? null : remainder}
+        strong
+        tone={remainder > 0 ? "red" : "green"}
+      />
 
       {(data.residence.hostShareTotalAmount != null ||
         data.residence.hostSharePastNights != null ||
         data.residence.hostShareFutureNights != null) && (
-        <p className="mt-12 text-11 leading-18 text-gray-9B9BAA">
-          سیاست تسویه‌ی اقامتگاه: کل {data.residence.hostShareTotalAmount ?? "—"}٪ · شب‌های گذشته{" "}
+        <p className="mt-10 text-11 leading-18 text-gray-9B9BAA">
+          سیاست تسویه: کل {data.residence.hostShareTotalAmount ?? "—"}٪ · شب‌های گذشته{" "}
           {data.residence.hostSharePastNights ?? "—"}٪ · شب‌های آینده{" "}
           {data.residence.hostShareFutureNights ?? "—"}٪
         </p>
       )}
+
+      <div className="mt-14">
+        <Button variant="secondary" className="w-full" onClick={onEdit}>
+          <i className="icon-Edit text-16" /> ویرایش قیمت رزرو
+        </Button>
+      </div>
     </Card>
   );
 }
 
-function MoneyGroup({
-  title,
-  last,
-  children,
-}: {
-  title: string;
-  last?: boolean;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className={last ? "" : "mb-12 pb-12 border-b border-gray-F0F0F0"}>
-      <p className="text-11 leading-18 text-gray-9B9BAA mb-6">{title}</p>
-      {children}
-    </div>
-  );
+function Divider() {
+  return <div className="h-1 bg-gray-F0F0F0 my-10" />;
 }
 
 /**
@@ -807,15 +767,16 @@ function MoneyRow({
   value,
   hint,
   strong,
-  negative,
   tone,
+  text,
 }: {
   label: string;
   value: number | null;
   hint?: string;
   strong?: boolean;
-  negative?: boolean;
   tone?: "red" | "green";
+  /** Overrides the amount — used for the voucher code, which is not a number. */
+  text?: string;
 }) {
   const color =
     tone === "red"
@@ -828,25 +789,213 @@ function MoneyRow({
 
   return (
     <div className="flex items-baseline justify-between gap-x-12 py-3">
-      <span className="text-12 leading-20 text-gray-6C6A7D min-w-0">
+      <span className="text-12 leading-20 text-gray-9B9BAA min-w-0">
         {label}
-        {hint && <span className="text-11 text-gray-9B9BAA"> · {hint}</span>}
+        {hint && <span className="text-11"> · {hint}</span>}
       </span>
       <span className={`text-13 leading-20 whitespace-nowrap ${color} ${strong ? "font-m" : ""}`}>
-        {value == null ? (
-          <span className="text-gray-9B9BAA">ثبت نشده</span>
-        ) : (
-          <>
-            {/* Written-out sign: on an RTL line a leading "−" lands where
-                nobody is looking for it. */}
-            {negative && value > 0 ? "− " : ""}
-            {faMoney(Math.abs(value))}
-          </>
-        )}
+        {text ?? (value == null ? <span className="text-gray-9B9BAA">ثبت نشده</span> : faMoney(value))}
       </span>
     </div>
   );
 }
+
+/* ────────────────────────── ستون چپ ────────────────────────── */
+
+/**
+ * The decision that is waiting, and the clock it is waiting against.
+ *
+ * «رد درخواست» opens the cancellation dialog rather than moving the state
+ * directly: rejecting a booking refunds the guest and releases the calendar,
+ * and those need a canceller and a justification that a one-line note cannot
+ * carry.
+ */
+function DecisionPanel({
+  data,
+  onChanged,
+  onReject,
+}: {
+  data: ReservationDetail;
+  onChanged: () => void;
+  onReject: () => void;
+}) {
+  const [confirming, setConfirming] = useState(false);
+  const [note, setNote] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [extending, setExtending] = useState(false);
+
+  const decision = DECISION[data.state];
+  const left = data.expiryDate
+    ? Math.round((new Date(data.expiryDate).getTime() - Date.now()) / 60000)
+    : null;
+  const overdue = left != null && left <= 0;
+
+  async function approve() {
+    if (!decision) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await apiFetch(`/api/admin/reservations/${data.id}/state`, {
+        method: "POST",
+        body: JSON.stringify({ toState: decision.to, note: note.trim() }),
+      });
+      setConfirming(false);
+      setNote("");
+      onChanged();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "ثبت نشد");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function extend(minutes: number) {
+    setBusy(true);
+    setError(null);
+    try {
+      await apiFetch(`/api/admin/reservations/${data.id}/expiry`, {
+        method: "PATCH",
+        body: JSON.stringify({ minutesFromNow: minutes }),
+      });
+      setExtending(false);
+      onChanged();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "تمدید نشد");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (!decision) {
+    return (
+      <Card className="p-20">
+        <h3 className="text-15 leading-24 font-m text-black mb-8">وضعیت رزرو</h3>
+        <Badge tone={STATE_TONE[data.state] ?? "gray"}>
+          {STATE_LABELS[data.state] ?? data.state}
+        </Badge>
+        <p className="mt-10 text-12 leading-20 text-gray-6C6A7D">
+          تصمیمی برای این رزرو در انتظار نیست. برای جابه‌جایی دستی از پنل «وضعیت رزرو» پایین صفحه
+          استفاده کنید.
+        </p>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="p-20">
+      <div className="flex flex-col gap-y-10">
+        <Button
+          className="w-full bg-[#2E7D32] text-white hover:opacity-90"
+          onClick={() => setConfirming(true)}
+        >
+          {decision.approve}
+        </Button>
+        <Button variant="danger" className="w-full" onClick={onReject}>
+          {decision.reject}
+        </Button>
+      </div>
+
+      <div className="mt-16 pt-14 border-t border-gray-F0F0F0">
+        <p className="text-12 leading-20 text-gray-6C6A7D mb-6">{decision.deadline}</p>
+
+        {data.expiryDate ? (
+          <>
+            <div
+              className={`text-24 leading-32 font-m tracking-wide ${
+                overdue ? "text-[#C62828]" : "text-black"
+              }`}
+              dir="ltr"
+            >
+              {overdue ? "۰۰ : ۰۰" : countdown(left!)}
+            </div>
+            <p className="text-11 leading-18 text-gray-9B9BAA mt-2">
+              {faDate(data.expiryDate)} ساعت {faDateTime(data.expiryDate)[1]}
+              {overdue && " — گذشته؛ در اجرای بعدی زمان‌بند منقضی می‌شود"}
+            </p>
+          </>
+        ) : (
+          /* Every booking made before deadlines existed has none, and without
+             one the sweep leaves it alone — so it waits forever rather than
+             expiring silently. */
+          <p className="text-12 leading-20 text-gray-9B9BAA">
+            مهلتی ثبت نشده — این رزرو خودبه‌خود منقضی نمی‌شود.
+          </p>
+        )}
+
+        {extending ? (
+          <div className="mt-10 flex flex-wrap gap-8">
+            {[30, 60, 120, 720].map((m) => (
+              <button
+                key={m}
+                type="button"
+                disabled={busy}
+                onClick={() => extend(m)}
+                className="px-10 py-6 rounded-10 text-12 leading-20 border border-gray-E5E5E6 text-gray-6C6A7D hover:border-gray-C4CAD3 transition disabled:opacity-50"
+              >
+                {m < 60 ? `${faNum(m)} دقیقه` : `${faNum(m / 60)} ساعت`}
+              </button>
+            ))}
+            <button
+              type="button"
+              onClick={() => setExtending(false)}
+              className="px-10 py-6 rounded-10 text-12 leading-20 text-gray-9B9BAA"
+            >
+              انصراف
+            </button>
+          </div>
+        ) : (
+          <Button variant="secondary" className="w-full mt-10" onClick={() => setExtending(true)}>
+            تمدید {decision.deadline}
+          </Button>
+        )}
+      </div>
+
+      {error && <p className="mt-10 text-13 text-[#C62828]">{error}</p>}
+
+      <Modal
+        open={confirming}
+        onClose={() => setConfirming(false)}
+        title={decision.approve}
+        width="max-w-[460px]"
+      >
+        <p className="text-13 leading-22 text-gray-6C6A7D mb-10">
+          رزرو <b className="text-black">{data.reference}</b> به وضعیت «
+          {STATE_LABELS[decision.to]}» منتقل می‌شود.
+        </p>
+        <textarea
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          rows={3}
+          placeholder="توضیح — چرا این رزرو جابه‌جا می‌شود؟"
+          className="w-full rounded-8 border border-gray-E5E5E6 p-10 text-13 leading-22 outline-none focus:border-primary-main"
+        />
+        <p className="mt-6 text-11 leading-18 text-gray-9B9BAA">
+          این توضیح در تاریخچه‌ی رزرو با نام شما ثبت می‌شود و پاک نمی‌شود.
+        </p>
+        {error && <p className="mt-8 text-13 text-[#C62828]">{error}</p>}
+        <div className="flex justify-end gap-x-8 mt-14">
+          <Button variant="secondary" onClick={() => setConfirming(false)}>
+            انصراف
+          </Button>
+          <Button disabled={busy || note.trim().length < 3} onClick={approve}>
+            {busy ? "در حال ثبت..." : "ثبت"}
+          </Button>
+        </div>
+      </Modal>
+    </Card>
+  );
+}
+
+/** «۲۵ : ۱۵» — hours and minutes left, in Persian digits. */
+function countdown(minutes: number) {
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  const pad = (n: number) => faNum(n).padStart(2, "۰");
+  return `${pad(h)} : ${pad(m)}`;
+}
+
+/* ────────────────────────── پایین صفحه ────────────────────────── */
 
 function ReviewCard({ review }: { review: Review }) {
   const scores = [
@@ -866,7 +1015,7 @@ function ReviewCard({ review }: { review: Review }) {
       </div>
       <p className="text-13 leading-22 text-black whitespace-pre-wrap">{review.comment}</p>
 
-      <div className="grid md:grid-cols-2 gap-x-24 mt-12">
+      <div className="grid md:grid-cols-3 gap-x-24 mt-12">
         {scores.map((s) => (
           <Fact key={s.label} label={s.label} value={`${faNum(s.score)} از ۵`} />
         ))}
@@ -878,119 +1027,6 @@ function ReviewCard({ review }: { review: Review }) {
           <p className="text-13 leading-22 text-black whitespace-pre-wrap">{review.hostAnswer}</p>
         </div>
       )}
-    </Card>
-  );
-}
-
-/**
- * مهلت این رزرو.
- *
- * The site-wide window sets the deadline when a booking is made; this moves it
- * for one booking. Support needs it for the case the whole feature exists
- * for — a host who has just called to say they are on their way, or a guest
- * whose bank transfer is stuck — and the alternative today is watching the
- * booking expire and taking a new one.
- *
- * Two ways to say the same thing, because those are the two ways people ask:
- * a quick "another hour", or an exact time.
- */
-function ExpiryCard({
-  id,
-  state,
-  expiryDate,
-  onChanged,
-}: {
-  id: number;
-  state: "HOST_APPROVAL" | "SECOND_PAYMENT";
-  expiryDate: string | null;
-  onChanged: () => void;
-}) {
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [exact, setExact] = useState("");
-
-  const left = expiryDate ? Math.round((new Date(expiryDate).getTime() - Date.now()) / 60000) : null;
-  const overdue = left != null && left <= 0;
-
-  async function send(body: Record<string, unknown>) {
-    setBusy(true);
-    setError(null);
-    try {
-      await apiFetch(`/api/admin/reservations/${id}/expiry`, {
-        method: "PATCH",
-        body: JSON.stringify(body),
-      });
-      setExact("");
-      onChanged();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "تغییر مهلت انجام نشد");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  return (
-    <Card className="p-20">
-      <div className="flex items-center justify-between gap-x-12 flex-wrap gap-y-8 mb-10">
-        <h3 className="text-16 leading-24 font-m text-black">
-          مهلت {state === "HOST_APPROVAL" ? "تایید میزبان" : "پرداخت مهمان"}
-        </h3>
-        {expiryDate && (
-          <Badge tone={overdue ? "red" : "yellow"}>
-            {overdue ? "گذشته" : `${faNum(left!)} دقیقه`}
-          </Badge>
-        )}
-      </div>
-
-      {expiryDate ? (
-        <p className="text-13 leading-22 text-black mb-12">
-          {faDate(expiryDate)} ساعت {faDateTime(expiryDate)[1]}
-          {overdue && (
-            <span className="block text-11 leading-18 text-[#C62828] mt-2">
-              در اجرای بعدی زمان‌بند منقضی می‌شود.
-            </span>
-          )}
-        </p>
-      ) : (
-        <p className="text-12 leading-20 text-gray-9B9BAA mb-12">
-          {/* Every booking made before deadlines existed has none, and without
-              one the sweep leaves it alone — so it waits forever rather than
-              expiring silently. */}
-          مهلتی ثبت نشده — این رزرو خودبه‌خود منقضی نمی‌شود.
-        </p>
-      )}
-
-      <div className="flex flex-wrap gap-8 mb-10">
-        {[30, 60, 120, 720].map((m) => (
-          <button
-            key={m}
-            type="button"
-            disabled={busy}
-            onClick={() => send({ minutesFromNow: m })}
-            className="px-12 py-8 rounded-10 text-13 leading-20 border border-gray-E5E5E6 text-gray-6C6A7D hover:border-gray-C4CAD3 transition disabled:opacity-50"
-          >
-            {m < 60 ? `${faNum(m)} دقیقه` : `${faNum(m / 60)} ساعت`}
-          </button>
-        ))}
-      </div>
-
-      <div className="flex items-center gap-x-8">
-        <Input
-          type="datetime-local"
-          value={exact}
-          onChange={(e) => setExact(e.target.value)}
-          className="flex-1 min-w-0"
-        />
-        <Button
-          variant="secondary"
-          disabled={busy || !exact}
-          onClick={() => send({ expiryDate: new Date(exact).toISOString() })}
-        >
-          ثبت
-        </Button>
-      </div>
-
-      {!!error && <p className="mt-8 text-13 text-[#C62828]">{error}</p>}
     </Card>
   );
 }
