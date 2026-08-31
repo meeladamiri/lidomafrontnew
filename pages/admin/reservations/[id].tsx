@@ -9,6 +9,9 @@ import ReservationStatusBar from "@/components/Admin/ReservationStatusBar";
 import ReservationActions from "@/components/Admin/ReservationActions";
 import CallAndNotePanel from "@/components/Admin/CallAndNotePanel";
 import PricingWorkspace from "@/components/Admin/PricingWorkspace";
+import PaymentsPanel from "@/components/Admin/PaymentsPanel";
+import EditTermsModal from "@/components/Admin/EditTermsModal";
+import EditStayModal from "@/components/Admin/EditStayModal";
 import {
   Badge,
   Button,
@@ -177,6 +180,8 @@ export default function AdminReservationDetailPage() {
 
   const [showCancel, setShowCancel] = useState(false);
   const [showReprice, setShowReprice] = useState(false);
+  const [showTerms, setShowTerms] = useState(false);
+  const [showStay, setShowStay] = useState(false);
   /** Bumped whenever something writes to the log, so the list refetches. */
   const [logVersion, setLogVersion] = useState(0);
 
@@ -249,6 +254,41 @@ export default function AdminReservationDetailPage() {
             }}
           />
 
+          <EditTermsModal
+            open={showTerms}
+            onClose={() => setShowTerms(false)}
+            reservationId={data.id}
+            terms={{
+              totalAmount: data.totalAmount,
+              websiteShare: data.websiteShare,
+              vatAmount: data.vatAmount,
+              guestCommission: data.guestCommission,
+              hostShare: data.hostShare,
+            }}
+            onSaved={() => {
+              mutate();
+              setLogVersion((v) => v + 1);
+            }}
+          />
+
+          <EditStayModal
+            open={showStay}
+            onClose={() => setShowStay(false)}
+            reservationId={data.id}
+            stay={{
+              startDate: data.startDate,
+              endDate: data.endDate,
+              daysCount: data.daysCount,
+              guestsCount: data.guestsCount,
+              extraGuestsCount: data.extraGuestsCount,
+              maxCapacity: data.residence.maxCapacity,
+            }}
+            onSaved={() => {
+              mutate();
+              setLogVersion((v) => v + 1);
+            }}
+          />
+
           <div className="flex flex-col gap-y-16">
             {/* وضعیت — read and changed in the same place, because they are
                 the same thought two seconds apart. */}
@@ -267,14 +307,18 @@ export default function AdminReservationDetailPage() {
             <div className="grid lg:grid-cols-12 gap-16 items-start">
               {/* راست: مهمان، اقامتگاه، میزبان */}
               <div className="lg:col-span-5 flex flex-col gap-y-16 min-w-0">
-                <GuestCard data={data} />
+                <GuestCard data={data} onEditStay={() => setShowStay(true)} />
                 <ResidenceCard data={data} />
                 <HostCard data={data} />
               </div>
 
               {/* وسط: پول */}
               <div className="lg:col-span-4 min-w-0">
-                <PriceCard data={data} onEdit={() => setShowReprice(true)} />
+                <PriceCard
+                  data={data}
+                  onEditRates={() => setShowReprice(true)}
+                  onEditTerms={() => setShowTerms(true)}
+                />
               </div>
 
               {/* چپ: تصمیمی که منتظر است */}
@@ -288,6 +332,15 @@ export default function AdminReservationDetailPage() {
             </div>
 
             {/* ── تماس و یادداشت ─────────────────────────────────── */}
+            <PaymentsPanel
+              reservationId={data.id}
+              canRecord={data.state !== "CANCEL"}
+              onChanged={() => {
+                mutate();
+                setLogVersion((v) => v + 1);
+              }}
+            />
+
             <CallAndNotePanel reservationId={data.id} refreshKey={logVersion} />
 
             {data.state === "CANCEL" && (
@@ -415,7 +468,7 @@ function Avatar({ url, name, size = 44 }: { url: string | null; name: string | n
 
 /* ────────────────────────── ستون راست ────────────────────────── */
 
-function GuestCard({ data }: { data: ReservationDetail }) {
+function GuestCard({ data, onEditStay }: { data: ReservationDetail; onEditStay: () => void }) {
   const p = data.guestProfile;
 
   return (
@@ -470,10 +523,13 @@ function GuestCard({ data }: { data: ReservationDetail }) {
         </p>
       )}
 
-      <div className="mt-12">
+      <div className="mt-12 flex flex-wrap gap-8">
+        <Button variant="secondary" onClick={onEditStay}>
+          <i className="icon-Calendar text-16" /> ویرایش اقامت
+        </Button>
         <Link href={`/admin/users/${data.guest.id}`}>
           <Button variant="secondary">
-            <i className="icon-Edit text-16" /> ویرایش
+            <i className="icon-Edit text-16" /> پروفایل مهمان
           </Button>
         </Link>
       </div>
@@ -626,7 +682,15 @@ function HostCard({ data }: { data: ReservationDetail }) {
  * سایت» and «پرداختی از کیف پول» as separate lines; we have no such columns,
  * and printing them as zero would state something we do not know.
  */
-function PriceCard({ data, onEdit }: { data: ReservationDetail; onEdit: () => void }) {
+function PriceCard({
+  data,
+  onEditRates,
+  onEditTerms,
+}: {
+  data: ReservationDetail;
+  onEditRates: () => void;
+  onEditTerms: () => void;
+}) {
   const due = data.totalAmount + (data.guestCommission ?? 0);
   const remainder = (data.hostShare ?? 0) - data.settledAmount;
 
@@ -694,9 +758,14 @@ function PriceCard({ data, onEdit }: { data: ReservationDetail; onEdit: () => vo
         </p>
       )}
 
-      <div className="mt-14">
-        <Button variant="secondary" className="w-full" onClick={onEdit}>
+      <div className="mt-14 flex flex-col gap-y-8">
+        {/* Two different edits, named for what they change: the nightly rates
+            that make up the rent, and the cut taken out of it. */}
+        <Button variant="secondary" className="w-full" onClick={onEditRates}>
           <i className="icon-Edit text-16" /> ویرایش قیمت رزرو
+        </Button>
+        <Button variant="secondary" className="w-full" onClick={onEditTerms}>
+          <i className="icon-Cash text-16" /> ویرایش کارمزد و مالیات
         </Button>
       </div>
     </Card>

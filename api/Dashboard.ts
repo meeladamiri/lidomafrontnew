@@ -88,13 +88,21 @@ function mapVerificationStatus(status: string | undefined): "confirmed" | "not_c
 }
 
 function reshapeUserInfo(u: any) {
+  // The backend attaches the user to a single `location` row and hands its
+  // province back as `location.parent` — there is no `city` object, and no
+  // `city.province` under it. Same unpacking as the residence mapper.
+  const locationRow = u?.location ?? null;
+  const isProvinceRow = locationRow?.type === "PROVINCE";
+  const cityRow = isProvinceRow ? null : locationRow;
+  const provinceRow = isProvinceRow ? locationRow : locationRow?.parent ?? null;
+
   return {
     address: u?.address ?? "",
     avatar_url: u?.avatarUrl ?? "",
     birth_day: u?.birthDay ?? 0,
     birth_month: u?.birthMonth ?? 0,
     birth_year: u?.birthYear ?? 0,
-    city: u?.city?.name ?? "",
+    city: cityRow?.name ?? "",
     description: u?.description ?? "",
     education: u?.education ?? "",
     email: u?.email ?? "",
@@ -106,7 +114,7 @@ function reshapeUserInfo(u: any) {
     national_card_url: u?.nationalCardUrl ?? "",
     national_code: u?.nationalCode ?? "",
     phone: u?.phone ?? "",
-    province: u?.city?.province?.name ?? "",
+    province: provinceRow?.name ?? "",
     status: mapVerificationStatus(u?.verificationStatus),
     zip: u?.zip ?? "",
     contact_phone: u?.contactPhone ?? "",
