@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { apiFetch } from "@/api/Admin/adminApi";
-import { Badge, Button, Modal, faMoney, faNum } from "@/components/Admin/ui";
+import { Badge, Button, Modal, faMoney, faNum, parseNum } from "@/components/Admin/ui";
 
 /**
  * ویرایش کارمزد، مالیات و کارمزد مهمان.
@@ -62,7 +62,7 @@ export default function EditTermsModal({
     setError(null);
   }, [open, terms.websiteShare, terms.vatAmount, terms.guestCommission]);
 
-  const num = (s: string) => Number(s.replace(/[^\d]/g, "")) || 0;
+  const num = (s: string) => parseNum(s);
   const body = {
     websiteShare: num(websiteShare),
     vatAmount: num(vatAmount),
@@ -216,7 +216,7 @@ function Amount({
   value: string;
   onChange: (v: string) => void;
 }) {
-  const n = Number(value.replace(/[^\d]/g, "")) || 0;
+  const n = parseNum(value);
   return (
     <label className="grid grid-cols-[1fr_auto] gap-x-10 items-center mb-10">
       <span className="min-w-0">

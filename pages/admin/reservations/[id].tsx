@@ -12,6 +12,7 @@ import PricingWorkspace from "@/components/Admin/PricingWorkspace";
 import PaymentsPanel from "@/components/Admin/PaymentsPanel";
 import EditTermsModal from "@/components/Admin/EditTermsModal";
 import EditStayModal from "@/components/Admin/EditStayModal";
+import { jalaliLong } from "@/components/Admin/JalaliDate";
 import {
   Badge,
   Button,
@@ -21,7 +22,6 @@ import {
   Stars,
   type Tone,
   adminImageUrl,
-  faDate,
   faDateTime,
   faMoney,
   faNum,
@@ -203,6 +203,18 @@ export default function AdminReservationDetailPage() {
       actions={
         data && (
           <>
+            <Button
+              className="bg-[#2E7D32] text-white hover:opacity-90"
+              onClick={() => reveal("payments")}
+            >
+              <i className="icon-Cash text-16" /> ثبت پرداخت
+            </Button>
+            <Button
+              className="bg-[#1B4F9C] text-white hover:opacity-90"
+              onClick={() => reveal("activity")}
+            >
+              <i className="icon-PhoneFill text-16" /> تماس و یادداشت
+            </Button>
             <Button variant="secondary" onClick={() => setShowReprice(true)}>
               <i className="icon-CalendarFlash text-16" /> تقویم و نرخ
             </Button>
@@ -281,6 +293,7 @@ export default function AdminReservationDetailPage() {
               daysCount: data.daysCount,
               guestsCount: data.guestsCount,
               extraGuestsCount: data.extraGuestsCount,
+              capacity: data.residence.capacity,
               maxCapacity: data.residence.maxCapacity,
             }}
             onSaved={() => {
@@ -332,6 +345,7 @@ export default function AdminReservationDetailPage() {
             </div>
 
             {/* ── تماس و یادداشت ─────────────────────────────────── */}
+            <div id="payments">
             <PaymentsPanel
               reservationId={data.id}
               canRecord={data.state !== "CANCEL"}
@@ -340,8 +354,11 @@ export default function AdminReservationDetailPage() {
                 setLogVersion((v) => v + 1);
               }}
             />
+            </div>
 
-            <CallAndNotePanel reservationId={data.id} refreshKey={logVersion} />
+            <div id="activity">
+              <CallAndNotePanel reservationId={data.id} refreshKey={logVersion} />
+            </div>
 
             {data.state === "CANCEL" && (
               <Card className="p-20 border-r-4 border-r-[#E53935]">
@@ -371,6 +388,25 @@ export default function AdminReservationDetailPage() {
 }
 
 /* ────────────────────────── کمکی‌ها ────────────────────────── */
+
+/** Clears the sticky top bar, so the panel's heading is not hidden under it. */
+const HEADER_OFFSET = 76;
+
+/**
+ * Take the page to a panel.
+ *
+ * Not `scrollIntoView({ behavior: "smooth" })`: that is ignored outright in
+ * some browsers and by anyone with reduced motion on, and a button that
+ * sometimes fails to move the page is worse than one that always jumps.
+ */
+function reveal(elementId: string) {
+  requestAnimationFrame(() => {
+    const el = document.getElementById(elementId);
+    if (!el) return;
+    const top = el.getBoundingClientRect().top + window.scrollY - HEADER_OFFSET;
+    window.scrollTo({ top: Math.max(top, 0) });
+  });
+}
 
 
 /**
@@ -498,7 +534,7 @@ function GuestCard({ data, onEditStay }: { data: ReservationDetail; onEditStay: 
         <Fact
           nowrap
           label="تاریخ سفر"
-          value={`${faDate(data.startDate)} ← ${faDate(data.endDate)}`}
+          value={`${jalaliLong(data.startDate)} ← ${jalaliLong(data.endDate)}`}
         />
         <Fact nowrap label="مدت اقامت" value={`${faNum(data.daysCount)} شب`} />
         <Fact
@@ -931,7 +967,7 @@ function DecisionPanel({
               {overdue ? "۰۰ : ۰۰" : countdown(left!)}
             </div>
             <p className="text-11 leading-18 text-gray-9B9BAA mt-2">
-              {faDate(data.expiryDate)} ساعت {faDateTime(data.expiryDate)[1]}
+              {jalaliLong(data.expiryDate)} ساعت {faDateTime(data.expiryDate)[1]}
               {overdue && " — گذشته؛ در اجرای بعدی زمان‌بند منقضی می‌شود"}
             </p>
           </>

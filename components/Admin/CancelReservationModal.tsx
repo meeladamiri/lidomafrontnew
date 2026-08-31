@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import useSWR from "swr";
 import { apiFetch } from "@/api/Admin/adminApi";
-import { Badge, Button, Field, Input, Modal, Select, Toggle, faNum } from "@/components/Admin/ui";
+import { Badge, Button, Field, Input, Modal, Select, Toggle, faNum, parseNum } from "@/components/Admin/ui";
 
 /**
  * لغو رزرو — the whole decision on one screen.
@@ -106,7 +106,7 @@ export default function CancelReservationModal({
     setReason("");
   }, [cancelledBy]);
 
-  const overrideValue = override.trim() ? Number(override.replace(/[^\d]/g, "")) : null;
+  const overrideValue = override.trim() ? parseNum(override) : null;
 
   const params = new URLSearchParams({
     cancelledBy,

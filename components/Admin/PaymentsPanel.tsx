@@ -8,11 +8,12 @@ import {
   EmptyState,
   Modal,
   Skeleton,
-  faDate,
   faDateTime,
   faMoney,
   faNum,
+  parseNum,
 } from "@/components/Admin/ui";
+import JalaliDateField, { jalaliLong } from "@/components/Admin/JalaliDate";
 
 /**
  * پرداخت‌های مهمان.
@@ -194,7 +195,7 @@ function PaymentRow({ payment, onVoid }: { payment: Payment; onVoid?: () => void
           {voided && <Badge tone="red">باطل شده</Badge>}
         </div>
         <p className="text-11 leading-18 text-gray-9B9BAA mt-2">
-          {faDate(payment.paid_at)} ساعت {faDateTime(payment.paid_at)[1]}
+          {jalaliLong(payment.paid_at)} ساعت {faDateTime(payment.paid_at)[1]}
           {payment.reference ? ` · پیگیری ${payment.reference}` : ""}
           {payment.recorded_by ? ` · ثبت ${payment.recorded_by}` : ""}
         </p>
@@ -234,13 +235,14 @@ function AddPaymentModal({
 }) {
   const [amount, setAmount] = useState("");
   const [method, setMethod] = useState<string>("CARD_TRANSFER");
-  const [paidAt, setPaidAt] = useState(() => new Date().toISOString().slice(0, 16));
+  const [paidDate, setPaidDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [paidTime, setPaidTime] = useState(() => new Date().toTimeString().slice(0, 5));
   const [reference, setReference] = useState("");
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const value = Number(amount.replace(/[^\d]/g, "")) || 0;
+  const value = parseNum(amount);
 
   async function submit() {
     setBusy(true);
@@ -251,7 +253,7 @@ function AddPaymentModal({
         body: JSON.stringify({
           amount: value,
           method,
-          paidAt: new Date(paidAt).toISOString(),
+          paidAt: new Date(`${paidDate}T${paidTime || "00:00"}`).toISOString(),
           reference: reference.trim() || null,
           note: note.trim() || null,
         }),
@@ -306,23 +308,20 @@ function AddPaymentModal({
           </select>
         </label>
 
-        <label className="block">
-          {/* When the money moved, not when this was typed — they differ on
-              every payment recorded the morning after. */}
-          <span className="block mb-6 text-12 leading-18 text-gray-6C6A7D font-m">
-            تاریخ و ساعت واریز
-          </span>
-          <input
-            type="datetime-local"
-            value={paidAt}
-            onChange={(e) => setPaidAt(e.target.value)}
-            className="w-full px-14 py-10 rounded-10 border border-gray-E5E5E6 text-14 leading-22 outline-none focus:border-primary-main"
-          />
-          <span className="block mt-4 text-11 leading-18 text-gray-9B9BAA">
-            {paidAt ? faDate(paidAt) : ""}
-          </span>
-        </label>
+        {/* When the money moved, not when this was typed — they differ on
+            every payment recorded the morning after. */}
+        <JalaliDateField label="تاریخ واریز" value={paidDate} onChange={setPaidDate} />
       </div>
+
+      <label className="block mb-12">
+        <span className="block mb-6 text-12 leading-18 text-gray-6C6A7D font-m">ساعت واریز</span>
+        <input
+          type="time"
+          value={paidTime}
+          onChange={(e) => setPaidTime(e.target.value)}
+          className="w-full px-14 py-10 rounded-10 border border-gray-E5E5E6 text-14 leading-22 outline-none focus:border-primary-main"
+        />
+      </label>
 
       <label className="block mb-12">
         <span className="block mb-6 text-12 leading-18 text-gray-6C6A7D font-m">
@@ -350,7 +349,7 @@ function AddPaymentModal({
         <Button variant="secondary" onClick={onClose}>
           انصراف
         </Button>
-        <Button disabled={busy || value <= 0 || !paidAt} onClick={submit}>
+        <Button disabled={busy || value <= 0 || !paidDate} onClick={submit}>
           {busy ? "در حال ثبت..." : "ثبت پرداخت"}
         </Button>
       </div>

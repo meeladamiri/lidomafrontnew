@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
+import moment from "moment-jalaali";
 import { apiFetch } from "@/api/Admin/adminApi";
-import { Badge, Button, Modal, faDate, faMoney, faNum } from "@/components/Admin/ui";
+import { Badge, Button, Modal, faMoney, faNum } from "@/components/Admin/ui";
+import JalaliDateField, { jalaliLong } from "@/components/Admin/JalaliDate";
 
 /**
  * ویرایش تاریخ، شب و نفرات.
@@ -8,12 +10,14 @@ import { Badge, Button, Modal, faDate, faMoney, faNum } from "@/components/Admin
  * Moving a booking's dates is not a field edit: it changes what the stay
  * costs, releases the old nights and takes the new ones, and can collide with
  * another booking. So it is a two-step — describe the change, see what it
- * does, then confirm — and every figure in the middle step comes from the
- * server's own dry run rather than arithmetic done here.
+ * does, then confirm — and every figure in the middle comes from the server's
+ * own dry run rather than arithmetic done here.
  *
- * The night count is not an input. It is the distance between two dates, and
- * a field that lets someone type a fourth night into a three-night range is a
- * field that produces an invoice nobody can explain.
+ * Check-out is not an input. Nobody books "until the 24th"; they book a
+ * check-in and a number of nights, and the date follows. Typing both is two
+ * chances to disagree with each other.
+ *
+ * Extra guests are not an input either — see `extraFor`.
  */
 
 interface Stay {
@@ -22,6 +26,7 @@ interface Stay {
   daysCount: number;
   guestsCount: number;
   extraGuestsCount: number;
+  capacity: number | null;
   maxCapacity: number | null;
 }
 
@@ -41,6 +46,27 @@ interface Preview {
   warnings: string[];
 }
 
+/**
+ * How many of the party count as "extra".
+ *
+ * The listing has a standard capacity included in the nightly rate and a
+ * maximum it will take; everyone above the standard is charged per head. That
+ * arithmetic was being typed by hand into a second field, which is how a
+ * booking ends up with six guests and no extras — the rate says one thing and
+ * the invoice another.
+ */
+function extraFor(guests: number, capacity: number | null, maxCapacity: number | null) {
+  if (!capacity) return 0;
+  const ceiling = maxCapacity ?? guests;
+  return Math.max(Math.min(guests, ceiling) - capacity, 0);
+}
+
+const addDays = (iso: string, n: number) =>
+  moment(iso, "YYYY-MM-DD").add(n, "day").format("YYYY-MM-DD");
+
+const nightsBetween = (from: string, to: string) =>
+  Math.round(moment(to, "YYYY-MM-DD").diff(moment(from, "YYYY-MM-DD"), "day"));
+
 export default function EditStayModal({
   open,
   onClose,
@@ -55,9 +81,8 @@ export default function EditStayModal({
   onSaved: () => void;
 }) {
   const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+  const [nights, setNights] = useState(1);
   const [guests, setGuests] = useState(1);
-  const [extra, setExtra] = useState(0);
   const [note, setNote] = useState("");
   const [preview, setPreview] = useState<Preview | null>(null);
   const [busy, setBusy] = useState(false);
@@ -66,33 +91,23 @@ export default function EditStayModal({
   useEffect(() => {
     if (!open) return;
     setStartDate(stay.startDate.slice(0, 10));
-    setEndDate(stay.endDate.slice(0, 10));
+    setNights(Math.max(stay.daysCount, 1));
     setGuests(stay.guestsCount);
-    setExtra(stay.extraGuestsCount);
     setNote("");
     setPreview(null);
     setError(null);
-  }, [open, stay.startDate, stay.endDate, stay.guestsCount, stay.extraGuestsCount]);
+  }, [open, stay.startDate, stay.daysCount, stay.guestsCount]);
 
-  const nights =
-    startDate && endDate
-      ? Math.round(
-          (new Date(endDate).getTime() - new Date(startDate).getTime()) / 86_400_000
-        )
-      : 0;
+  const endDate = startDate ? addDays(startDate, nights) : "";
+  const extra = extraFor(guests, stay.capacity, stay.maxCapacity);
 
   const changed =
     startDate !== stay.startDate.slice(0, 10) ||
-    endDate !== stay.endDate.slice(0, 10) ||
+    nights !== stay.daysCount ||
     guests !== stay.guestsCount ||
     extra !== stay.extraGuestsCount;
 
-  const body = {
-    startDate,
-    endDate,
-    guestsCount: guests,
-    extraGuestsCount: extra,
-  };
+  const overCapacity = !!stay.maxCapacity && guests > stay.maxCapacity;
 
   async function send(dryRun: boolean) {
     setBusy(true);
@@ -100,7 +115,14 @@ export default function EditStayModal({
     try {
       const res = await apiFetch<Preview>(`/api/admin/reservations/${reservationId}/stay`, {
         method: "PATCH",
-        body: JSON.stringify({ ...body, dryRun, ...(dryRun ? {} : { note: note.trim() }) }),
+        body: JSON.stringify({
+          startDate,
+          endDate,
+          guestsCount: guests,
+          extraGuestsCount: extra,
+          dryRun,
+          ...(dryRun ? {} : { note: note.trim() }),
+        }),
       });
       if (dryRun) setPreview(res);
       else {
@@ -119,7 +141,7 @@ export default function EditStayModal({
   return (
     <Modal open={open} onClose={onClose} title="ویرایش اقامت" width="max-w-[560px]">
       <div className="grid md:grid-cols-2 gap-12 mb-12">
-        <DateField
+        <JalaliDateField
           label="تاریخ ورود"
           value={startDate}
           onChange={(v) => {
@@ -127,52 +149,57 @@ export default function EditStayModal({
             setPreview(null);
           }}
         />
-        <DateField
-          label="تاریخ خروج"
-          value={endDate}
+
+        <Counter
+          label="تعداد شب"
+          value={nights}
+          min={1}
           onChange={(v) => {
-            setEndDate(v);
+            setNights(v);
             setPreview(null);
           }}
         />
       </div>
 
-      <div className="rounded-10 bg-gray-F5F5F7 px-12 py-10 mb-12 flex items-center justify-between">
-        <span className="text-12 leading-20 text-gray-6C6A7D">مدت اقامت</span>
-        <b className={`text-14 leading-22 font-m ${nights < 1 ? "text-[#C62828]" : "text-black"}`}>
-          {nights < 1 ? "بازه نامعتبر" : `${faNum(nights)} شب`}
-        </b>
+      <div className="rounded-10 bg-gray-F5F5F7 px-12 py-10 mb-12 flex items-center justify-between gap-x-12 flex-wrap gap-y-6">
+        <span className="text-12 leading-20 text-gray-6C6A7D">تاریخ خروج</span>
+        <b className="text-14 leading-22 font-m text-black">{jalaliLong(endDate)}</b>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-12 mb-12">
+      <div className="grid md:grid-cols-2 gap-12 mb-4">
         <Counter
           label="تعداد مهمانان"
           value={guests}
           min={1}
+          max={stay.maxCapacity ?? undefined}
           onChange={(v) => {
             setGuests(v);
             setPreview(null);
           }}
         />
-        <Counter
-          label="نفرات اضافه"
-          value={extra}
-          min={0}
-          onChange={(v) => {
-            setExtra(v);
-            setPreview(null);
-          }}
-        />
+
+        {/* Read-only on purpose: it is arithmetic, not a decision. */}
+        <div>
+          <span className="block mb-6 text-12 leading-18 text-gray-6C6A7D font-m">نفرات اضافه</span>
+          <div className="px-14 py-10 rounded-10 border border-gray-E5E5E6 bg-gray-F5F5F7 text-14 leading-22 text-center text-black">
+            {faNum(extra)} نفر
+          </div>
+          <span className="block mt-4 text-11 leading-18 text-gray-9B9BAA">
+            {stay.capacity
+              ? `ظرفیت پایه ${faNum(stay.capacity)} نفر${stay.maxCapacity ? ` · حداکثر ${faNum(stay.maxCapacity)}` : ""}`
+              : "ظرفیت پایه‌ی اقامتگاه ثبت نشده"}
+          </span>
+        </div>
       </div>
 
-      {stay.maxCapacity && guests + extra > stay.maxCapacity && (
+      {overCapacity && (
         <p className="mb-12 text-12 leading-20 text-[#C62828]">
           ظرفیت این اقامتگاه حداکثر {faNum(stay.maxCapacity)} نفر است.
         </p>
       )}
 
       {preview && (
-        <div className="rounded-10 border border-gray-E5E5E6 p-12 mb-14">
+        <div className="rounded-10 border border-gray-E5E5E6 p-12 mt-8 mb-14">
           <p className="text-12 leading-20 text-gray-6C6A7D mb-8">پس از ذخیره</p>
           <Delta label="مبلغ کل اجاره" a={preview.before.total_amount} b={preview.after.total_amount} />
           <Delta label="سهم میزبان" a={preview.before.host_share} b={preview.after.host_share} />
@@ -201,7 +228,8 @@ export default function EditStayModal({
           {/* Said plainly because it is the part that surprises people: the
               rent follows the nights, it is not carried over. */}
           <p className="mt-10 text-11 leading-18 text-gray-9B9BAA">
-            مبلغ اجاره از نرخ شب‌های بازه‌ی جدید در تقویم دوباره حساب می‌شود.
+            مبلغ اجاره از نرخ شب‌های بازه‌ی جدید در تقویم دوباره حساب می‌شود و شب‌های قبلی در
+            تقویم آزاد می‌شوند.
           </p>
         </div>
       )}
@@ -224,7 +252,7 @@ export default function EditStayModal({
           انصراف
         </Button>
         {!preview ? (
-          <Button disabled={busy || !changed || nights < 1} onClick={() => send(true)}>
+          <Button disabled={busy || !changed || !startDate || overCapacity} onClick={() => send(true)}>
             {busy ? "..." : "محاسبه‌ی تغییر"}
           </Button>
         ) : (
@@ -237,57 +265,27 @@ export default function EditStayModal({
   );
 }
 
-/**
- * A Gregorian picker with the Jalali date printed under it.
- *
- * The browser's own date input is what the rest of this panel uses, and it is
- * Gregorian; showing the Jalali equivalent underneath is what lets someone
- * check they picked the day they meant without a second calendar widget.
- */
-function DateField({
-  label,
-  value,
-  onChange,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-}) {
-  return (
-    <label className="block">
-      <span className="block mb-6 text-12 leading-18 text-gray-6C6A7D font-m">{label}</span>
-      <input
-        type="date"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-full px-14 py-10 rounded-10 border border-gray-E5E5E6 text-14 leading-22 outline-none focus:border-primary-main"
-      />
-      <span className="block mt-4 text-11 leading-18 text-primary-dark">
-        {value ? faDate(value) : "—"}
-      </span>
-    </label>
-  );
-}
-
 function Counter({
   label,
   value,
   min,
+  max,
   onChange,
 }: {
   label: string;
   value: number;
   min: number;
+  max?: number;
   onChange: (v: number) => void;
 }) {
   return (
-    <label className="block">
+    <div>
       <span className="block mb-6 text-12 leading-18 text-gray-6C6A7D font-m">{label}</span>
       <div className="flex items-center gap-x-8">
         <button
           type="button"
           onClick={() => onChange(Math.max(value - 1, min))}
-          className="w-36 h-36 rounded-10 border border-gray-E5E5E6 text-16 text-gray-6C6A7D hover:border-gray-C4CAD3 transition"
+          className="w-36 h-36 shrink-0 rounded-10 border border-gray-E5E5E6 text-16 text-gray-6C6A7D hover:border-gray-C4CAD3 transition"
         >
           −
         </button>
@@ -296,13 +294,14 @@ function Counter({
         </span>
         <button
           type="button"
+          disabled={max !== undefined && value >= max}
           onClick={() => onChange(value + 1)}
-          className="w-36 h-36 rounded-10 border border-gray-E5E5E6 text-16 text-gray-6C6A7D hover:border-gray-C4CAD3 transition"
+          className="w-36 h-36 shrink-0 rounded-10 border border-gray-E5E5E6 text-16 text-gray-6C6A7D hover:border-gray-C4CAD3 transition disabled:opacity-40"
         >
           +
         </button>
       </div>
-    </label>
+    </div>
   );
 }
 

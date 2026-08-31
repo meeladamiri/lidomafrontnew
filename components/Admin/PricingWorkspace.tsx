@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import useSWR from "swr";
 import moment from "moment-jalaali";
 import { apiFetch } from "@/api/Admin/adminApi";
-import { Badge, Button, Modal, Skeleton, faMoney, faNum } from "@/components/Admin/ui";
+import { Badge, Button, Modal, Skeleton, faMoney, faNum, parseNum } from "@/components/Admin/ui";
 
 /**
  * ویرایش قیمت رزرو — three panes over one draft.
@@ -213,7 +213,7 @@ export default function PricingWorkspace({
   }
 
   function applyToSelection() {
-    const price = Number(dayPrice.replace(/[^\d]/g, ""));
+    const price = parseNum(dayPrice);
     if (!price || selected.size === 0) return;
     const next = { ...draft };
     selected.forEach((d) => (next[d] = price));
@@ -273,7 +273,7 @@ export default function PricingWorkspace({
     }
   }
 
-  const priceValue = Number(dayPrice.replace(/[^\d]/g, "")) || 0;
+  const priceValue = parseNum(dayPrice);
 
   return (
     <Modal
@@ -623,7 +623,7 @@ function BucketRow({
 
   function commit(raw: string) {
     setText(raw);
-    const n = Number(raw.replace(/[^\d]/g, ""));
+    const n = parseNum(raw);
     if (n > 0) onChange(n);
   }
 

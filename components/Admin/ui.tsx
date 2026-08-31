@@ -584,10 +584,35 @@ export function Stars({ value, count }: { value: number; count?: number }) {
 // Liara object storage 404s any request whose User-Agent contains "Mozilla",
 // so a browser <img src> pointed straight at it never loads. Every admin
 // image goes through Next's optimizer, which fetches server-side.
+/**
+ * The widths Next's optimiser will serve — `deviceSizes` and `imageSizes` from
+ * next.config.js. Asking for anything else returns 400 and the image simply
+ * does not appear, which is how a residence photo went missing at w=320.
+ */
+const NEXT_IMAGE_WIDTHS = [96, 128, 256, 384, 640, 750, 828, 1080, 1200, 1920];
+
 export function adminImageUrl(url: string | null | undefined, w = 640) {
   if (!url) return "";
   if (!url.startsWith("http")) return url;
-  return `/_next/image?url=${encodeURIComponent(url)}&w=${w}&q=70`;
+  // Snap up to the next allowed width rather than trusting the caller: a
+  // number that is not on the list fails silently at request time.
+  const width = NEXT_IMAGE_WIDTHS.find((n) => n >= w) ?? NEXT_IMAGE_WIDTHS[NEXT_IMAGE_WIDTHS.length - 1];
+  return `/_next/image?url=${encodeURIComponent(url)}&w=${width}&q=70`;
+}
+
+/**
+ * Digits out of a field, whatever script they were typed in.
+ *
+ * The money inputs show their value through `toLocaleString("fa-IR")`, so what
+ * comes back on the next keystroke is Persian digits — and `\d` matches only
+ * ASCII, so stripping "non-digits" threw away everything already typed. The
+ * field appeared to accept one character and then refuse the rest.
+ */
+export function parseNum(input: string): number {
+  const ascii = input
+    .replace(/[۰-۹]/g, (d) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)))
+    .replace(/[٠-٩]/g, (d) => String("٠١٢٣٤٥٦٧٨٩".indexOf(d)));
+  return Number(ascii.replace(/[^\d]/g, "")) || 0;
 }
 
 export const faNum = (n: number | null | undefined) => (n ?? 0).toLocaleString("fa-IR");

@@ -16,6 +16,7 @@ import {
   faDate,
   faMoney,
   faNum,
+  parseNum,
 } from "@/components/Admin/ui";
 
 /**
@@ -288,7 +289,7 @@ function DepositModal({
     setError(null);
   }
 
-  const value = Number(amount.replace(/[^\d]/g, "")) || 0;
+  const value = parseNum(amount);
   const tooMuch = !!payable && value > payable.remainder;
 
   async function submit() {

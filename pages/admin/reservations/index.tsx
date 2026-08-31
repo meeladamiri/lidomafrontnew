@@ -72,7 +72,7 @@ const COLUMNS = [
   "سود سایت (تومان)",
   "شهر",
   "وضعیت",
-  "رزرو قبلی",
+  "رزرو قبلی مهمان",
 ];
 
 function Person({ name, phone }: { name: string | null; phone: string }) {

@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import useSWR from "swr";
 import moment from "moment-jalaali";
 import { apiFetch } from "@/api/Admin/adminApi";
-import { Badge, Button, Card, Field, Input, Skeleton, faNum } from "@/components/Admin/ui";
+import { Badge, Button, Card, Field, Input, Skeleton, faNum, parseNum } from "@/components/Admin/ui";
 
 /**
  * تقویم و نرخ.
@@ -167,7 +167,7 @@ export default function CalendarRates({
     }
   }
 
-  const priceValue = Number(price.replace(/[^\d]/g, "")) || 0;
+  const priceValue = parseNum(price);
 
   return (
     <Card className="p-20">
