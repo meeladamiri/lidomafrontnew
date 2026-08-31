@@ -5,6 +5,7 @@ import BoomgardiPropertyPageDataProvider from "@/providers/BoomgardiPropertyPage
 import { useGetObserveResidence } from "Hooks/ObserveResidence/useGetObserveResidence";
 import dynamic from "next/dynamic";
 import Footer from "@/layouts/Footer";
+import UnavailableBox from "./BillAndReserveSettings/common/UnavailableBox";
 // import LazyLoad from "react-lazyload";
 // const Footer = dynamic(() => import("@/layouts/Footer"), {
 //   ssr: true,
@@ -32,6 +33,10 @@ function BoomgardiDetailsIndex2() {
 
   if (isLoading || !data) return null;
 
+  // `bookable === false` only for a deactivated listing; an older payload
+  // without the field must not turn a working page read-only.
+  const bookable = data?.bookable !== false;
+
   return (
     <>
       <BoomgardiPropertyPageDataProvider>
@@ -45,13 +50,21 @@ function BoomgardiDetailsIndex2() {
               <ResCompleteInfo />
             </div>
             <footer className="hidden md:block md:col-span-5 relative">
-              {!!isDesktop && <BoomgardiBillAndReserveSettingsPaper />}
+              {/* A deactivated listing keeps its whole page; only this box changes. */}
+              {!!isDesktop &&
+                (bookable ? <BoomgardiBillAndReserveSettingsPaper /> : <UnavailableBox className="sticky top-[95px]" />)}
             </footer>
           </div>
 
           {!isDesktop && (
             <footer className="md:hidden">
-              <BoomgardiMobileBottomFloater />
+              {bookable ? (
+                <BoomgardiMobileBottomFloater />
+              ) : (
+                <div className="CustomContainer mt-24">
+                  <UnavailableBox />
+                </div>
+              )}
             </footer>
           )}
         </article>

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import StateChangeModal from "@/components/Admin/Residence/StateChangeModal";
 import Link from "next/link";
 import useSWR from "swr";
 import AdminLayout from "@/components/Admin/Layout";
@@ -98,6 +99,11 @@ export default function AdminResidencesPage() {
   const [showFilters, setShowFilters] = useState(false);
   const [selected, setSelected] = useState<number[]>([]);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  // {ids, state} for the state-change modal — the row menu passes one id, the
+  // selection bar passes the whole selection. Both need the note.
+  const [pendingState, setPendingState] = useState<{ ids: number[]; state: string; from?: string } | null>(
+    null
+  );
 
   const query = new URLSearchParams({
     page: String(page),
@@ -200,16 +206,12 @@ export default function AdminResidencesPage() {
       {
         icon: "icon-Power",
         label: r.state === "PUBLISHED" ? "غیرفعال‌سازی" : "فعال‌سازی",
-        onClick: async () => {
-          await apiFetch("/api/admin/residences/bulk/state", {
-            method: "POST",
-            body: JSON.stringify({
-              ids: [r.id],
-              state: r.state === "PUBLISHED" ? "DEACTIVATED" : "PUBLISHED",
-            }),
-          });
-          refreshAll();
-        },
+        onClick: () =>
+          setPendingState({
+            ids: [r.id],
+            state: r.state === "PUBLISHED" ? "DEACTIVATED" : "PUBLISHED",
+            from: r.state,
+          }),
       },
       {
         icon: "icon-Delete",
@@ -523,7 +525,7 @@ export default function AdminResidencesPage() {
           {
             icon: "icon-Block",
             label: "غیرفعال‌سازی",
-            onClick: () => bulk("state", { state: "DEACTIVATED" }),
+            onClick: () => setPendingState({ ids: selected, state: "DEACTIVATED" }),
           },
           {
             icon: TYPE_ICON.SUIT,
@@ -543,6 +545,17 @@ export default function AdminResidencesPage() {
         ]}
       />
 
+      <StateChangeModal
+        open={pendingState !== null}
+        onClose={() => setPendingState(null)}
+        ids={pendingState?.ids ?? []}
+        state={pendingState?.state ?? "DEACTIVATED"}
+        currentState={pendingState?.from}
+        onSaved={() => {
+          setSelected([]);
+          refreshAll();
+        }}
+      />
       <Modal
         open={confirmDelete}
         onClose={() => setConfirmDelete(false)}

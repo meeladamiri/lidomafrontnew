@@ -5,6 +5,7 @@ import useSWR from "swr";
 import dynamic from "next/dynamic";
 import AdminLayout from "@/components/Admin/Layout";
 import ResidenceImagesModal from "@/components/Admin/Residence/ImagesModal";
+import StateChangeModal from "@/components/Admin/Residence/StateChangeModal";
 import { apiFetch } from "@/api/Admin/adminApi";
 import {
   Badge,
@@ -47,6 +48,8 @@ interface ResidenceDetail {
   type: "SUIT" | "BOOMGARDI" | "HOTEL";
   state: string;
   published: boolean;
+  deactivatedAt: string | null;
+  deactivationNote: string | null;
   importance: number;
   averageRating: number;
   reviewsCount: number;
@@ -159,7 +162,9 @@ export default function AdminResidenceDetailPage() {
   const [showAddress, setShowAddress] = useState(false);
   const [showImages, setShowImages] = useState(false);
   const [showHost, setShowHost] = useState(false);
-  const [confirmDeactivate, setConfirmDeactivate] = useState(false);
+  // Which state the modal is about to move this listing to; null = closed.
+  // Every state change goes through it, because every one of them needs a note.
+  const [pendingState, setPendingState] = useState<string | null>(null);
   const [tab, setTab] = useState<TabKey>("basic");
 
   const { data, isLoading, mutate } = useSWR<ResidenceDetail>(
@@ -169,14 +174,6 @@ export default function AdminResidenceDetailPage() {
 
   async function patch(body: Record<string, unknown>) {
     await apiFetch(`/api/admin/residences/${id}`, { method: "PATCH", body: JSON.stringify(body) });
-    mutate();
-  }
-
-  async function setState(state: string) {
-    await apiFetch(`/api/admin/residences/${id}/state`, {
-      method: "PATCH",
-      body: JSON.stringify({ state }),
-    });
     mutate();
   }
 
@@ -298,14 +295,12 @@ export default function AdminResidenceDetailPage() {
             </a>
             <Button
               variant={data.state === "PUBLISHED" ? "danger" : "primary"}
-              onClick={() =>
-                data.state === "PUBLISHED" ? setConfirmDeactivate(true) : setState("PUBLISHED")
-              }
+              onClick={() => setPendingState(data.state === "PUBLISHED" ? "DEACTIVATED" : "PUBLISHED")}
             >
               <i className="icon-Power text-16" />
               {data.state === "PUBLISHED" ? "غیرفعال کردن" : "فعال کردن"}
             </Button>
-            <Button variant="secondary" onClick={() => setState("DELETED")}>
+            <Button variant="secondary" onClick={() => setPendingState("DELETED")}>
               <i className="icon-Delete text-16" /> حذف اقامتگاه
             </Button>
           </Card>
@@ -345,6 +340,29 @@ export default function AdminResidenceDetailPage() {
               </div>
             </Card>
 
+            {data.state === "DEACTIVATED" && (
+              <Card className="px-16 py-14 border-r-4 border-r-[#E11D48] bg-[#FEF2F2]">
+                <div className="flex items-start gap-x-10">
+                  <i className="icon-WarningFill text-18 text-[#E11D48] mt-2 shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-14 leading-24 font-b text-black">
+                      این اقامتگاه غیرفعال است
+                      {!!data.deactivatedAt && (
+                        <span className="font-r text-gray-6C6A7D"> — از {faDate(data.deactivatedAt)}</span>
+                      )}
+                    </p>
+                    {!!data.deactivationNote && (
+                      <p className="mt-4 text-13 leading-22 text-black">{data.deactivationNote}</p>
+                    )}
+                    <p className="mt-6 text-12 leading-20 text-gray-6C6A7D">
+                      صفحه‌ی اقامتگاه در سایت باز است و همه‌ی اطلاعاتش دیده می‌شود، ولی از نتایج
+                      جستجو حذف شده و باکس رزروش بسته است.
+                    </p>
+                  </div>
+                </div>
+              </Card>
+            )}
+
             {/* status strip */}
             <Card className="px-16 py-12 flex items-center gap-x-16 flex-wrap gap-y-10 text-13">
               <span className="text-gray-6C6A7D">
@@ -363,7 +381,7 @@ export default function AdminResidenceDetailPage() {
               <label className="flex items-center gap-x-8 text-gray-6C6A7D">
                 <Toggle
                   checked={data.published}
-                  onChange={(v) => setState(v ? "PUBLISHED" : "DEACTIVATED")}
+                  onChange={(v) => setPendingState(v ? "PUBLISHED" : "DEACTIVATED")}
                 />
                 منتشر شده
               </label>
@@ -650,30 +668,14 @@ export default function AdminResidenceDetailPage() {
             images={data.images}
             onChanged={mutate}
           />
-          <Modal
-            open={confirmDeactivate}
-            onClose={() => setConfirmDeactivate(false)}
-            title="غیرفعال کردن اقامتگاه"
-            width="max-w-[420px]"
-          >
-            <p className="text-14 leading-24 text-black mb-16">
-              مطمئنی می‌خوای این اقامتگاه رو غیرفعال کنی؟ از صفحات جستجو حذف می‌شه.
-            </p>
-            <div className="flex items-center gap-x-10 justify-end">
-              <Button variant="secondary" onClick={() => setConfirmDeactivate(false)}>
-                انصراف
-              </Button>
-              <Button
-                variant="danger"
-                onClick={async () => {
-                  await setState("DEACTIVATED");
-                  setConfirmDeactivate(false);
-                }}
-              >
-                آره، غیرفعال کن
-              </Button>
-            </div>
-          </Modal>
+          <StateChangeModal
+            open={pendingState !== null}
+            onClose={() => setPendingState(null)}
+            ids={[data.id]}
+            state={pendingState ?? "DEACTIVATED"}
+            currentState={data.state}
+            onSaved={mutate}
+          />
         </>
       )}
     </AdminLayout>

@@ -210,9 +210,18 @@ function mapSimilar(similar: any[]): any[] {
 // `getServerSideProps` (which fetches the backend directly by absolute URL since
 // relative `/api/...` rewrites only resolve in the browser, not server-side).
 export function mapObserveResidenceData(
-  data: { residence?: any; similar?: any[]; tags?: any[]; publicId?: number } | undefined
+  data:
+    | {
+        residence?: any;
+        similar?: any[];
+        tags?: any[];
+        publicId?: number;
+        bookable?: boolean;
+        unavailable?: { since?: string | null } | null;
+      }
+    | undefined
 ) {
-  const { residence, similar, tags, publicId } = data || {};
+  const { residence, similar, tags, publicId, bookable, unavailable } = data || {};
 
   if (!residence) {
     return { status: "error", err_msg: "اقامتگاه یافت نشد" };
@@ -225,6 +234,12 @@ export function mapObserveResidenceData(
   // guard, so `undefined` here would crash the page; `[]` degrades safely.
   return {
     status: "success",
+    // A deactivated listing still renders its whole page — only the booking box
+    // is replaced. `bookable` is the single flag the tree branches on, rather
+    // than each panel re-deriving it. Older payloads have no field, and an
+    // undefined one has to mean "yes" or every existing page goes read-only.
+    bookable: bookable !== false,
+    unavailable_since: unavailable?.since ?? null,
     params: {
       residence_info: mapResidenceInfo(residence, publicId),
       images: (residence.images || []).map((img: any) => ({

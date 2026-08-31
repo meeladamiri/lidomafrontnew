@@ -3,6 +3,7 @@ import { LinkButton } from "@/components/General/core/Button";
 import SideNavbar from "@/layouts/SideNavbar";
 import { useUserProfile } from "@/providers/Profile";
 import { useRouter } from "next/router";
+import { useGetObserveResidence } from "Hooks/ObserveResidence/useGetObserveResidence";
 import { Dispatch, SetStateAction, useEffect, useRef, useState } from "react";
 
 function ResPageDynamicHeaderInMobile({
@@ -12,6 +13,8 @@ function ResPageDynamicHeaderInMobile({
 }) {
   const router = useRouter();
   const profileData = useUserProfile();
+  const { data: residenceData } = useGetObserveResidence();
+  const bookable = residenceData?.bookable !== false;
 
   const curScrollRef = useRef<number>();
   const prevScrollRef = useRef<number>();
@@ -69,15 +72,20 @@ function ResPageDynamicHeaderInMobile({
           </div>
         </div>
         <div className="flex items-center gap-x-8">
-          <LinkButton
-            href="tel:02191070021"
-            className="!py-6 !pr-12"
-            color="secondary"
-            rightIcon={<i className="icon-Phone text-white text-20" />}
-            rounded
-          >
-            رزرو تلفنی
-          </LinkButton>
+          {/* A deactivated listing cannot be booked by phone either, and a button
+              that says it can sends the guest to a call that ends in "no". The
+              unavailable panel offers support separately, without the promise. */}
+          {bookable && (
+            <LinkButton
+              href="tel:02191070021"
+              className="!py-6 !pr-12"
+              color="secondary"
+              rightIcon={<i className="icon-Phone text-white text-20" />}
+              rounded
+            >
+              رزرو تلفنی
+            </LinkButton>
+          )}
           <div
             onClick={() => {
               setIsSideNavbarOpen((prev) => !prev);

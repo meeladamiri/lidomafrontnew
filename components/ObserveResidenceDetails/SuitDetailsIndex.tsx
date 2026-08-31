@@ -7,6 +7,7 @@ import ResCompleteInfo from "./ResCompleteInfo";
 import { useGetObserveResidence } from "Hooks/ObserveResidence/useGetObserveResidence";
 // import ResPageNavigationTabs from "./TopSection/ResPageNavigationTabs";
 import Footer from "@/layouts/Footer";
+import UnavailableBox from "./BillAndReserveSettings/common/UnavailableBox";
 import SimilarReses from "./ResCompleteInfo/SimilarReses";
 import RelatedSearches from "../General/RelatedSearches";
 // import { useEffect } from "react";
@@ -33,6 +34,10 @@ function SuitDetailsIndex() {
 
   if (isLoading || !data) return null;
 
+  // `bookable === false` only for a deactivated listing; an older payload
+  // without the field must not turn a working page read-only.
+  const bookable = data?.bookable !== false;
+
   // useEffect(() => {
   //   if (!!router?.query?.guests_count) {
   //     setNumberOfPeople(Number(router?.query?.guests_count));
@@ -52,13 +57,21 @@ function SuitDetailsIndex() {
               <ResCompleteInfo />
             </div>
             <footer className="hidden md:block md:col-span-5 relative">
-              {!!isDesktop && <SuitBillAndReserveSettingsPaper />}
+              {/* A deactivated listing keeps its whole page; only this box changes. */}
+              {!!isDesktop &&
+                (bookable ? <SuitBillAndReserveSettingsPaper /> : <UnavailableBox className="sticky top-[95px]" />)}
             </footer>
           </div>
 
           {!isDesktop && (
             <footer className="md:hidden">
-              <SuitMobileBottomFloater />
+              {bookable ? (
+                <SuitMobileBottomFloater />
+              ) : (
+                <div className="CustomContainer mt-24">
+                  <UnavailableBox />
+                </div>
+              )}
             </footer>
           )}
         </article>
