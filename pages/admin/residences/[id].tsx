@@ -30,6 +30,7 @@ import PricingTab from "@/components/Admin/Residence/PricingTab";
 import RulesTab from "@/components/Admin/Residence/RulesTab";
 import ReservationsTab from "@/components/Admin/Residence/ReservationsTab";
 import RankCard from "@/components/Admin/Residence/RankCard";
+import ClassificationCard from "@/components/Admin/Residence/ClassificationCard";
 import ChangeHostModal from "@/components/Admin/Residence/ChangeHostModal";
 
 // leaflet touches window on import
@@ -414,6 +415,8 @@ export default function AdminResidenceDetailPage() {
               </Card>
             )}
 
+            <ClassificationCard residenceId={data.id} onSaved={mutate} />
+
             <RankCard residenceId={data.id} onSaved={mutate} />
 
             {/* specs */}
@@ -428,8 +431,6 @@ export default function AdminResidenceDetailPage() {
                     value={[data.location?.parent?.name, data.location?.name].filter(Boolean).join(" / ")}
                   />
                   <Row label="نوع ملک" value={TYPE_LABEL[data.type]} />
-                  <Row label="منطقه اقامتگاه" value={data.region} />
-                  <Row label="نوع اجاره" value={data.rentType} />
                 </div>
                 <div>
                   <Row
@@ -674,8 +675,6 @@ function EditSpecsModal({
           hostSuggestedName: form.hostSuggestedName || undefined,
           description: form.description || undefined,
           type: form.type,
-          region: form.region || undefined,
-          rentType: form.rentType || undefined,
           floor: form.floor || undefined,
           totalArea: form.totalArea === "" ? undefined : Number(form.totalArea),
           foundationArea: form.foundationArea === "" ? undefined : Number(form.foundationArea),
@@ -708,12 +707,6 @@ function EditSpecsModal({
         </Field>
         <Field label="اهمیت اقامتگاه (رتبه در جستجو)">
           <Input value={form.importance} onChange={set("importance")} inputMode="numeric" />
-        </Field>
-        <Field label="منطقه اقامتگاه">
-          <Input value={form.region} onChange={set("region")} />
-        </Field>
-        <Field label="نوع اجاره">
-          <Input value={form.rentType} onChange={set("rentType")} />
         </Field>
         <Field label="مساحت کل زمین (متر)">
           <Input value={form.totalArea} onChange={set("totalArea")} inputMode="numeric" />
