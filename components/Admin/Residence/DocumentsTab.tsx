@@ -63,6 +63,25 @@ const VERIFICATION: Record<string, { label: string; tone: "green" | "yellow" | "
   NOT_CONFIRMED: { label: "احراز نشده", tone: "gray" },
 };
 
+/**
+ * Whether a browser will actually draw this in an <img>.
+ *
+ * HEIC is the reason this exists: 25 of the migrated documents are iPhone
+ * photos, and Chrome renders none of them. A broken image icon would read as
+ * "the file is missing" when the file is perfectly fine — so these are offered
+ * as a download instead, which is honest and still gets the admin to the
+ * document. PDFs are the same story for a different reason.
+ */
+function isPreviewable(url: string): boolean {
+  const clean = url.split("?")[0].toLowerCase();
+  return !/.(heic|heif|pdf)$/.test(clean);
+}
+
+function fileLabel(url: string): string {
+  const ext = url.split("?")[0].split(".").pop()?.toUpperCase() ?? "فایل";
+  return ext === "PDF" ? "فایل PDF" : `تصویر ${ext}`;
+}
+
 export default function DocumentsTab({ residenceId }: { residenceId: number }) {
   const { data, isLoading, mutate } = useSWR<Payload>(
     `/api/admin/residences/${residenceId}/documents`,
@@ -170,7 +189,7 @@ export default function DocumentsTab({ residenceId }: { residenceId: number }) {
               <p className="text-11 leading-18 text-gray-9B9BAA mb-12">{doc.help}</p>
 
               <div className="rounded-10 border border-gray-E5E5E6 bg-gray-F7F7F7 h-[150px] flex items-center justify-center overflow-hidden mb-12">
-                {url ? (
+                {url && isPreviewable(url) ? (
                   <button
                     type="button"
                     onClick={() => setViewing({ url, label: doc.label })}
@@ -189,6 +208,21 @@ export default function DocumentsTab({ residenceId }: { residenceId: number }) {
                       loading="lazy"
                     />
                   </button>
+                ) : url ? (
+                  <a
+                    href={url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex flex-col items-center justify-center gap-y-6 w-full h-full text-center px-10"
+                  >
+                    <i className="icon-Attach text-32 text-gray-9B9BAA" />
+                    <span className="text-12 leading-20 text-primary-dark font-m">
+                      {fileLabel(url)} — باز کردن
+                    </span>
+                    <span className="text-11 leading-16 text-gray-9B9BAA">
+                      مرورگر این نوع فایل را پیش‌نمایش نمی‌دهد
+                    </span>
+                  </a>
                 ) : (
                   <span className="text-12 leading-20 text-gray-9B9BAA">فایلی بارگذاری نشده</span>
                 )}
