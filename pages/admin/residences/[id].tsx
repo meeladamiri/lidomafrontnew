@@ -4,6 +4,7 @@ import { useRouter } from "next/router";
 import useSWR from "swr";
 import dynamic from "next/dynamic";
 import AdminLayout from "@/components/Admin/Layout";
+import ResidenceImagesModal from "@/components/Admin/Residence/ImagesModal";
 import { apiFetch } from "@/api/Admin/adminApi";
 import {
   Badge,
@@ -73,7 +74,7 @@ interface ResidenceDetail {
     isSpecialHost: boolean;
     residencesCount: number;
   } | null;
-  images: { id: number; url: string; isMain: boolean; title: string | null }[];
+  images: { id: number; url: string; isMain: boolean; title: string | null; alt: string | null; sortOrder: number }[];
   distances: { id: number; placeName: string; distance: string | null; eta: string | null }[];
   extraLocations: { id: number; location: { id: number; name: string } }[];
   rooms: {
@@ -152,6 +153,7 @@ export default function AdminResidenceDetailPage() {
   const { id } = router.query;
   const [showEdit, setShowEdit] = useState(false);
   const [showAddress, setShowAddress] = useState(false);
+  const [showImages, setShowImages] = useState(false);
   const [confirmDeactivate, setConfirmDeactivate] = useState(false);
   const [tab, setTab] = useState<TabKey>("basic");
 
@@ -327,16 +329,12 @@ export default function AdminResidenceDetailPage() {
                 </div>
               )}
               <div className="flex items-center gap-x-8 mt-12">
-                <Link href={`/admin/residences/${data.id}/images`}>
-                  <Button>
-                    <i className="icon-Edit text-16" /> مشاهده و ویرایش تصاویر
-                  </Button>
-                </Link>
-                <Link href={`/admin/residences/${data.id}/images`}>
-                  <Button variant="secondary">
-                    <i className="icon-Upload text-16" /> بارگذاری تصویر جدید
-                  </Button>
-                </Link>
+                <Button onClick={() => setShowImages(true)}>
+                  <i className="icon-Edit text-16" /> مشاهده و ویرایش تصاویر
+                </Button>
+                <Button variant="secondary" onClick={() => setShowImages(true)}>
+                  <i className="icon-Upload text-16" /> بارگذاری تصویر جدید
+                </Button>
               </div>
             </Card>
 
@@ -575,6 +573,13 @@ export default function AdminResidenceDetailPage() {
               setShowAddress(false);
               mutate();
             }}
+          />
+          <ResidenceImagesModal
+            open={showImages}
+            onClose={() => setShowImages(false)}
+            residenceId={data.id}
+            images={data.images}
+            onChanged={mutate}
           />
           <Modal
             open={confirmDeactivate}
