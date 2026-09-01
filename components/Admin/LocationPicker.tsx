@@ -1,6 +1,6 @@
 import "leaflet/dist/leaflet.css";
 import { useEffect, useMemo, useState } from "react";
-import { divIcon, icon } from "leaflet";
+import { icon } from "leaflet";
 import { MapContainer, Marker, Popup, TileLayer, useMap, useMapEvents } from "react-leaflet";
 
 // Standalone lat/lng picker for the admin panel — click or drag the pin.
@@ -47,13 +47,18 @@ const PIN = icon({
  * relative to places you recognise, and that reading only works if one marker
  * is obviously the subject.
  *
- * A divIcon, so there is no second asset to ship and it stays crisp at any zoom.
+ * An `icon()` for the same reason as PIN above: a divIcon's children become
+ * drag targets and break Leaflet's drag teardown.
  */
-const DOT = divIcon({
-  className: "",
-  html: '<span style="display:block;width:12px;height:12px;border-radius:9999px;background:#B26A00;border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.4)"></span>',
-  iconSize: [12, 12],
-  iconAnchor: [6, 6],
+const DOT_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 14 14">
+<circle cx="7" cy="7" r="5" fill="#B26A00" stroke="#FFFFFF" stroke-width="2"/>
+</svg>`;
+
+const DOT = icon({
+  iconUrl: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(DOT_SVG)}`,
+  iconSize: [14, 14],
+  iconAnchor: [7, 7],
+  popupAnchor: [0, -8],
 });
 
 export interface MapMarker {
