@@ -920,6 +920,12 @@ function MyTripDetails() {
                           گفتگوی آنلاین با میزبان
                         </LinkButton>
                       )}
+
+                      {/* Said while the option is still there, not discovered
+                          when it disappears. */}
+                      <p className="text-11 leading-18 text-gray-959FA7 mt-8 text-center">
+                        تماس با میزبان {CONTACT_WINDOW_NOTE}
+                      </p>
                     </div>
                   )}
                 </>
