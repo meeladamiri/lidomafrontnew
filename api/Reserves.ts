@@ -204,6 +204,8 @@ export interface IAlterResidences {
 export interface IReserveDetails {
   faqs: IReserveDetailsFAQ[];
   order_details: {
+    has_review?: boolean;
+    review_id?: number | null;
     paid_amount?: number;
     remaining_amount?: number;
     total_amount: number;

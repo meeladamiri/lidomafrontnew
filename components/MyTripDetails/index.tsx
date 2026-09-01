@@ -16,6 +16,7 @@ import {
   unDiscountTheCodeDiscount,
 } from "api/Reserves";
 import { useRouter } from "next/router";
+import { isContactOpen, CONTACT_WINDOW_NOTE } from "@/utilities/tripWindow";
 import { ReserveDetailsCheckout_enum } from "constants/enums/reserve_details_checkout";
 import { TinyLoader } from "components/General/Loader/TinyLoader";
 import moment from "moment-jalaali";
@@ -643,7 +644,7 @@ function MyTripDetails() {
                 )}
                 {reserveInfo?.state === ReserveStates_enum.DONE && (
                   <div className="w-[318px] mt-16">
-                    <DownloadFactor reserveId={reserveInfo.id} />
+                    <DownloadFactor reserveId={reserveInfo.id} endDate={reserveInfo.end_date} />
                   </div>
                 )}
               </div>
@@ -895,7 +896,10 @@ function MyTripDetails() {
               {reserveInfo?.state === ReserveStates_enum.CANCEL ||
               reserveInfo?.state === ReserveStates_enum.EXPIRED ? null : (
                 <>
-                  {!moment(reserveInfo?.end_date)?.isBefore(moment()) && (
+                  {/* One day past checkout, not the moment of it — a guest who
+                      left something behind still needs the host. After that
+                      the number goes away for good; see utilities/tripWindow. */}
+                  {isContactOpen(reserveInfo?.end_date) && (
                     <div className="mt-18 md:mt-24 md:max-w-[224px]">
                       {reserveInfo?.state === ReserveStates_enum.DONE ? (
                         <LinkButton
@@ -1118,12 +1122,12 @@ function MyTripDetails() {
                 ) : reserveInfo?.state === ReserveStates_enum.DONE &&
                   moment(reserveInfo?.end_date)?.isBefore(moment()) ? (
                   <LinkButton
-                    href={`https://lidomatrip.com/submit-review?id=${router?.query?.id}`}
+                    href={`/submit-review?id=${router?.query?.id}`}
                     color="secondary"
                     isFullWidth
                     rightIcon={<i className="icon-message text-24" />}
                   >
-                    ثبت نظر
+                    {reserveInfo?.has_review ? "مشاهده نظر ثبت‌شده" : "ثبت نظر"}
                   </LinkButton>
                 ) : reserveInfo?.state === ReserveStates_enum.DONE ? (
                   <LinkButton
@@ -1214,12 +1218,12 @@ function MyTripDetails() {
             ) : reserveInfo?.state === ReserveStates_enum.DONE &&
               moment(reserveInfo?.end_date)?.isBefore(moment()) ? (
               <LinkButton
-                href={`https://lidomatrip.com/submit-review?id=${router?.query?.id}`}
+                href={`/submit-review?id=${router?.query?.id}`}
                 color="secondary"
                 isFullWidth
                 rightIcon={<i className="icon-message text-24" />}
               >
-                ثبت نظر
+                {reserveInfo?.has_review ? "مشاهده نظر ثبت‌شده" : "ثبت نظر"}
               </LinkButton>
             ) : reserveInfo?.state === ReserveStates_enum.DONE ? (
               <LinkButton

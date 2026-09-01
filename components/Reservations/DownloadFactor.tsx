@@ -2,6 +2,7 @@ import { Button } from "components/General/core/Button";
 import Image from "next/image";
 
 import { useRouter } from "next/router";
+import { isContactOpen, INVOICE_WINDOW_NOTE } from "@/utilities/tripWindow";
 
 const pageStyle = `
 @page {
@@ -11,8 +12,14 @@ const pageStyle = `
 }
 `;
 
-function DownloadFactor({ reserveId }: { reserveId: number }) {
+/**
+ * The invoice is available for the same window as contact: until the day
+ * after checkout. It says so up front rather than letting somebody find out
+ * by pressing a button that has quietly stopped working.
+ */
+function DownloadFactor({ reserveId, endDate }: { reserveId: number; endDate?: string }) {
   const router = useRouter();
+  const open = isContactOpen(endDate);
 
   return (
     <>
@@ -20,9 +27,13 @@ function DownloadFactor({ reserveId }: { reserveId: number }) {
         <Factor ref={(el: any) => (componentRef.current = el)} />
       </div> */}
 
-      <div className="p-12 bg-black rounded-8 flex items-center justify-between">
-        <p className="text-16 font-m text-white">دریافت فاکتور رزرو</p>
+      <div className="p-12 bg-black rounded-8 flex items-center justify-between gap-x-10">
+        <div className="min-w-0">
+          <p className="text-16 font-m text-white">دریافت فاکتور رزرو</p>
+          <p className="text-12 leading-20 text-white/70 mt-2">{INVOICE_WINDOW_NOTE}</p>
+        </div>
         <Button
+          disabled={!open}
           color="warning"
           rightIcon={
             <Image

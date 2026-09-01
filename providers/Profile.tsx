@@ -167,7 +167,17 @@ function UserProfileProvider({ children }: { children: JSX.Element }) {
       setState((prev) => ({
         ...prev,
         address: userInfo?.address,
-        avatar_url: `${userInfo?.avatar_url}${new Date().getTime()}`,
+        // The timestamp is a cache-buster, and it used to be glued straight onto
+        // the URL with no separator: an avatar at
+        //   .../migrated/avatar-e9-e9fb6763…
+        // became
+        //   .../migrated/avatar-e9-e9fb6763…1788286173000
+        // which is a different object that does not exist, so every avatar
+        // 404'd. It goes in the query string, where it busts the cache without
+        // changing which file is being asked for.
+        avatar_url: userInfo?.avatar_url
+          ? `${userInfo.avatar_url}${userInfo.avatar_url.includes("?") ? "&" : "?"}v=${Date.now()}`
+          : "",
         birth_day: userInfo?.birth_day,
         birth_month: userInfo?.birth_month,
         birth_year: userInfo?.birth_year,

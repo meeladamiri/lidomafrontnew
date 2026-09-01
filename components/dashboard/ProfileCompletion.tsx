@@ -65,7 +65,18 @@ export default function ProfileCompletion({
     ...(isHost && !hasShaba && !done.has("shaba") ? (["shaba"] as TaskKey[]) : []),
   ];
 
-  if (tasks.length === 0) return null;
+  const LABEL: Record<TaskKey, string> = {
+    avatar: "تصویر پروفایل ثبت شد",
+    nationalCard: "تصویر کارت ملی بارگذاری شد",
+    shaba: "شماره شبا ثبت شد",
+  };
+
+  // A task that has just been completed is kept on screen, ticked, for a
+  // moment before it goes. Disappearing the instant it succeeds looks exactly
+  // like the click having done nothing — the one thing an upload button must
+  // never look like.
+  const justDone = [...done];
+  if (tasks.length === 0 && justDone.length === 0) return null;
 
   async function uploadImage(key: "avatar" | "nationalCard", file: File) {
     setError(null);
@@ -145,6 +156,18 @@ export default function ProfileCompletion({
         />
 
         <div className="flex flex-col gap-y-12">
+          {justDone.map((key) => (
+            <div
+              key={`done-${key}`}
+              className="rounded-12 border-1 border-solid border-success/40 bg-success/10 p-12 flex items-center gap-x-10"
+            >
+              <span className="w-32 h-32 rounded-full bg-success flex items-center justify-center shrink-0">
+                <i className="icon-Tick text-16 text-white" />
+              </span>
+              <p className="text-14 leading-24 text-black font-m">{LABEL[key]}</p>
+            </div>
+          ))}
+
           {tasks.includes("avatar") && (
             <div className="rounded-12 border-1 border-solid border-gray-CACFD3 p-12 flex items-center gap-x-12">
               <button

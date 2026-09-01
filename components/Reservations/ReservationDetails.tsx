@@ -429,7 +429,7 @@ function ReservationDetails() {
 
                   {reserveInfo?.state === ReserveStates_enum.DONE && (
                     <div className="grow md:w-[318px] mt-16">
-                      <DownloadFactor reserveId={reserveInfo.id} />
+                      <DownloadFactor reserveId={reserveInfo.id} endDate={reserveInfo.end_date} />
                     </div>
                   )}
                 </div>

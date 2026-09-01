@@ -124,6 +124,11 @@ export function mapReservationDetail(r: any) {
       days_count: r.daysCount ?? 0,
       end_date: dateOnly(r.endDate),
       expiry_date: r.expiryDate || "",
+      // Whether this stay has already been reviewed. The button needs to know
+      // so it can offer "مشاهده نظر" instead of inviting a second one — a
+      // review is written once and is not editable afterwards.
+      has_review: !!r.review,
+      review_id: r.review?.id ?? null,
       guest: {
         name: r.guest?.name || "",
         phone: r.guest?.phone || undefined,
