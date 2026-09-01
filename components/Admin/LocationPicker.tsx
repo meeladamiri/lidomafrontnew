@@ -1,15 +1,46 @@
 import "leaflet/dist/leaflet.css";
 import { useEffect, useMemo, useState } from "react";
-import { divIcon, icon } from "leaflet";
+import { divIcon } from "leaflet";
 import { MapContainer, Marker, Popup, TileLayer, useMap, useMapEvents } from "react-leaflet";
 
 // Standalone lat/lng picker for the admin panel — click or drag the pin.
 // Deliberately not reusing components/Map: that one is formik-bound and
 // carries the guest-site chrome (routing, "my location", popups).
-const PIN = icon({
-  iconUrl: "/assets/non-icomoon-icons/current-location-pinpoint.svg",
-  iconSize: [36, 36],
-  iconAnchor: [18, 34],
+/**
+ * The listing's pin.
+ *
+ * Drawn inline rather than loaded from /assets: the previous icon was a
+ * general-purpose "current location" graphic borrowed from the guest site,
+ * which on OpenStreetMap tiles sat somewhere between the green of parks and
+ * the beige of built-up areas and was genuinely hard to find on a busy map.
+ *
+ * This one is built to be found. The navy body is the panel's own header
+ * colour and appears nowhere on a map tile; the white ring separates it from
+ * whatever is underneath; the teal centre marks the exact point, so the pin
+ * says which pixel it means rather than merely roughly where it is. A drop
+ * shadow lifts it off dense city tiles.
+ *
+ * The tip is the anchor — `iconAnchor` is the bottom centre — so the point
+ * the pin appears to indicate is the coordinate actually stored.
+ */
+const PIN = divIcon({
+  className: "",
+  html: `
+    <svg width="34" height="46" viewBox="0 0 34 46" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <filter id="lp-shadow" x="-50%" y="-30%" width="200%" height="170%">
+          <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#000" flood-opacity="0.35" />
+        </filter>
+      </defs>
+      <path filter="url(#lp-shadow)"
+            d="M17 45C17 45 32 27.4 32 17A15 15 0 1 0 2 17c0 10.4 15 28 15 28Z"
+            fill="#2B3A55" stroke="#FFFFFF" stroke-width="2.5" stroke-linejoin="round" />
+      <circle cx="17" cy="17" r="7.5" fill="#FFFFFF" />
+      <circle cx="17" cy="17" r="4" fill="#03D6BB" />
+    </svg>`,
+  iconSize: [34, 46],
+  iconAnchor: [17, 45],
+  popupAnchor: [0, -40],
 });
 
 /**
