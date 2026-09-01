@@ -104,6 +104,12 @@ export default function AdminSettingsPage() {
             دسته‌بندی مکان‌ها
           </Link>
           <Link
+            href="/admin/settings/announcements"
+            className="px-14 py-8 rounded-10 text-13 leading-20 font-m whitespace-nowrap text-gray-6C6A7D hover:bg-gray-F0F0F0"
+          >
+            اطلاعیه‌ها
+          </Link>
+          <Link
             href="/admin/settings/attractions"
             className="px-14 py-8 rounded-10 text-13 leading-20 font-m whitespace-nowrap text-gray-6C6A7D hover:bg-gray-F0F0F0"
           >

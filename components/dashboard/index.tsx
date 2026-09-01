@@ -4,6 +4,7 @@ import PendingRequests from "components/dashboard/PendingRequests";
 import { LinkButton } from "components/General/core/Button";
 import ProfileCompletion from "components/dashboard/ProfileCompletion";
 import CurrentReservations from "components/dashboard/CurrentReservations";
+import Announcements from "components/dashboard/Announcements";
 import GuestsComments from "components/dashboard/GuestsComments";
 import Conversations from "components/dashboard/Conversations";
 import DashboardPageSlider from "components/dashboard/Slider";
@@ -67,6 +68,9 @@ function Dashboard() {
           </LinkButton>
         }
       />
+
+      {/* Above everything: a notice below the fold is a notice nobody reads. */}
+      {!isLoading && <Announcements items={data?.params?.announcements} />}
 
       <div className="md:w-[320px] md:mx-auto">
         {isLoading ? (
