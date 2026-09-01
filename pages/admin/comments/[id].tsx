@@ -83,6 +83,8 @@ interface Review {
   reservation: { id: number; reference: string; startDate: string; endDate: string } | null;
   residence: {
     id: number;
+    /** کد اقامتگاه — what the panel URL uses. Not the same as `id`. */
+    publicId: number;
     name: string;
     reference: string | null;
     host: { id: number; name: string | null; phone: string; avatarUrl: string | null } | null;
@@ -265,7 +267,7 @@ export default function ReviewDetailPage() {
       breadcrumb={
         <>
           <Link href="/admin">داشبورد</Link> / <Link href="/admin/comments">نظرات</Link> /{" "}
-          <Link href={`/admin/residences/${data.residence.id}`}>{data.residence.name}</Link>
+          <Link href={`/admin/residences/${data.residence.publicId ?? data.residence.id}`}>{data.residence.name}</Link>
         </>
       }
     >
@@ -537,7 +539,7 @@ export default function ReviewDetailPage() {
           <Card className="p-14">
             <p className="text-12 leading-20 text-gray-6C6A7D mb-2">اقامتگاه</p>
             <Link
-              href={`/admin/residences/${data.residence.id}`}
+              href={`/admin/residences/${data.residence.publicId ?? data.residence.id}`}
               className="text-13 leading-22 font-m text-primary-dark"
             >
               {data.residence.name}

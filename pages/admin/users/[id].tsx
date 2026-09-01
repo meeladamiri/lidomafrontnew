@@ -49,6 +49,8 @@ interface UserDetail {
   bankAccount: { cardNumber: string | null; shebaNumber: string | null; accountOwner: string | null } | null;
   residences: {
     id: number;
+    /** کد اقامتگاه — what the panel URL uses. Not the same as `id`. */
+    publicId: number;
     reference: string | null;
     name: string;
     state: string;
@@ -373,7 +375,7 @@ export default function AdminUserDetailPage() {
                 {data.residences.map((r) => (
                   <Link
                     key={r.id}
-                    href={`/admin/residences/${r.id}`}
+                    href={`/admin/residences/${r.publicId ?? r.id}`}
                     className="border border-gray-E5E5E6 rounded-12 overflow-hidden hover:border-primary-main transition"
                   >
                     <div className="h-[110px] bg-gray-F0F0F0">

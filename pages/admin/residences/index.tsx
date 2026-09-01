@@ -378,7 +378,7 @@ export default function AdminResidencesPage() {
                     </td>
                     <td className="px-16 py-12 max-w-[220px]">
                       <Link
-                        href={`/admin/residences/${r.id}`}
+                        href={`/admin/residences/${r.publicId}`}
                         className="text-14 leading-20 text-black line-clamp-2 hover:text-primary-dark"
                       >
                         {r.name}
@@ -467,7 +467,7 @@ export default function AdminResidencesPage() {
 
                   <div className="p-14 flex flex-col gap-y-8">
                     <Link
-                      href={`/admin/residences/${r.id}`}
+                      href={`/admin/residences/${r.publicId}`}
                       className="text-14 leading-22 text-black line-clamp-2 hover:text-primary-dark"
                     >
                       {r.name}
@@ -504,7 +504,7 @@ export default function AdminResidencesPage() {
                       قیمت: {faMoney(r.weekPrice)}
                     </div>
 
-                    <Link href={`/admin/residences/${r.id}`} className="mt-4">
+                    <Link href={`/admin/residences/${r.publicId}`} className="mt-4">
                       <Button className="w-full">مشاهده جزئیات</Button>
                     </Link>
                   </div>

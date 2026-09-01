@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState  , useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import useSWR from "swr";
@@ -171,13 +171,30 @@ export default function AdminResidenceDetailPage() {
   const [pendingState, setPendingState] = useState<string | null>(null);
   const [tab, setTab] = useState<TabKey>("basic");
 
-  const { data, isLoading, mutate } = useSWR<ResidenceDetail>(
+  // The URL carries the کد اقامتگاه. Only this one request accepts it; the
+  // server resolves it and hands back the internal id, which everything below
+  // uses. The two numbers collide on 1,640 listings, so a write addressed by
+  // the wrong one would edit a different residence.
+  const { data, isLoading, mutate, error } = useSWR<ResidenceDetail>(
     id ? `/api/admin/residences/${id}` : null,
     (path: string) => apiFetch<ResidenceDetail>(path)
   );
 
+  // Old panel bookmarks hold the internal id. The server answers those with
+  // the code they should have used, so the page corrects its own address
+  // rather than showing a dead end.
+  useEffect(() => {
+    const canonical = (error as { details?: { canonicalId?: number } } | undefined)?.details
+      ?.canonicalId;
+    if (canonical) router.replace(`/admin/residences/${canonical}`);
+  }, [error, router]);
+
   async function patch(body: Record<string, unknown>) {
-    await apiFetch(`/api/admin/residences/${id}`, { method: "PATCH", body: JSON.stringify(body) });
+    if (!data) return;
+    await apiFetch(`/api/admin/residences/${data.id}`, {
+      method: "PATCH",
+      body: JSON.stringify(body),
+    });
     mutate();
   }
 

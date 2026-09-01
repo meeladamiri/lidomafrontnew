@@ -22,10 +22,19 @@ export function clearToken() {
 export class ApiError extends Error {
   status: number;
   code?: string;
-  constructor(status: number, message: string, code?: string) {
+  /**
+   * The error's structured payload, when it has one.
+   *
+   * Dropped until now, which made server-side hints unreachable: the residence
+   * route answers an internal-id URL with the کد اقامتگاه the caller should
+   * have used, and without this the page could only show a dead end.
+   */
+  details?: unknown;
+  constructor(status: number, message: string, code?: string, details?: unknown) {
     super(message);
     this.status = status;
     this.code = code;
+    this.details = details;
   }
 }
 
@@ -50,7 +59,7 @@ export async function apiFetch<T = unknown>(path: string, options: RequestInit =
       clearToken();
       if (typeof window !== "undefined") window.location.href = "/admin/login";
     }
-    throw new ApiError(res.status, body?.message ?? "خطای غیرمنتظره", body?.code);
+    throw new ApiError(res.status, body?.message ?? "خطای غیرمنتظره", body?.code, body?.details);
   }
 
   return body.data ?? body;

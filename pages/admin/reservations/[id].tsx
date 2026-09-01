@@ -107,6 +107,8 @@ interface ReservationDetail {
   hostProfile: PartyProfile | null;
   residence: {
     id: number;
+    /** کد اقامتگاه — what the panel URL uses. Not the same as `id`. */
+    publicId: number;
     name: string;
     reference: string;
     type: "BOOMGARDI" | "SUIT";
@@ -596,7 +598,7 @@ function ResidenceCard({ data }: { data: ReservationDetail }) {
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-x-8 flex-wrap gap-y-4">
             <Link
-              href={`/admin/residences/${r.id}`}
+              href={`/admin/residences/${r.publicId ?? r.id}`}
               className="text-14 leading-22 font-m text-primary-dark hover:text-primary-main"
             >
               {r.name}
@@ -644,7 +646,7 @@ function ResidenceCard({ data }: { data: ReservationDetail }) {
       )}
 
       <div className="mt-12">
-        <Link href={`/admin/residences/${r.id}/calendar`}>
+        <Link href={`/admin/residences/${r.publicId ?? r.id}/calendar`}>
           <Button variant="secondary">
             <i className="icon-CalendarFlash text-16" /> تقویم اقامتگاه
           </Button>
