@@ -1,21 +1,29 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import Link from "next/link";
-import { clearToken, getToken } from "@/api/Admin/adminApi";
+import useSWR from "swr";
+import { apiFetch, clearToken, getToken } from "@/api/Admin/adminApi";
 
 // Icons come from the project's own icomoon font (styles/icomoon.css, loaded
 // globally) — same visual language as the rest of the site, no extra bundle.
-const NAV: { href: string; label: string; icon: string }[] = [
+/**
+ * `badge` marks the links with a queue behind them. Only queues get a number:
+ * "9,574 residences" never goes down, so a count beside it trains the eye to
+ * skip counts — which costs you the one badge that did mean something.
+ */
+const NAV: { href: string; label: string; icon: string; badge?: SidebarCountKey }[] = [
   { href: "/admin", label: "داشبورد", icon: "icon-Home" },
   { href: "/admin/users", label: "کاربران", icon: "icon-Profile" },
-  { href: "/admin/residences", label: "اقامتگاه‌ها", icon: "icon-Homes" },
-  { href: "/admin/reservations", label: "رزروها", icon: "icon-Reserve" },
-  { href: "/admin/comments", label: "نظرات", icon: "icon-message" },
+  { href: "/admin/residences", label: "اقامتگاه‌ها", icon: "icon-Homes", badge: "residences" },
+  { href: "/admin/reservations", label: "رزروها", icon: "icon-Reserve", badge: "reservations" },
+  { href: "/admin/comments", label: "نظرات", icon: "icon-message", badge: "comments" },
   { href: "/admin/conversations", label: "گفتگوها", icon: "icon-Comments" },
   { href: "/admin/statistics", label: "گزارش‌ها", icon: "icon-Amaar" },
   { href: "/admin/wallet", label: "کیف پول و تسویه", icon: "icon-Cash" },
   { href: "/admin/settings", label: "تنظیمات", icon: "icon-Setting" },
 ];
+
+type SidebarCountKey = "residences" | "reservations" | "comments";
 
 export default function AdminLayout({
   children,
@@ -33,6 +41,14 @@ export default function AdminLayout({
   toolbar?: React.ReactNode;
 }) {
   const router = useRouter();
+  // Refreshed on focus, so a badge cleared in another tab does not sit there
+  // claiming work that is already done.
+  const { data: counts } = useSWR<Record<SidebarCountKey, number>>(
+    "/api/admin/sidebar-counts",
+    (path: string) => apiFetch<Record<SidebarCountKey, number>>(path),
+    { refreshInterval: 120000 }
+  );
+
   const [ready, setReady] = useState(false);
   const [adminName, setAdminName] = useState<string>("");
 
@@ -90,8 +106,15 @@ export default function AdminLayout({
                   : "text-gray-6C6A7D hover:bg-gray-F0F0F0"
               }`}
             >
-              <span className="w-40 group-hover:w-20 group-focus-within:w-20 shrink-0 flex items-center justify-center transition-all">
+              <span className="relative w-40 group-hover:w-20 group-focus-within:w-20 shrink-0 flex items-center justify-center transition-all">
                 <i className={`${item.icon} text-20`} />
+                {/* On the icon while the rail is collapsed, so the number is
+                    still visible when the labels are not. */}
+                {!!item.badge && !!counts?.[item.badge] && (
+                  <span className="absolute -top-4 -left-2 min-w-16 h-16 px-4 rounded-full bg-[#E53935] text-white text-10 leading-16 font-m flex items-center justify-center">
+                    {counts[item.badge]! > 99 ? "+۹۹" : counts[item.badge]!.toLocaleString("fa-IR")}
+                  </span>
+                )}
               </span>
               <span className="text-14 leading-20 whitespace-nowrap opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity duration-200">
                 {item.label}

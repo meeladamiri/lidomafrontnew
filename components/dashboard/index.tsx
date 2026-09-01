@@ -86,7 +86,7 @@ function Dashboard() {
 
       <div className="mt-16 mb-24 ">
         <div className="grid grid-cols-12 gap-10">
-          {isLoading ? <DashboardPageGrid /> : <Grid isHost={!!data?.params?.partner?.is_host} />}
+          {isLoading ? <DashboardPageGrid /> : <Grid isHost={!!data?.params?.partner?.is_host} badges={data?.params?.badges} />}
         </div>
       </div>
 
