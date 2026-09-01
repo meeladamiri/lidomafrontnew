@@ -45,3 +45,26 @@ export const CONTACT_WINDOW_NOTE =
 
 export const INVOICE_WINDOW_NOTE =
   "چاپ صورتحساب تا یک روز پس از پایان سفر امکان‌پذیر است";
+
+/**
+ * Whether the two sides' contact details may be shown at all.
+ *
+ * Two conditions, and both have to hold:
+ *
+ *   1. **The booking is قطعی.** Before that it is a request, not an
+ *      arrangement — a host who has not accepted has no reason to have the
+ *      guest's number, and a guest whose request may still be declined has no
+ *      reason to have the address. Handing them over early is how a booking
+ *      gets completed outside the platform.
+ *   2. **The window is still open** — see isContactOpen.
+ *
+ * The address is included deliberately: a listing's exact address is as much
+ * a contact detail as the phone number, and showing it on an unconfirmed
+ * request gives away the thing the booking is for.
+ */
+export function canShowContact(
+  state: string | undefined,
+  endDate: string | Date | null | undefined
+): boolean {
+  return state === "DONE" && isContactOpen(endDate);
+}

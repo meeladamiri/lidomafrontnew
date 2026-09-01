@@ -16,7 +16,7 @@ import {
   unDiscountTheCodeDiscount,
 } from "api/Reserves";
 import { useRouter } from "next/router";
-import { isContactOpen, CONTACT_WINDOW_NOTE } from "@/utilities/tripWindow";
+import { canShowContact, CONTACT_WINDOW_NOTE } from "@/utilities/tripWindow";
 import { ReserveDetailsCheckout_enum } from "constants/enums/reserve_details_checkout";
 import { TinyLoader } from "components/General/Loader/TinyLoader";
 import moment from "moment-jalaali";
@@ -899,7 +899,7 @@ function MyTripDetails() {
                   {/* One day past checkout, not the moment of it — a guest who
                       left something behind still needs the host. After that
                       the number goes away for good; see utilities/tripWindow. */}
-                  {isContactOpen(reserveInfo?.end_date) && (
+                  {canShowContact(reserveInfo?.state, reserveInfo?.end_date) && (
                     <div className="mt-18 md:mt-24 md:max-w-[224px]">
                       {reserveInfo?.state === ReserveStates_enum.DONE ? (
                         <LinkButton

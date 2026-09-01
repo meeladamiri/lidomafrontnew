@@ -51,6 +51,12 @@ interface Announcement {
   startsAt: string | null;
   endsAt: string | null;
   sortOrder: number;
+  maxViews: number | null;
+  backgroundColor: string | null;
+  textColor: string | null;
+  titleBold: boolean;
+  dashedBorder: boolean;
+  imageUrlMobile: string | null;
   isLive: boolean;
   createdBy: { id: number; name: string | null } | null;
 }
@@ -78,6 +84,12 @@ const EMPTY = {
   startsAt: "",
   endsAt: "",
   sortOrder: 0,
+  maxViews: "" as string,
+  backgroundColor: "",
+  textColor: "",
+  titleBold: true,
+  dashedBorder: false,
+  imageUrlMobile: "",
 };
 
 type Draft = typeof EMPTY;
@@ -210,6 +222,12 @@ function Editor({
             startsAt: announcement.startsAt?.slice(0, 10) ?? "",
             endsAt: announcement.endsAt?.slice(0, 10) ?? "",
             sortOrder: announcement.sortOrder,
+            maxViews: announcement.maxViews != null ? String(announcement.maxViews) : "",
+            backgroundColor: announcement.backgroundColor ?? "",
+            textColor: announcement.textColor ?? "",
+            titleBold: announcement.titleBold,
+            dashedBorder: announcement.dashedBorder,
+            imageUrlMobile: announcement.imageUrlMobile ?? "",
           }
         : EMPTY
     );
@@ -240,6 +258,14 @@ function Editor({
         startsAt: draft.startsAt || null,
         endsAt: draft.endsAt || null,
         sortOrder: Number(draft.sortOrder) || 0,
+        // Empty means "every time" — null, not 0, which the schema would
+        // reject and which would read as "never show it".
+        maxViews: draft.maxViews.trim() ? Number(draft.maxViews) : null,
+        backgroundColor: draft.backgroundColor.trim() || null,
+        textColor: draft.textColor.trim() || null,
+        titleBold: draft.titleBold,
+        dashedBorder: draft.dashedBorder,
+        imageUrlMobile: draft.imageUrlMobile.trim() || null,
       });
 
       if (announcement) {
@@ -297,14 +323,24 @@ function Editor({
             />
           </Field>
 
-          <Field label="آدرس تصویر (اختیاری)" hint="اگر خالی باشد فقط متن نمایش داده می‌شود">
-            <Input
-              value={draft.imageUrl}
-              onChange={(e) => set("imageUrl", e.target.value)}
-              placeholder="https://…"
-              dir="ltr"
-            />
-          </Field>
+          <div className="grid grid-cols-2 gap-10">
+            <Field label="تصویر دسکتاپ" hint="خالی = بدون تصویر">
+              <Input
+                value={draft.imageUrl}
+                onChange={(e) => set("imageUrl", e.target.value)}
+                placeholder="https://…"
+                dir="ltr"
+              />
+            </Field>
+            <Field label="تصویر موبایل" hint="خالی = همان تصویر دسکتاپ">
+              <Input
+                value={draft.imageUrlMobile}
+                onChange={(e) => set("imageUrlMobile", e.target.value)}
+                placeholder="https://…"
+                dir="ltr"
+              />
+            </Field>
+          </div>
 
           <div className="grid grid-cols-2 gap-10">
             <Field label="لینک (اختیاری)">
@@ -374,6 +410,102 @@ function Editor({
             </Field>
           </div>
 
+          <div className="grid grid-cols-2 gap-10">
+            <Field
+              label="دفعات نمایش"
+              hint="خالی = هر بار · ۱ = فقط یک بار"
+            >
+              <Input
+                value={draft.maxViews}
+                onChange={(e) => set("maxViews", e.target.value.replace(/[^0-9]/g, ""))}
+                inputMode="numeric"
+                placeholder="هر بار"
+              />
+            </Field>
+            <Field label="ترتیب" hint="کوچکتر بالاتر">
+              <Input
+                value={String(draft.sortOrder)}
+                onChange={(e) => set("sortOrder", Number(e.target.value.replace(/[^0-9]/g, "")) || 0)}
+                inputMode="numeric"
+              />
+            </Field>
+          </div>
+
+          <div className="rounded-10 border border-gray-E5E5E6 p-12">
+            <p className="text-12 leading-20 text-gray-6C6A7D mb-10">ظاهر</p>
+
+            <div className="grid grid-cols-2 gap-10 mb-10">
+              <Field label="رنگ پس‌زمینه">
+                <div className="flex items-center gap-x-8">
+                  <input
+                    type="color"
+                    value={draft.backgroundColor || "#E6FBF8"}
+                    onChange={(e) => set("backgroundColor", e.target.value)}
+                    className="w-40 h-40 rounded-8 border border-gray-E5E5E6 shrink-0"
+                  />
+                  <Input
+                    value={draft.backgroundColor}
+                    onChange={(e) => set("backgroundColor", e.target.value)}
+                    placeholder="پیش‌فرض"
+                    dir="ltr"
+                  />
+                </div>
+              </Field>
+              <Field label="رنگ متن">
+                <div className="flex items-center gap-x-8">
+                  <input
+                    type="color"
+                    value={draft.textColor || "#000000"}
+                    onChange={(e) => set("textColor", e.target.value)}
+                    className="w-40 h-40 rounded-8 border border-gray-E5E5E6 shrink-0"
+                  />
+                  <Input
+                    value={draft.textColor}
+                    onChange={(e) => set("textColor", e.target.value)}
+                    placeholder="پیش‌فرض"
+                    dir="ltr"
+                  />
+                </div>
+              </Field>
+            </div>
+
+            {/* Presets, because most notices want one of a few looks and
+                picking hex codes by hand produces the ones that clash. */}
+            <div className="flex flex-wrap gap-6 mb-10">
+              {[
+                { name: "پیش‌فرض", bg: "", fg: "" },
+                { name: "هشدار", bg: "#FFF8EC", fg: "#7A4B00" },
+                { name: "خطر", bg: "#FDECEC", fg: "#8A1C1C" },
+                { name: "موفق", bg: "#EAF7EA", fg: "#14600F" },
+                { name: "خنثی", bg: "#F4F5F6", fg: "#2B3A55" },
+              ].map((preset) => (
+                <button
+                  key={preset.name}
+                  type="button"
+                  onClick={() => {
+                    set("backgroundColor", preset.bg);
+                    set("textColor", preset.fg);
+                  }}
+                  className="rounded-full border border-gray-E5E5E6 px-10 py-4 text-12 leading-18"
+                  style={{ backgroundColor: preset.bg || undefined, color: preset.fg || undefined }}
+                >
+                  {preset.name}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex items-center gap-x-20 flex-wrap gap-y-8">
+              <label className="flex items-center gap-x-8 text-13 text-gray-6C6A7D">
+                <Toggle checked={draft.titleBold} onChange={(v) => set("titleBold", v)} />
+                عنوان پررنگ
+              </label>
+              <label className="flex items-center gap-x-8 text-13 text-gray-6C6A7D">
+                <Toggle checked={draft.dashedBorder} onChange={(v) => set("dashedBorder", v)} />
+                کادر خط‌چین
+              </label>
+            </div>
+          </div>
+
           <label className="flex items-center gap-x-8 text-13 text-gray-6C6A7D">
             <Toggle checked={draft.isActive} onChange={(v) => set("isActive", v)} />
             فعال
@@ -389,6 +521,14 @@ function Editor({
             <AnnouncementPreview draft={draft} />
           </div>
           <p className="text-11 leading-18 text-gray-9B9BAA mt-8">
+            {draft.style === "MODAL"
+              ? "به صورت پنجره‌ی بازشو روی صفحه باز می‌شود."
+              : "به صورت نوار، بالای پیشخوان."}{" "}
+            {draft.maxViews.trim()
+              ? `حداکثر ${Number(draft.maxViews).toLocaleString("fa-IR")} بار برای هر کاربر.`
+              : "هر بار که پیشخوان باز شود."}
+          </p>
+          <p className="text-11 leading-18 text-gray-9B9BAA mt-4">
             {draft.audience === "ALL"
               ? "برای همه‌ی کاربران واردشده نمایش داده می‌شود."
               : draft.audience === "HOSTS"
@@ -430,21 +570,39 @@ function AnnouncementPreview({ draft }: { draft: Draft }) {
     return <p className="text-12 text-gray-9B9BAA text-center py-20">عنوان را بنویسید…</p>;
   }
 
+  const img = draft.imageUrl.trim() || draft.imageUrlMobile.trim();
+
   return (
-    <div className="rounded-12 bg-white border-1 border-solid border-gray-E5E5E6 overflow-hidden">
-      {!!draft.imageUrl.trim() && (
+    <div
+      className={`rounded-12 border-1 border-solid overflow-hidden ${
+        draft.backgroundColor ? "" : "bg-primary-light"
+      } border-gray-CACFD3`}
+      style={{
+        backgroundColor: draft.backgroundColor || undefined,
+        borderStyle: draft.dashedBorder ? "dashed" : undefined,
+      }}
+    >
+      {!!img && (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={draft.imageUrl} alt="" className="w-full h-[120px] object-cover" />
+        <img src={img} alt="" className="w-full max-h-[140px] object-cover" />
       )}
       <div className="p-14">
-        <p className="text-15 leading-24 font-m text-black">{draft.title || "عنوان اطلاعیه"}</p>
+        <p
+          className={`text-16 leading-26 ${draft.titleBold ? "font-b" : "font-r"} text-black`}
+          style={{ color: draft.textColor || undefined }}
+        >
+          {draft.title || "عنوان اطلاعیه"}
+        </p>
         {!!draft.body.trim() && (
-          <p className="text-13 leading-22 text-gray-6C6A7D mt-4 whitespace-pre-line">
+          <p
+            className="text-13 leading-22 text-gray-6C6A7D mt-4 whitespace-pre-line"
+            style={{ color: draft.textColor || undefined }}
+          >
             {draft.body}
           </p>
         )}
         {!!draft.linkUrl.trim() && (
-          <span className="inline-block mt-10 rounded-8 bg-primary-main text-white text-13 leading-22 px-14 py-6">
+          <span className="inline-block mt-12 rounded-8 bg-primary-main text-white text-13 leading-22 px-16 py-8">
             {draft.linkLabel.trim() || "مشاهده"}
           </span>
         )}
