@@ -7,6 +7,7 @@ import AdminLayout from "@/components/Admin/Layout";
 import ResidenceImagesModal from "@/components/Admin/Residence/ImagesModal";
 import StateChangeModal from "@/components/Admin/Residence/StateChangeModal";
 import CalendarTab from "@/components/Admin/Residence/CalendarTab";
+import LocationTab from "@/components/Admin/Residence/LocationTab";
 import StatsTab from "@/components/Admin/Residence/StatsTab";
 import ReviewsTab from "@/components/Admin/Residence/ReviewsTab";
 import DocumentsTab from "@/components/Admin/Residence/DocumentsTab";
@@ -134,6 +135,7 @@ const STATE: Record<string, { label: string; tone: "green" | "yellow" | "red" | 
 
 const TABS = [
   { key: "basic", label: "اطلاعات پایه" },
+  { key: "location", label: "موقعیت مکانی" },
   { key: "capacity", label: "ظرفیت" },
   { key: "amenities", label: "امکانات" },
   { key: "rules", label: "قوانین و مقررات" },
@@ -292,6 +294,10 @@ export default function AdminResidenceDetailPage() {
       {data && tab === "reservations" && <ReservationsTab residenceId={data.id} />}
 
       {data && tab === "calendar" && <CalendarTab residenceId={data.id} />}
+
+      {data && tab === "location" && (
+        <LocationTab residenceId={data.id} residence={data} onSaved={mutate} />
+      )}
 
       {data && tab === "stats" && <StatsTab residenceId={data.id} />}
 

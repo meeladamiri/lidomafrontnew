@@ -25,6 +25,8 @@ const HostInfo = dynamic(() => import("./HostInfo"), {
 const ResCapacity = dynamic(() => import("./ResCapacity"), {
   ssr: true,
 });
+import TouristAttractionsPlaces from "./TouristAttractionsPlaces";
+
 const ResGeoLocation = dynamic(() => import("../ResCompleteInfo/ResGeoLocation"), {
   ssr: true,
 });
@@ -69,6 +71,21 @@ function ResCompleteInfo() {
       <LazyLoad height={453} once offset={150}>
         <ResGeoLocation />
       </LazyLoad>
+
+      {/* "فاصله تا جاذبه‌های گردشگری". The component and the data have both
+          existed the whole time — 14,866 rows on 1,212 listings — but nothing
+          rendered it and the API mapper hardcoded an empty array. Deliberately
+          NOT lazy-loaded: it is crawlable text about the neighbourhood, which
+          is exactly the kind of content these pages rank on. */}
+      {!!resp?.distances?.length && (
+        <section>
+          <TouristAttractionsPlaces
+            cityName={resp?.residence_info?.city || ""}
+            places={resp.distances}
+            wrapperClassname="pb-24"
+          />
+        </section>
+      )}
       {/* SEO: rules are crawlable text — must be in the SSR HTML, not behind
           a client-only LazyLoad placeholder */}
       <section>

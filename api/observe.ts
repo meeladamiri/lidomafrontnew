@@ -256,7 +256,17 @@ export function mapObserveResidenceData(
       schema_data: (residence.amenities || [])
         .filter((ra: any) => ra.amenity?.category === "امکانات")
         .map((ra: any) => ({ [ra.amenity.name]: true })),
-      distances: [],
+      // The backend serves these now. They were hardcoded empty because the
+      // payload had no such field, so 1,212 listings carried distances that
+      // never reached a page.
+      // Shaped as IDistanceItem, which is what TouristAttractionsPlaces reads.
+      // A row with no distance still belongs on the page — the name and the
+      // travel time are useful on their own — so only the label is required.
+      distances: (residence.distances || []).map((d: any) => ({
+        name: d.placeName,
+        distance: d.distance || "",
+        time: d.eta || "",
+      })),
       // "جستجوهای مرتبط" — computed by the backend from this residence's own
       // amenities (type/area/pool/...) + its city, like the old site.
       tags: tags || [],

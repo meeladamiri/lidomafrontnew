@@ -167,7 +167,7 @@ export interface IDistanceItem {
 }
 
 export interface IObserveResidenceData {
-  distances: IDistance[];
+  distances: IDistanceItem[];
   faqs: I_FAQ[];
   features: IFeature[];
   images: T_image[];

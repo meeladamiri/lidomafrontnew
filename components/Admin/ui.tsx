@@ -615,6 +615,29 @@ export function parseNum(input: string): number {
   return Number(ascii.replace(/[^\d]/g, "")) || 0;
 }
 
+/**
+ * A decimal coordinate typed by hand.
+ *
+ * Deliberately NOT `parseNum`: that one strips everything that is not a digit,
+ * which turns "35.6892" into 356892 and drops a pin in the Indian Ocean. This
+ * keeps the decimal point and the sign, and still accepts Persian and Arabic
+ * digits — a field showing ۳۵٫۶۸۹۲ has to be re-readable after a keystroke.
+ *
+ * Returns null for anything that is not a number, so an empty or half-typed
+ * field ("35.", "-") leaves the value alone instead of writing NaN.
+ */
+export function parseCoord(input: string): number | null {
+  const ascii = input
+    .replace(/[۰-۹]/g, (d) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)))
+    .replace(/[٠-٩]/g, (d) => String("٠١٢٣٤٥٦٧٨٩".indexOf(d)))
+    // Both decimal separators Persian keyboards produce.
+    .replace(/[٫،]/g, ".")
+    .replace(/[^0-9.-]/g, "");
+  if (!ascii || ascii === "-" || ascii === "." || ascii === "-.") return null;
+  const n = Number(ascii);
+  return Number.isFinite(n) ? n : null;
+}
+
 export const faNum = (n: number | null | undefined) => (n ?? 0).toLocaleString("fa-IR");
 
 /**
