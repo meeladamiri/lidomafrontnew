@@ -17,13 +17,13 @@ const NAV: { href: string; label: string; icon: string; badge?: SidebarCountKey 
   { href: "/admin/residences", label: "اقامتگاه‌ها", icon: "icon-Homes", badge: "residences" },
   { href: "/admin/reservations", label: "رزروها", icon: "icon-Reserve", badge: "reservations" },
   { href: "/admin/comments", label: "نظرات", icon: "icon-message", badge: "comments" },
-  { href: "/admin/conversations", label: "گفتگوها", icon: "icon-Comments" },
+  { href: "/admin/conversations", label: "گفتگوها", icon: "icon-Comments", badge: "conversations" },
   { href: "/admin/statistics", label: "گزارش‌ها", icon: "icon-Amaar" },
   { href: "/admin/wallet", label: "کیف پول و تسویه", icon: "icon-Cash" },
   { href: "/admin/settings", label: "تنظیمات", icon: "icon-Setting" },
 ];
 
-type SidebarCountKey = "residences" | "reservations" | "comments";
+type SidebarCountKey = "residences" | "reservations" | "comments" | "conversations";
 
 export default function AdminLayout({
   children,
