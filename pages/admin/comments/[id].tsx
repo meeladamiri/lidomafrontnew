@@ -89,15 +89,49 @@ interface Review {
   };
 }
 
-function Stars5({ value }: { value: number }) {
+/**
+ * Five stars, clickable.
+ *
+ * Buttons rather than a range input: a score is one of five named things, and
+ * the thing being clicked should be the thing being chosen. Each carries its
+ * own label so the row is usable without seeing the colour.
+ */
+function Stars5({
+  value,
+  onPick,
+}: {
+  value: number;
+  onPick?: (n: number) => void;
+}) {
   return (
     <span className="inline-flex items-center gap-x-2" dir="ltr">
-      {[1, 2, 3, 4, 5].map((n) => (
-        <i
-          key={n}
-          className={`icon-Star text-14 ${n <= Math.round(value) ? "text-[#FFC120]" : "text-gray-E5E5E6"}`}
-        />
-      ))}
+      {[1, 2, 3, 4, 5].map((n) => {
+        const lit = n <= Math.round(value);
+        if (!onPick) {
+          return (
+            <i
+              key={n}
+              className={`icon-Star text-14 ${lit ? "text-[#FFC120]" : "text-gray-E5E5E6"}`}
+            />
+          );
+        }
+        return (
+          <button
+            key={n}
+            type="button"
+            title={`${n} از ۵`}
+            aria-label={`${n} از ۵`}
+            onClick={() => onPick(n)}
+            className="leading-none"
+          >
+            <i
+              className={`icon-Star text-16 transition ${
+                lit ? "text-[#FFC120]" : "text-gray-E5E5E6 hover:text-[#FFE2A0]"
+              }`}
+            />
+          </button>
+        );
+      })}
     </span>
   );
 }
@@ -138,6 +172,9 @@ export default function ReviewDetailPage() {
   const [answer, setAnswer] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState<{ tone: "ok" | "err"; text: string } | null>(null);
+  // Only the scores that were touched. Sent as-is, so an untouched field is
+  // never written back — the server keeps its current value.
+  const [scoreDraft, setScoreDraft] = useState<Record<string, number>>({});
   const [rejecting, setRejecting] = useState<"comment" | "answer" | null>(null);
   const [rejectNote, setRejectNote] = useState("");
 
@@ -147,6 +184,7 @@ export default function ReviewDetailPage() {
     if (!data) return;
     setComment(data.comment ?? "");
     setAnswer(data.hostAnswer ?? "");
+    setScoreDraft({});
   }, [data?.id, data?.comment, data?.hostAnswer]);
 
   async function run(label: string, fn: () => Promise<unknown>, okText: string) {
@@ -215,6 +253,9 @@ export default function ReviewDetailPage() {
       </AdminLayout>
     );
 
+  const scoresDirty = SCORES.some(
+    (sc) => scoreDraft[sc.key] !== undefined && scoreDraft[sc.key] !== data[sc.key]
+  );
   const commentDirty = comment.trim() !== (data.comment ?? "").trim();
   const answerDirty = answer.trim() !== (data.hostAnswer ?? "").trim();
 
@@ -269,17 +310,57 @@ export default function ReviewDetailPage() {
               </span>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-20 gap-y-8 mb-16">
-              {SCORES.map((s) => (
-                <div key={s.key} className="flex items-center justify-between gap-x-8">
-                  <span className="text-12 text-gray-6C6A7D">{s.label}</span>
-                  <span className="flex items-center gap-x-6">
-                    <Stars5 value={data[s.key] as number} />
-                    <span className="text-12 text-black">({faNum(data[s.key] as number)})</span>
-                  </span>
-                </div>
-              ))}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-20 gap-y-8 mb-10">
+              {SCORES.map((sc) => {
+                const current = scoreDraft[sc.key] ?? (data[sc.key] as number);
+                const moved = scoreDraft[sc.key] !== undefined && scoreDraft[sc.key] !== data[sc.key];
+                return (
+                  <div key={sc.key} className="flex items-center justify-between gap-x-8">
+                    <span className={`text-12 ${moved ? "text-[#B26A00] font-m" : "text-gray-6C6A7D"}`}>
+                      {sc.label}
+                    </span>
+                    <span className="flex items-center gap-x-6">
+                      <Stars5
+                        value={current}
+                        onPick={(n) => setScoreDraft((prev) => ({ ...prev, [sc.key]: n }))}
+                      />
+                      <span className={`text-12 ${moved ? "text-[#B26A00] font-m" : "text-black"}`}>
+                        ({faNum(current)})
+                      </span>
+                    </span>
+                  </div>
+                );
+              })}
             </div>
+
+            {scoresDirty && (
+              <div className="flex items-center justify-between gap-x-12 flex-wrap gap-y-8 rounded-10 bg-[#FFF8EC] border border-[#F5D9A8] px-12 py-10 mb-14">
+                <p className="text-12 leading-20 text-black">
+                  با ذخیره‌ی امتیازها، میانگین این نظر و امتیاز کل اقامتگاه دوباره حساب می‌شود.
+                </p>
+                <div className="flex items-center gap-x-8">
+                  <Button variant="secondary" onClick={() => setScoreDraft({})}>
+                    بازگردانی
+                  </Button>
+                  <Button
+                    disabled={busy === "edit-scores"}
+                    onClick={() =>
+                      run(
+                        "edit-scores",
+                        () =>
+                          apiFetch(`/api/admin/reviews/${id}/scores`, {
+                            method: "PUT",
+                            body: JSON.stringify(scoreDraft),
+                          }),
+                        "امتیازها ذخیره شد"
+                      ).then(() => setScoreDraft({}))
+                    }
+                  >
+                    ذخیره امتیازها
+                  </Button>
+                </div>
+              </div>
+            )}
 
             <label className="block text-11 text-gray-9B9BAA mb-4">متن نظر مهمان</label>
             <textarea
