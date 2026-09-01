@@ -54,7 +54,21 @@ export interface IDashboardData {
 const getDashboardData = async () => {
   const url = `/api/users/dashboard`;
 
-  return apiBuilder.setUrl(url).setCallMethod("POST").setJsonRpcMethod("call").setParams({}).call();
+  const resp = await apiBuilder
+    .setUrl(url)
+    .setCallMethod("POST")
+    .setJsonRpcMethod("call")
+    .setParams({})
+    .call();
+
+  if (resp?.status !== "success") return resp;
+
+  // The whole dashboard tree reads `data.params.*` — the envelope Odoo's
+  // JSON-RPC used. The new backend answers `{status, data}`, so every field on
+  // that page was reading undefined: no bookings, no listings, and profile
+  // prompts that appeared for everyone because `!!undefined` is false. Renamed
+  // here, the same way getAccountInfo and the residence mapper already do.
+  return { status: "success", params: resp.data };
 };
 
 const getDashboardData2 = async () => {

@@ -2,7 +2,8 @@ import PageTitle from "components/General/PageTitle";
 import Grid from "components/dashboard/Grid";
 import PendingRequests from "components/dashboard/PendingRequests";
 import { LinkButton } from "components/General/core/Button";
-import Profile from "components/dashboard/Profile";
+import ProfileCompletion from "components/dashboard/ProfileCompletion";
+import CurrentReservations from "components/dashboard/CurrentReservations";
 import GuestsComments from "components/dashboard/GuestsComments";
 import Conversations from "components/dashboard/Conversations";
 import DashboardPageSlider from "components/dashboard/Slider";
@@ -25,7 +26,7 @@ import { useEffect } from "react";
 import Loader from "../General/Loader";
 
 function Dashboard() {
-  const { data, isLoading } = useQuery(["getDashboardData"], () => getDashboardData());
+  const { data, isLoading, refetch } = useQuery(["getDashboardData"], () => getDashboardData());
   const { ref, onOpen, onClose } = useDialog();
 
   useEffect(() => {
@@ -81,7 +82,7 @@ function Dashboard() {
 
       <div className="mt-16 mb-24 ">
         <div className="grid grid-cols-12 gap-10">
-          {isLoading ? <DashboardPageGrid /> : <Grid />}
+          {isLoading ? <DashboardPageGrid /> : <Grid isHost={!!data?.params?.partner?.is_host} />}
         </div>
       </div>
 
@@ -117,19 +118,51 @@ function Dashboard() {
         <DashboardPageProfileSkeleton />
       ) : (
         !!data && (
-          <Profile
-            avatarNeedsChange={!data?.params?.partner?.has_avatar}
-            shabaNeedsChange={!data?.params?.partner?.has_shaba}
-            national_card_image_NeedsChange={!data?.params?.partner?.has_national_card_image}
+          <ProfileCompletion
+            hasAvatar={!!data?.params?.partner?.has_avatar}
+            hasShaba={!!data?.params?.partner?.has_shaba}
+            hasNationalCard={!!data?.params?.partner?.has_national_card_image}
+            isHost={!!data?.params?.partner?.is_host}
+            avatarUrl={data?.params?.partner?.image_url}
+            onDone={() => refetch()}
           />
         )
       )}
+
+      {/* Current bookings — the thing a person opens this page to see. The
+          guest list is shown to everyone, because every host is also a guest
+          sometimes; the host list only to hosts, and each hides when empty. */}
+      {!isLoading && !!data?.params?.guest_current_requests?.length && (
+        <CurrentReservations
+          title="سفرهای جاری شما"
+          icon="icon-Reserve"
+          emptyHref="/my-trips"
+          rows={data.params.guest_current_requests}
+          hrefFor={(r: any) => `/my-trips/${r.id}`}
+        />
+      )}
+
+      {!isLoading &&
+        !!data?.params?.partner?.is_host &&
+        !!data?.params?.host_current_requests?.length && (
+          <CurrentReservations
+            title="رزروهای جاری اقامتگاه‌های شما"
+            icon="icon-Homes"
+            emptyHref="/reservations"
+            rows={data.params.host_current_requests}
+            hrefFor={(r: any) => `/reservations/${r.id}`}
+          />
+        )}
 
       {isLoading ? (
         <IncompleteResidencesSkeleton />
       ) : (
         !!data &&
-        data?.params?.new_residences?.length !== 0 && (
+        // Was `new_residences.length !== 0`, which is the wrong list: this
+        // section renders only the ones under 100%, so a host whose listings
+        // were all complete still got an empty "در انتظار تکمیل" heading.
+        !!data?.params?.partner?.is_host &&
+        data?.params?.new_residences?.some((r: any) => r.completion_percent !== 100) && (
           <IncompleteResidences
             incompleteResidencesData={data?.params?.new_residences
               ?.filter((r: any) => r.completion_percent !== 100)
@@ -152,7 +185,9 @@ function Dashboard() {
         <ResidencesWaitingForExpertsConfirmSkeleton />
       ) : (
         !!data &&
-        data?.params?.new_residences?.length !== 0 && (
+        // Same again, for the complement of that filter.
+        !!data?.params?.partner?.is_host &&
+        data?.params?.new_residences?.some((r: any) => r.completion_percent === 100) && (
           <ResidencesWaitingForExpertsConfirm
             residencesWaitingForExpertsConfirmData={data?.params?.new_residences
               ?.filter((r: any) => r.completion_percent === 100)
@@ -172,16 +207,37 @@ function Dashboard() {
         )
       )}
 
-      {isLoading ? (
-        <ReviewsSkeleton />
-      ) : (
-        <GuestsComments pendingReviewsN={data?.params?.pending_reviews || 0} />
-      )}
+      {/* "نظرات مهمان‌ها" is about reviews left ON a host's listings — there is
+          nothing there for someone who has never hosted. */}
+      {!!data?.params?.partner?.is_host &&
+        (isLoading ? (
+          <ReviewsSkeleton />
+        ) : (
+          <GuestsComments pendingReviewsN={data?.params?.pending_reviews || 0} />
+        ))}
 
       {isLoading ? (
         <ConversationsSkeleton />
       ) : (
         <Conversations pendingConversationsN={data?.params?.pending_messages || 0} />
+      )}
+
+      {/* The one thing a guest's dashboard should offer that a host's should
+          not. Placed last: an invitation, not an interruption. */}
+      {!isLoading && !!data && !data?.params?.partner?.is_host && (
+        <div className="py-16">
+          <div className="rounded-16 bg-primary-light p-20">
+            <p className="text-16 leading-26 text-black font-m mb-4">
+              اقامتگاه دارید؟ میزبان شوید
+            </p>
+            <p className="text-13 leading-22 text-gray-6C6A7D mb-14">
+              اقامتگاهتان را ثبت کنید و از همین صفحه رزروها، تقویم و درآمدتان را مدیریت کنید.
+            </p>
+            <LinkButton href="/residences/submit" className="!w-auto !px-20">
+              ثبت اقامتگاه
+            </LinkButton>
+          </div>
+        </div>
       )}
     </div>
   );

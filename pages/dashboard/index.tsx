@@ -6,7 +6,9 @@ import Dashboard from "components/dashboard";
 import type { GetServerSideProps, GetServerSidePropsContext, NextPage, PreviewData } from "next";
 import { ParsedUrlQuery } from "querystring";
 
-const page = `داشبورد میزبان`;
+// Not "داشبورد میزبان": this page serves guests too now, and a guest who has
+// never hosted anything should not be told they are looking at a host panel.
+const page = `پیشخوان`;
 
 const DashboardPage: NextPage = () => {
   return (
