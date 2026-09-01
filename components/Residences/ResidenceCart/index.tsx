@@ -28,6 +28,8 @@ interface IResidenceCart {
   step?: number;
   completionPercent?: number;
   resCode: string;
+  /** کد اقامتگاه — what /rentals is addressed by. Not the same as residenceId. */
+  publicId?: number;
   resName: string;
   lastUpdate: string;
   displayType: I_Residence_display_type;
@@ -73,6 +75,7 @@ function ResidenceCart({
   step,
   completionPercent,
   resCode,
+  publicId,
   resName,
   lastUpdate,
   displayType,
@@ -273,7 +276,7 @@ function ResidenceCart({
                 <Link
                   passHref
                   prefetch={false}
-                  href={getPropertyPageUrl({ residenceId })}
+                  href={getPropertyPageUrl({ residenceId: publicId ?? residenceId })}
                   className="p-5 pl-12 text-white flex items-center gap-x-5 bg-black rounded-50 bg-opacity-80 cursor-pointer"
                   onClick={() => {
                     applySessionStorageValues_residences_list({ residenceId, residenceType });

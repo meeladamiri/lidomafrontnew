@@ -23,6 +23,8 @@ export interface IServerRoom {
   is_complete: boolean;
   last_update_time: string;
   reference: string;
+  /** کد اقامتگاه — the Odoo id for migrated listings. Not the primary key. */
+  public_id: number;
   res_type: I_Residence_display_type;
   sales_count: number;
   completion_percent?: number;
@@ -38,6 +40,8 @@ export interface IServerResidence {
   name: string;
   published: boolean;
   reference: string;
+  /** کد اقامتگاه — the Odoo id for migrated listings. Not the primary key. */
+  public_id: number;
   res_type: I_Residence_display_type;
   sales_count: number;
   state: ResidenceStates_enum;
@@ -75,6 +79,11 @@ function mapResidence(r: any): IServerResidence {
     name: r.name,
     published: !!r.published,
     reference: r.reference,
+    // The کد اقامتگاه a person reads and types is the Odoo id, not the raw
+    // reference and not the primary key. "ODOO-45285" was printed on the card
+    // verbatim, and the public-page link was built from `id`, which is a
+    // different listing on every migrated one.
+    public_id: r.reference?.startsWith("ODOO-") ? Number(r.reference.slice(5)) || r.id : r.id,
     res_type: mapDisplayType(r.type),
     sales_count: r.salesCount ?? 0,
     state: mapState(r.state),

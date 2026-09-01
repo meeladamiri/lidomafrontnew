@@ -247,8 +247,15 @@ function ResidencesList() {
                 {
                   tabLabel: !!residencesList
                     ? `غیرفعال (${
-                        residencesList.filter((r) => r.state === ResidenceStates_enum.DISABLED)
-                          .length +
+                        // Counts what the tab actually renders: DISABLED *and*
+                        // SUSPENDED. A listing the host deactivates maps to
+                        // SUSPENDED (see mapState), so it appeared in the list
+                        // while the badge beside it said (۰).
+                        residencesList.filter(
+                          (r) =>
+                            r.state === ResidenceStates_enum.DISABLED ||
+                            r.state === ResidenceStates_enum.SUSPENDED
+                        ).length +
                         (
                           roomsList?.filter((room) => room.state !== ResidenceStates_enum.ACTIVE) ||
                           []
@@ -287,7 +294,8 @@ function ResidencesList() {
                       state={resiOrRoom.state as ResidenceStates_enum}
                       step={resiOrRoom.step}
                       completionPercent={resiOrRoom.completion_percent}
-                      resCode={resiOrRoom.reference}
+                      publicId={(resiOrRoom as any).public_id ?? resiOrRoom.id}
+                      resCode={String((resiOrRoom as any).public_id ?? resiOrRoom.id)}
                       resName={resiOrRoom.name}
                       lastUpdate={miladiToJalali(resiOrRoom.last_update_time)}
                       imageUrl={resiOrRoom.image_url}
