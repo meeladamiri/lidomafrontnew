@@ -44,8 +44,14 @@ interface Review {
   averageRating: number;
   comment: string;
   hostAnswer: string | null;
-  hiddenAt: string | null;
-  hiddenReason: string | null;
+  // A review is moderated in two independent parts — see the panel's نظرات
+  // page. `status` is the single badge derived from both, sent by the server.
+  commentStatus: "PENDING" | "PUBLISHED" | "REJECTED";
+  hostAnswerStatus: "PENDING" | "PUBLISHED" | "REJECTED" | null;
+  status: string;
+  statusLabel: string;
+  moderatedAt: string | null;
+  moderationNote: string | null;
   createdAt: string;
   guest: { id: number; name: string | null; phone: string; avatarUrl: string | null } | null;
   reservation: { id: number; reference: string; startDate: string; endDate: string } | null;
@@ -111,9 +117,9 @@ export default function ReviewsTab({ residenceId }: { residenceId: number }) {
     );
 
   const rows = data.reviews.filter((r) => {
-    if (filter === "visible") return !r.hiddenAt;
-    if (filter === "hidden") return !!r.hiddenAt;
-    if (filter === "unanswered") return !r.hiddenAt && !r.hostAnswer;
+    if (filter === "visible") return r.commentStatus === "PUBLISHED";
+    if (filter === "hidden") return r.commentStatus !== "PUBLISHED";
+    if (filter === "unanswered") return r.commentStatus === "PUBLISHED" && !r.hostAnswer;
     return true;
   });
 
@@ -122,9 +128,9 @@ export default function ReviewsTab({ residenceId }: { residenceId: number }) {
     setBusy(true);
     setError(null);
     try {
-      await apiFetch(`/api/admin/reviews/${hiding.id}/hide`, {
+      await apiFetch(`/api/admin/reviews/${hiding.id}/comment-status`, {
         method: "POST",
-        body: JSON.stringify({ reason: reason.trim() }),
+        body: JSON.stringify({ status: "REJECTED", note: reason.trim() }),
       });
       setHiding(null);
       setReason("");
@@ -137,7 +143,10 @@ export default function ReviewsTab({ residenceId }: { residenceId: number }) {
   }
 
   async function unhide(review: Review) {
-    await apiFetch(`/api/admin/reviews/${review.id}/unhide`, { method: "POST" });
+    await apiFetch(`/api/admin/reviews/${review.id}/comment-status`, {
+      method: "POST",
+      body: JSON.stringify({ status: "PUBLISHED" }),
+    });
     mutate();
   }
 
@@ -235,7 +244,7 @@ export default function ReviewsTab({ residenceId }: { residenceId: number }) {
           {rows.map((r) => (
             <Card
               key={r.id}
-              className={`p-16 ${r.hiddenAt ? "bg-[#FCF6F6] border-r-4 border-r-[#E11D48]" : ""}`}
+              className={`p-16 ${r.commentStatus !== "PUBLISHED" ? "bg-[#FCF6F6] border-r-4 border-r-[#E11D48]" : ""}`}
             >
               <div className="flex items-start justify-between gap-x-12 flex-wrap gap-y-8 mb-10">
                 <div className="min-w-0">
@@ -254,8 +263,14 @@ export default function ReviewsTab({ residenceId }: { residenceId: number }) {
                     <span className="text-12 leading-20 text-gray-9B9BAA">
                       {jDate(r.createdAt)}
                     </span>
-                    {!!r.hiddenAt && <Badge tone="red">پنهان</Badge>}
-                    {!r.hiddenAt && !r.hostAnswer && <Badge tone="yellow">بی‌پاسخ</Badge>}
+                    {r.commentStatus === "REJECTED" && <Badge tone="red">رد شده</Badge>}
+                    {r.commentStatus === "PENDING" && <Badge tone="yellow">در انتظار تایید</Badge>}
+                    {r.hostAnswerStatus === "PENDING" && (
+                      <Badge tone="yellow">پاسخ میزبان در انتظار تایید</Badge>
+                    )}
+                    {r.commentStatus === "PUBLISHED" && !r.hostAnswer && (
+                      <Badge tone="gray">بی‌پاسخ</Badge>
+                    )}
                   </div>
                   {!!r.reservation && (
                     <Link
@@ -278,9 +293,12 @@ export default function ReviewsTab({ residenceId }: { residenceId: number }) {
                   >
                     {r.hostAnswer ? "ویرایش پاسخ" : "ثبت پاسخ میزبان"}
                   </Button>
-                  {r.hiddenAt ? (
+                  <Link href={`/admin/comments/${r.id}`}>
+                    <Button variant="secondary">جزئیات نظر</Button>
+                  </Link>
+                  {r.commentStatus !== "PUBLISHED" ? (
                     <Button variant="secondary" onClick={() => unhide(r)}>
-                      نمایش دوباره
+                      تایید و انتشار
                     </Button>
                   ) : (
                     <Button
@@ -316,11 +334,12 @@ export default function ReviewsTab({ residenceId }: { residenceId: number }) {
                 </div>
               )}
 
-              {!!r.hiddenAt && (
+              {r.commentStatus !== "PUBLISHED" && (
                 <div className="mt-12 rounded-10 bg-[#FDECEC] px-12 py-10">
                   <p className="text-12 leading-20 text-[#C62828]">
-                    پنهان شده در {jDate(r.hiddenAt)}
-                    {r.hiddenReason ? ` — ${r.hiddenReason}` : ""}
+                    {r.commentStatus === "REJECTED" ? "رد شده" : "در انتظار تایید"}
+                    {r.moderatedAt ? ` — ${jDate(r.moderatedAt)}` : ""}
+                    {r.moderationNote ? ` — ${r.moderationNote}` : ""}
                   </p>
                 </div>
               )}
