@@ -30,7 +30,7 @@ function NonAuthenticatedUserSideNavbarContent({
 
       <div>
         <SidebarNavItem
-          link={`/residences/submit?step=${0}`}
+          link="/residences/submit"
           icon={<i className="icon-AddHome text-24" />}
           name={"ثبت اقامتگاه"}
           badge={null}

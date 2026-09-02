@@ -1,6 +1,6 @@
 import Counter from "components/General/Counter";
 import Divider from "components/General/Divider";
-import RoomBox from "components/Residences/Submit/Steps/Step_5/RoomBox";
+import RoomBox from "components/Residences/Edit/shared/RoomBox";
 import { emptyRoomValues } from "constants/Residences/Submit/Steps/Step_5";
 import { IOtherRoomData, ISharedSpaceData } from "interfaces/Residences/Submit/Steps/Step_5";
 import { Dispatch, SetStateAction } from "react";

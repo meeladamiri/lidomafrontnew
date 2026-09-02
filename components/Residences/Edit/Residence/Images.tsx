@@ -13,7 +13,7 @@ import { DragDropContext } from "react-beautiful-dnd";
 import exception from "@/utilities/exception";
 import { EXCEPTIONTYPES } from "@/constants/enums/exception_types";
 import { monotonicFactory } from "ulid";
-import UploadedResidenceImages from "../../Submit/Steps/Step_9/UploadedResidenceImages";
+import UploadedResidenceImages from "../shared/UploadedResidenceImages";
 import { useRouter } from "next/router";
 import { editResidenceImage } from "@/api/EditResidenceImages";
 import dynamic from "next/dynamic";
@@ -22,13 +22,13 @@ const BottomSheet = dynamic(() => import("components/General/core/BottomSheet"),
   ssr: true,
 });
 const UploadedImagePreviewBottomSheet = dynamic(
-  () => import("../../Submit/Steps/Step_9/UploadedImagePreviewBottomSheet"),
+  () => import("../shared/UploadedImagePreviewBottomSheet"),
   {
     ssr: true,
   }
 );
 const ConfirmDeleteImageBottomSheet = dynamic(
-  () => import("../../Submit/Steps/Step_9/ConfirmDeleteImageBottomSheet"),
+  () => import("../shared/ConfirmDeleteImageBottomSheet"),
   {
     ssr: true,
   }
@@ -39,11 +39,11 @@ const UploadBox = dynamic(
     ssr: true,
   }
 );
-const ResidenceMainImage = dynamic(() => import("../../Submit/Steps/Step_9/ResidenceMainImage"), {
+const ResidenceMainImage = dynamic(() => import("../shared/ResidenceMainImage"), {
   ssr: true,
 });
 const EditMainImageBottomSheet = dynamic(
-  () => import("../../Submit/Steps/Step_9/EditMainImageBottomSheet"),
+  () => import("../shared/EditMainImageBottomSheet"),
   {
     ssr: true,
   }

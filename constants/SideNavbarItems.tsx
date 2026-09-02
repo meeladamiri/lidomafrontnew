@@ -91,7 +91,7 @@ export const sideNavbarItems_ForHostAccount: {
         size: 16,
       },
       name: "ثبت اقامتگاه",
-      linkTo: `/residences/submit?step=${0}`,
+      linkTo: "/residences/submit",
     },
     {
       icon: {

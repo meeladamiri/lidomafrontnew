@@ -1,4 +1,4 @@
-import SubmitResidence from "components/Residences/Submit";
+import SubmitResidence from "components/Residences/SubmitWizard";
 import { PROJECTNAMEFA } from "configs/info";
 import type { GetServerSideProps, NextPage } from "next";
 

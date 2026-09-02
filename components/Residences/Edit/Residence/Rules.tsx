@@ -4,7 +4,7 @@ import { IAmenity_ExtraFeature, ResidenceAmenity } from "interfaces/Residences/S
 import Image from "next/image";
 import { Dispatch, SetStateAction, useEffect, useState } from "react";
 import { ISelectedRulesData, IStaticRule } from "@/interfaces/Residences/Submit/Steps/Step_12";
-import SwitchItem from "components/Residences/Submit/Steps/Step_12/SwitchItem";
+import SwitchItem from "components/Residences/Edit/shared/SwitchItem";
 import { Textarea } from "@/components/General/core/Textarea";
 import { Select } from "@/components/General/core/Select";
 import { Hours } from "@/constants/Hours";

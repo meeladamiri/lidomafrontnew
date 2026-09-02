@@ -37,7 +37,7 @@ function IncompleteResidences({
         </div>
 
         <LinkButton
-          href="/residences/submit?step=0"
+          href="/residences/submit"
           className="mt-16"
           isFullWidth
           variant="outlined"

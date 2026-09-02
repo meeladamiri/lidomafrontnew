@@ -15,7 +15,7 @@ const BottomSheet = dynamic(() => import("components/General/core/BottomSheet"),
   ssr: true,
 });
 const FacilityDetailsBottomSheet = dynamic(
-  () => import("components/Residences/Submit/Steps/Step_6/FacilityDetailsBottomSheet"),
+  () => import("components/Residences/Edit/shared/FacilityDetailsBottomSheet"),
   {
     ssr: true,
   }

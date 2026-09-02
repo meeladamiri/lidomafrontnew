@@ -38,7 +38,7 @@ function IncompleteResidence({
       </div>
       <div className="col-span-3">
         <LinkButton
-          href={`/residences/submit?step=${untilWhichStepUserHasCompleted}&productId=${residenceId}`}
+          href={`/residences/submit?productId=${residenceId}`}
           isFullWidth
           className="!pr-12 !pl-8"
           onClick={() => {

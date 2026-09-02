@@ -177,7 +177,7 @@ function Dashboard() {
                   updateDate: residence.last_update,
                   completePercentage: residence.completion_percent || 0,
                   residenceId: residence.id,
-                  link: `/residences/submit?step=${residence.step}&productId=${residence.id}`,
+                  link: `/residences/submit?productId=${residence.id}`,
                   residenceImage: residence.image_url,
                 };
               })}
