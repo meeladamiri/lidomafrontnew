@@ -162,22 +162,27 @@ function Dashboard() {
         <IncompleteResidencesSkeleton />
       ) : (
         !!data &&
-        // Was `new_residences.length !== 0`, which is the wrong list: this
-        // section renders only the ones under 100%, so a host whose listings
-        // were all complete still got an empty "در انتظار تکمیل" heading.
+        // `new_residences` is the DRAFT list and nothing else, so its length is
+        // the right test. It used to be split at completion_percent === 100,
+        // with the 100% half feeding the "awaiting expert" section below —
+        // which meant a draft the host had filled in but never submitted was
+        // reported as sitting with a reviewer, and the genuinely pending
+        // listings (`residences_waiting_confirm`, built by the backend all
+        // along) were rendered nowhere.
         !!data?.params?.partner?.is_host &&
-        data?.params?.new_residences?.some((r: any) => r.completion_percent !== 100) && (
+        data?.params?.new_residences?.length > 0 && (
           <IncompleteResidences
             incompleteResidencesData={data?.params?.new_residences
-              ?.filter((r: any) => r.completion_percent !== 100)
               ?.slice(0, 3)
               ?.map((residence: any) => {
                 return {
                   title: residence.name,
                   updateDate: residence.last_update,
                   completePercentage: residence.completion_percent || 0,
-                  residenceId: residence.id,
-                  link: `/residences/submit?productId=${residence.id}`,
+                  residenceId: residence.internal_id ?? residence.id,
+                  // internal_id, not id: the wizard and every host endpoint
+                  // take the primary key, while `id` is the public (Odoo) one.
+                  link: `/residences/submit?productId=${residence.internal_id ?? residence.id}`,
                   residenceImage: residence.image_url,
                 };
               })}
@@ -189,21 +194,18 @@ function Dashboard() {
         <ResidencesWaitingForExpertsConfirmSkeleton />
       ) : (
         !!data &&
-        // Same again, for the complement of that filter.
         !!data?.params?.partner?.is_host &&
-        data?.params?.new_residences?.some((r: any) => r.completion_percent === 100) && (
+        data?.params?.residences_waiting_confirm?.length > 0 && (
           <ResidencesWaitingForExpertsConfirm
-            residencesWaitingForExpertsConfirmData={data?.params?.new_residences
-              ?.filter((r: any) => r.completion_percent === 100)
+            residencesWaitingForExpertsConfirmData={data?.params?.residences_waiting_confirm
               ?.slice(0, 3)
               ?.map((residence: any) => {
                 return {
                   title: residence.name,
                   updateDate: residence.last_update,
-                  completePercentage: residence.completion_percent || 0,
-                  residenceId: residence.id,
-                  // TODO: apply res_type to below link
-                  link: `residences/${residence.id}/edit?residenceType=product`,
+                  completePercentage: 100,
+                  residenceId: residence.internal_id ?? residence.id,
+                  link: `/residences/submit?productId=${residence.internal_id ?? residence.id}`,
                   residenceImage: residence.image_url,
                 };
               })}

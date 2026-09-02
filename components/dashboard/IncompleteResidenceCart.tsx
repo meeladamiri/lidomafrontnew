@@ -41,16 +41,26 @@ function IncompleteResidenceCart({
             </div>
           </div>
         </div>
-        <Image
-          src={residenceImage}
-          alt=""
-          className="rounded-tr-10 rounded-br-10"
-          fill
-          sizes="100vw"
-          style={{
-            objectFit: "cover",
-          }}
-        />
+        {/*
+          A draft usually has no photograph yet — the images step is the
+          seventh of ten. next/image throws on an empty src, so the card that
+          exists to say "you have not finished this" was the one most likely
+          to have nothing to render.
+        */}
+        {residenceImage ? (
+          <Image
+            src={residenceImage}
+            alt=""
+            className="rounded-tr-10 rounded-br-10"
+            fill
+            sizes="100vw"
+            style={{
+              objectFit: "cover",
+            }}
+          />
+        ) : (
+          <div className="absolute inset-0 bg-gray-F3F5F7 rounded-tr-10 rounded-br-10" />
+        )}
       </div>
 
       <div className="pl-12 p-10 flex items-center gap-x-4 w-[calc(100%-72px)]">

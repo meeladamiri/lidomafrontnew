@@ -36,8 +36,13 @@ function IncompleteResidences({
           ))}
         </div>
 
+        {/*
+          "/residences/submit" with no productId starts a NEW draft. From a
+          list of unfinished ones, "مشاهده نتایج بیشتر" has to mean "show me
+          the rest", not "make another".
+        */}
         <LinkButton
-          href="/residences/submit"
+          href="/residences/list"
           className="mt-16"
           isFullWidth
           variant="outlined"
