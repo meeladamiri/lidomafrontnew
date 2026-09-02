@@ -3,16 +3,20 @@ import { getCalendarData, IServerCalendarData } from "api/Calendar/Calendar";
 import Calendar from "components/Calendar";
 import CalendarHelp from "components/Calendar/CalendarHelp";
 import BottomSheet, { THandleSmoothClose } from "components/General/core/BottomSheet";
-import { Button, LinkButton } from "components/General/core/Button";
+import { Button } from "components/General/core/Button";
 import DropDown from "components/General/core/DropDown";
 import Cart from "components/General/core/DropDown/DropdownCart";
 import ModalHeader from "components/General/core/ModalHeader";
 import { Switch } from "components/General/core/Switch";
 import { TinyLoader } from "components/General/Loader/TinyLoader";
 import Link from "next/link";
-import InstantBookingToggle from "./InstantBookingToggle";
+const EditResidenceGeneralPricing = dynamic(
+  () => import("@/components/Residences/Edit/GeneralPricing"),
+  { ssr: false }
+);
 import { useFormik } from "formik";
 import moment from "moment-jalaali";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import EditCalendarBottomSheet from "components/Residences/Edit/Calendar/EditCalendarBottomSheet";
@@ -21,6 +25,7 @@ import exception from "utilities/exception";
 import { defaultError, EXCEPTIONTYPES } from "constants/enums/exception_types";
 import { ResidenceTypes_enum } from "constants/enums/residence_types";
 import { getAllUniqueSelectedDays_Array } from "utilities/calendar/getAllUniqueSelectedDays_Array";
+import { jalaliToIso } from "@/utilities/jalaliGregorian";
 import { ResidenceStates_enum } from "constants/enums/residence_states";
 import { getPeakDays } from "@/utilities/calendar/getPeakDays";
 import {
@@ -91,6 +96,7 @@ function EditResidenceCalendar() {
    * slow network, and it left the host no way to try again.
    */
   const [calendarFailed, setCalendarFailed] = useState(false);
+  const [showGeneralPricing, setShowGeneralPricing] = useState(false);
   const [residencesList, setResidencesList] = useState<IServerResidence[]>();
   // const [allRoomsList, setAllRoomsList] = useState<IServerRoom[]>();
   const [eligibleRoomsToBeListed, setEligibleRoomsToBeListed] = useState<IServerRoom[]>();
@@ -474,6 +480,35 @@ function EditResidenceCalendar() {
   /** undefined when untouched, so the field is simply not sent. */
   const fastForRequest = () => (fastChoice === "none" ? undefined : fastChoice === "on");
 
+  /**
+   * Opens the update sheet, pre-filled when it can be.
+   *
+   * With a single day selected there is one unambiguous price and one
+   * discount to show, so the host edits what is there instead of typing
+   * into empty boxes and wondering what they are replacing. With several
+   * days the fields stay empty, because a blank field means "leave alone"
+   * and showing one day's price as if it applied to all of them would be a
+   * lie the host might well accept.
+   */
+  function openUpdateSheet() {
+    const selected = getAllUniqueSelectedDays_Array(selectedIndividualDays, selectedRanges);
+
+    if (selected.length === 1 && calendarData) {
+      const iso = jalaliToIso(selected[0]);
+      const priced = calendarData.special_dates?.find(([date]) => date === iso);
+      const discounted = calendarData.discounted_days?.find((d) => d.date === iso);
+
+      editCalendarPriceAndDiscount_NoChange_Formik.setValues({
+        "selected-days-price_NoChange": priced ? priced[1] : null,
+        "selected-days-discount_NoChange": discounted ? discounted.amount : null,
+      } as any);
+    } else {
+      editCalendarPriceAndDiscount_NoChange_Formik.resetForm();
+    }
+
+    setShowEditCalendarBottomSheet(true);
+  }
+
   async function handleFillingCalendarDates() {
     try {
       if (selectedResidenceValue === "all") {
@@ -594,15 +629,7 @@ function EditResidenceCalendar() {
         ) : (
           <>
             <div className="pb-[88px] md:pb-0">
-              {/*
-                «رزرو آنی» lives here rather than on the listing card: it is a
-                property of how the listing takes bookings, and the exceptions
-                to it are set on the calendar directly below. "All residences"
-                has no single answer to show, so it appears only for one.
-              */}
-              {typeof selectedResidenceValue === "number" && (
-                <InstantBookingToggle residenceId={selectedResidenceValue} />
-              )}
+              {/* «رزرو آنی» is set with the selected days, in the sheet below. */}
               {(!!residencesList?.filter((r) => r.state === ResidenceStates_enum.ACTIVE).length ||
                 (!!eligibleRoomsToBeListed && !!eligibleRoomsToBeListed.length)) && (
                 <DropDown
@@ -757,12 +784,14 @@ function EditResidenceCalendar() {
                 />
               </div>
 
-              <LinkButton
-                href={`/residences/${
-                  router?.query?.residenceId
-                }/general-pricing/edit?residenceType=${
-                  router.query.residenceType as ResidenceTypes_enum
-                }&fromCalendarPage=true`}
+              {/*
+                A dialog, not a route. Setting the listing's base rates is
+                something a host does while looking at the calendar those
+                rates land on — sending them to another page and back lost
+                both the month they were reading and any day selection.
+              */}
+              <Button
+                onClick={() => setShowGeneralPricing(true)}
                 isFullWidth
                 className="!pr-12 !pl-8"
                 color="grey"
@@ -773,7 +802,7 @@ function EditResidenceCalendar() {
                   <p>تغییر نرخ کلی اقامتگاه</p>
                   <i className="icon-FlashLeft text-24" />
                 </div>
-              </LinkButton>
+              </Button>
 
               <div className="mt-24">
                 <span className="text-14 leading-24 text-black font-m ml-4">توجه : </span>
@@ -807,10 +836,7 @@ function EditResidenceCalendar() {
                       disabled={!!selectedRanges.find((selectedRange) => selectedRange[1] === null)}
                       className="!px-4"
                       type="submit"
-                      onClick={() => {
-                        // TODO: calculate if the selected days have the same price or the same discount
-                        setShowEditCalendarBottomSheet(true);
-                      }}
+                      onClick={openUpdateSheet}
                     >
                       {getBtnText()}
                     </Button>
@@ -818,6 +844,27 @@ function EditResidenceCalendar() {
                 </div>
               )}
             </div>
+
+            <BottomSheet
+              open={showGeneralPricing}
+              handleClose={() => setShowGeneralPricing(false)}
+              headerTitle="نرخ گذاری کلی"
+              body={() => (
+                <EditResidenceGeneralPricing
+                  residenceId={selectedResidenceValue as number}
+                  residenceType={
+                    (router.query.residenceType as ResidenceTypes_enum) ||
+                    ResidenceTypes_enum.PRODUCT
+                  }
+                  onSaved={() => {
+                    setShowGeneralPricing(false);
+                    // The new base rates change what every unpriced day
+                    // shows, so the grid is re-read rather than left stale.
+                    refetchCalendarData();
+                  }}
+                />
+              )}
+            />
 
             <BottomSheet
               open={showEditCalendarBottomSheet}

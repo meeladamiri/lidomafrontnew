@@ -25,7 +25,10 @@ function EditCalendarBottomSheet({
 
   return (
     <div>
-      <p className="text-14 leading-24 text-black font-r mb-16">پر یا خالی کردن تقویم</p>
+      <p className="flex items-center gap-x-6 text-14 leading-24 text-primary-dark font-r mb-16">
+        <i className="icon-Calendar text-20 text-primary-dark" />
+        پر یا خالی کردن تقویم
+      </p>
 
       <div className="w-full">
         <RoundedTabs
@@ -70,9 +73,19 @@ function EditCalendarBottomSheet({
         this to reprice a weekend must not silently change how those nights
         get booked.
       */}
-      <div className="mt-20 pt-20 border-t border-gray-F3F5F7">
+      {/*
+        Greyed out while «پر شود» is selected: a night that is filled cannot
+        be booked at all, so whether it would have been booked instantly is
+        not a question with an answer.
+      */}
+      <div
+        className={`mt-20 pt-20 border-t border-gray-F3F5F7 transition-opacity ${
+          activeTab === 0 ? "opacity-40 pointer-events-none" : ""
+        }`}
+        aria-hidden={activeTab === 0}
+      >
         <p className="flex items-center gap-x-6 text-14 leading-24 text-black font-r mb-12">
-          <i className="icon-Flash text-20 text-primary-dark" />
+          <i className="icon-Flash text-20 text-black" />
           رزرو آنی روزهای انتخاب شده
         </p>
         <div className="w-full">

@@ -49,8 +49,30 @@ const residenceGeneralPricingYupSchema = {
     .nullable(),
 };
 
-function EditResidenceGeneralPricing() {
+/**
+ * «نرخ گذاری کلی».
+ *
+ * Used two ways. On its own route it reads the listing from the URL and
+ * navigates away when it is done. Given `residenceId` and `onSaved` it is a
+ * dialog over the calendar instead — same form, same request, but the host
+ * stays on the calendar and sees the new rates land on it, rather than being
+ * sent to another page and having to find their way back.
+ */
+function EditResidenceGeneralPricing({
+  residenceId,
+  residenceType,
+  onSaved,
+}: {
+  residenceId?: number;
+  residenceType?: ResidenceTypes_enum;
+  onSaved?: () => void;
+}) {
   const router = useRouter();
+  /** In a dialog the caller says which listing; on the route, the URL does. */
+  const asDialog = residenceId !== undefined;
+  const targetId = residenceId ?? Number(router?.query?.id);
+  const targetType = (residenceType ??
+    (router?.query?.residenceType as ResidenceTypes_enum)) as ResidenceTypes_enum;
 
   const [residenceGeneralPricingV, setResidenceGeneralPricingV] =
     useState<IResidenceGeneralPricingInitV>(residenceGeneralPricingInitV);
@@ -86,9 +108,11 @@ function EditResidenceGeneralPricing() {
             { type: EXCEPTIONTYPES.SUCCESS, title: "تغییرات با موفقیت اعمال شد" },
           ]);
 
-          if (!!router?.query?.fromCalendarPage && router?.query?.fromCalendarPage === "true") {
+          if (onSaved) {
+            onSaved();
+          } else if (router?.query?.fromCalendarPage === "true") {
             router.push(
-              `/residences/calendar/edit?residenceId=${router?.query?.id}&residenceType=${router?.query?.residenceType}`
+              `/residences/calendar?residenceId=${router?.query?.id}&residenceType=${router?.query?.residenceType}`
             );
           } else {
             router.push(`/residences/list`);
@@ -107,8 +131,8 @@ function EditResidenceGeneralPricing() {
     validationSchema: Yup.object(residenceGeneralPricingYupSchema),
     onSubmit: (values) => {
       editResidenceGeneralPricingMutation.mutate({
-        product_type: router?.query?.residenceType as ResidenceTypes_enum,
-        product_id: Number(router?.query?.id),
+        product_type: targetType,
+        product_id: targetId,
         week_price: values.basePrice || 0,
         weekend_price: values.weekEndPrice || 0,
         peak_price: values.peakDaysPrice || 0,
@@ -126,15 +150,15 @@ function EditResidenceGeneralPricing() {
     data,
     refetch,
   } = useQuery(
-    ["getCalendarData", router?.query?.id],
+    ["getCalendarData", targetId],
     () => {
       return getCalendarData({
-        residenceId: Number(router?.query?.id),
-        residenceType: router?.query?.residenceType as ResidenceTypes_enum,
+        residenceId: targetId,
+        residenceType: targetType,
       });
     },
     {
-      enabled: !!router?.query?.id,
+      enabled: !!targetId,
     }
   );
 
@@ -155,10 +179,12 @@ function EditResidenceGeneralPricing() {
   }, [data]);
 
   return (
-    <div className="relative pt-80 md:pt-0">
-      <div className="fixed right-0 left-0 top-0 bg-white z-4 md:hidden">
-        <ModalHeader headerTitle={"نرخ گذاری کلی"} onBackClick={() => router.back()} />
-      </div>
+    <div className={asDialog ? "relative" : "relative pt-80 md:pt-0"}>
+      {!asDialog && (
+        <div className="fixed right-0 left-0 top-0 bg-white z-4 md:hidden">
+          <ModalHeader headerTitle={"نرخ گذاری کلی"} onBackClick={() => router.back()} />
+        </div>
+      )}
 
       <div className="">
         {calendarDataIsLoading ? (

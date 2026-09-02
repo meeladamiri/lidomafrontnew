@@ -11,6 +11,10 @@ export const Pages_Not_Having_BottomNav_InMobile = [
   "/residences/submit",
   "/chats/[id]",
   "/my-trips/[id]",
+  // A working surface with its own action bar fixed to the bottom — the app
+  // nav sits at z-5 and would cover it. /profile, the item the calendar
+  // replaced in the bar, was listed here for the same reason.
+  "/residences/calendar",
   "/residences/calendar/edit",
   "/residences/[id]/general-pricing/edit",
   "/general-pricing",
