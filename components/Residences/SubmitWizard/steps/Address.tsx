@@ -6,7 +6,7 @@ import { getProvincesAndCities } from "@/api/address";
 import { StepLayout } from "../Shell";
 import { useWizard } from "../useWizard";
 import { useStepForm } from "../useStepForm";
-import { Callout, decimalOnly, Field, Section, Spinner, StepSkeleton, TextArea, TextInput } from "../ui";
+import { Callout, Field, Section, Spinner, StepSkeleton, TextArea, TextInput } from "../ui";
 
 const ProjectMap = dynamic(() => import("@/components/Map"), {
   ssr: false,
@@ -24,9 +24,10 @@ const ProjectMap = dynamic(() => import("@/components/Map"), {
  * first put a second serial round trip in front of every address save, on the
  * step where a host is already typing the most.
  *
- * The pin and the two coordinate boxes are the same pair of numbers reached
- * two ways. Some hosts know their coordinates and want to paste them; most
- * want to drag. Neither should be the only door.
+ * The pin is the only way to set the location. There were coordinate boxes
+ * beside it; they are gone. A host dropping a pin on their own house has no
+ * use for reading 36.9021 back, and a pair of number fields next to a map is
+ * an invitation to type into them and end up somewhere else.
  */
 
 interface Values {
@@ -49,14 +50,9 @@ function validate(values: Values): Partial<Record<keyof Values, string>> {
   if (!address) errors.address = "نشانی اقامتگاه را وارد کنید.";
   else if (address.length < ADDRESS_MIN) errors.address = "نشانی کامل‌تری وارد کنید.";
 
-  const lat = Number(values.latitude);
-  if (values.latitude && (!Number.isFinite(lat) || lat < 24 || lat > 40)) {
-    errors.latitude = "عرض جغرافیایی خارج از محدوده‌ی ایران است.";
-  }
-  const lng = Number(values.longitude);
-  if (values.longitude && (!Number.isFinite(lng) || lng < 43 || lng > 64)) {
-    errors.longitude = "طول جغرافیایی خارج از محدوده‌ی ایران است.";
-  }
+  // No coordinate validation: the only thing that can set these is the map,
+  // and a pin cannot land outside the world. The backend range check stays,
+  // because it is the boundary and this is not the only caller.
   return errors;
 }
 
@@ -94,11 +90,25 @@ export default function AddressStep() {
     setDirty(form.dirty);
   }, [form.dirty, setDirty]);
 
-  const cities: { id: number; name: string }[] = useMemo(() => {
+  /**
+   * The city names of the selected province.
+   *
+   * `/api/search/provinces` returns `cities` as an array of **strings**, not
+   * objects. Reading `.name` off each one produced a list of empty options —
+   * a dropdown that opened onto nothing. The response is typed `any` at the
+   * api layer, so the compiler had no way to say so.
+   *
+   * The object branch is kept because two other callers of this endpoint index
+   * it differently, and a silently empty list is exactly the failure worth
+   * being defensive about.
+   */
+  const cities: string[] = useMemo(() => {
     const province = (provinces ?? []).find(
       (p: any) => String(p.id) === form.values.provinceId
     );
-    return province?.cities ?? [];
+    return (province?.cities ?? []).map((city: any) =>
+      typeof city === "string" ? city : (city?.name ?? "")
+    ).filter(Boolean);
   }, [provinces, form.values.provinceId]);
 
   // The map talks in numbers; the form stores strings so a half-typed value is
@@ -205,9 +215,9 @@ export default function AddressStep() {
               }`}
             >
               <option value="">انتخاب کنید</option>
-              {cities.map((c) => (
-                <option key={c.id} value={c.name}>
-                  {c.name}
+              {cities.map((city) => (
+                <option key={city} value={city}>
+                  {city}
                 </option>
               ))}
             </select>
@@ -249,7 +259,7 @@ export default function AddressStep() {
 
       <Section
         title="محل دقیق روی نقشه"
-        description="نشانگر را بکشید یا روی نقشه بزنید. اگر مختصات را دارید، مستقیم وارد کنید."
+        description="روی نقشه بزنید یا نشانگر را بکشید تا محل دقیق اقامتگاه مشخص شود."
       >
         <div className="rounded-16 overflow-hidden border border-gray-DBDFE5">
           <ProjectMap
@@ -258,50 +268,45 @@ export default function AddressStep() {
             userLang={lng}
             setUserLat={setLat as any}
             setUserLang={setLng as any}
-            mapClassname="h-[300px] md:h-[360px] w-full"
+            mapClassname="h-[320px] md:h-[400px] w-full"
             showZoomControl
             automaticallyNavigateToCustomLatLng={flyTo}
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-x-16 mt-16">
-          <Field label="عرض جغرافیایی" optionalNote error={form.visibleErrors.latitude}>
-            {(props) => (
-              <TextInput
-                {...props}
-                value={form.values.latitude}
-                onChange={(e) => form.setField("latitude", decimalOnly(e.target.value))}
-                onBlur={() => form.touch("latitude")}
-                inputMode="decimal"
-                dir="ltr"
-                placeholder="36.9021"
-                invalid={!!form.visibleErrors.latitude}
-              />
-            )}
-          </Field>
-          <Field label="طول جغرافیایی" optionalNote error={form.visibleErrors.longitude}>
-            {(props) => (
-              <TextInput
-                {...props}
-                value={form.values.longitude}
-                onChange={(e) => form.setField("longitude", decimalOnly(e.target.value))}
-                onBlur={() => form.touch("longitude")}
-                inputMode="decimal"
-                dir="ltr"
-                placeholder="50.6739"
-                invalid={!!form.visibleErrors.longitude}
-              />
-            )}
-          </Field>
+        {/*
+          The coordinates themselves are not shown. They are a machine detail —
+          a host who has just dropped a pin on their own house does not need to
+          read back 36.9021, and a pair of number boxes next to a map invites
+          someone to type into them and end up somewhere else.
+        */}
+        <div className="mt-12">
+          {lat && lng ? (
+            <div className="flex items-center justify-between gap-x-12 rounded-12 border border-primary-main bg-primary-light/30 px-14 py-12">
+              <span className="flex items-center gap-x-8 text-13 font-m text-black">
+                <i className="icon-LocationFill text-16 text-primary-dark" />
+                محل روی نقشه مشخص شد
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  form.setField("latitude", "");
+                  form.setField("longitude", "");
+                }}
+                className="shrink-0 text-12 font-m text-gray-77828F underline"
+              >
+                حذف نشانگر
+              </button>
+            </div>
+          ) : (
+            <Callout tone="info">
+              بدون مشخص‌کردن محل روی نقشه، اقامتگاه شما در جست‌وجوی نقشه‌ای دیده نمی‌شود.
+              اجباری نیست، ولی توصیه می‌شود.
+            </Callout>
+          )}
         </div>
-
-        {!lat && !lng && (
-          <Callout tone="info">
-            بدون مختصات، اقامتگاه شما روی نقشه‌ی جست‌وجو دیده نمی‌شود. اجباری نیست، ولی توصیه
-            می‌شود.
-          </Callout>
-        )}
       </Section>
+
     </StepLayout>
   );
 }

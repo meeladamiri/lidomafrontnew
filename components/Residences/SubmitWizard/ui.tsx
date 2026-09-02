@@ -216,6 +216,14 @@ interface OptionCardProps {
   imageUrl?: string | null;
   icon?: string;
   disabled?: boolean;
+  /**
+   * Reserve the picture area even when this tile has no picture.
+   *
+   * Set for every tile in a group where at least one has artwork, so a group
+   * is not a ragged mix of tall and short cards. Without it, one configured
+   * image among eight makes the grid look broken.
+   */
+  reserveMedia?: boolean;
 }
 
 /**
@@ -233,6 +241,7 @@ export function OptionCard({
   imageUrl,
   icon,
   disabled,
+  reserveMedia,
 }: OptionCardProps) {
   return (
     <button
@@ -257,6 +266,10 @@ export function OptionCard({
             (e.currentTarget as HTMLImageElement).style.display = "none";
           }}
         />
+      ) : reserveMedia ? (
+        <span className="flex w-full h-[104px] bg-gray-F3F5F7 items-center justify-center">
+          <i className={`${icon || "icon-Home"} text-28 text-gray-A9B1BC`} />
+        </span>
       ) : null}
 
       <span className="flex items-start gap-x-12 p-16">

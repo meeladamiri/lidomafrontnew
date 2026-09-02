@@ -92,13 +92,25 @@ export default function DetailsStep() {
   const typeField = options?.find((f) => f.key === "type");
   const areaField = options?.find((f) => f.key === "area");
 
-  /** Panel-configured artwork, matched by name; missing is fine. */
+  /**
+   * Panel-configured artwork, matched by name; missing is fine.
+   *
+   * `/assets/res-placeholder.jpg` is the sentinel the old option lists shipped
+   * with — it renders as a grey broken-image glyph, which is worse than no
+   * picture at all, so it counts as "none".
+   */
   const imageFor = useMemo(() => {
     const map = new Map<string, string>();
-    (content?.options?.RES_TYPE ?? []).forEach((o) => o.image_url && map.set(o.name, o.image_url));
-    (content?.options?.REGION ?? []).forEach((o) => o.image_url && map.set(o.name, o.image_url));
+    const usable = (url: string | null) => !!url && !url.includes("res-placeholder");
+    (content?.options?.RES_TYPE ?? []).forEach((o) => usable(o.image_url) && map.set(o.name, o.image_url as string));
+    (content?.options?.REGION ?? []).forEach((o) => usable(o.image_url) && map.set(o.name, o.image_url as string));
     return (name: string) => map.get(name) ?? null;
   }, [content]);
+
+  // A group either shows pictures or it does not. One configured image among
+  // eight would otherwise leave a single tall tile beside seven short ones.
+  const groupHasArt = (options: string[] | undefined) =>
+    (options ?? []).some((option) => !!imageFor(option));
 
   const toggle = (list: string[], setList: (v: string[]) => void, value: string) => {
     setDirty(true);
@@ -195,6 +207,7 @@ export default function DetailsStep() {
                   key={option}
                   title={option}
                   imageUrl={imageFor(option)}
+                  reserveMedia={groupHasArt(typeField?.options)}
                   icon="icon-Home"
                   selected={types.includes(option)}
                   onSelect={() => toggle(types, setTypes, option)}
@@ -213,6 +226,7 @@ export default function DetailsStep() {
                   key={option}
                   title={option}
                   imageUrl={imageFor(option)}
+                  reserveMedia={groupHasArt(areaField?.options)}
                   icon="icon-Map"
                   selected={areas.includes(option)}
                   onSelect={() => toggle(areas, setAreas, option)}
