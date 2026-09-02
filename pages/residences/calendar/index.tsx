@@ -1,4 +1,4 @@
-import EditResidenceCalendar from "components/Residences/Edit/Calendar";
+import ResidenceCalendar from "components/Residences/Calendar";
 import { PROJECTNAMEFA } from "configs/info";
 import type { GetServerSideProps, NextPage } from "next";
 
@@ -18,7 +18,7 @@ import type { GetServerSideProps, NextPage } from "next";
 
 const page = "تقویم اقامتگاه";
 
-const ResidenceCalendarPage: NextPage = () => <EditResidenceCalendar />;
+const ResidenceCalendarPage: NextPage = () => <ResidenceCalendar />;
 
 export const getServerSideProps: GetServerSideProps = async () => {
   // NOTE: Keep index zero item for the title tag of page always.

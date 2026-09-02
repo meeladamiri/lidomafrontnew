@@ -1,13 +1,13 @@
-import EditResidenceCalendar from "components/Residences/Edit/Calendar";
+import ResidenceCalendar from "components/Residences/Calendar";
 import { PROJECTNAMEFA } from "configs/info";
 import type { GetServerSideProps, NextPage } from "next";
 
 const page = "ویرایش تقویم اقامتگاه";
 
-const EditResidenceCalendarPage: NextPage = () => {
+const ResidenceCalendarPage: NextPage = () => {
   return (
     <>
-      <EditResidenceCalendar />
+      <ResidenceCalendar />
     </>
   );
 };
@@ -30,4 +30,4 @@ export const getServerSideProps: GetServerSideProps = async () => {
   };
 };
 
-export default EditResidenceCalendarPage;
+export default ResidenceCalendarPage;
