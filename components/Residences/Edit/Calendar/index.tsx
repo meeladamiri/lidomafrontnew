@@ -82,6 +82,15 @@ function EditResidenceCalendar() {
   const router = useRouter();
   const [selectedResidenceValue, setSelectedResidenceValue] = useState<number | "all">(); // as residenceId
   const [fastChoice, setFastChoice] = useState<FastChoice>("none");
+  /**
+   * The last calendar fetch failed.
+   *
+   * Failure used to raise a toast and nothing else — `calendarData` stayed
+   * undefined, so the loading guard kept spinning behind a message that had
+   * already faded. A spinner that never stops is indistinguishable from a
+   * slow network, and it left the host no way to try again.
+   */
+  const [calendarFailed, setCalendarFailed] = useState(false);
   const [residencesList, setResidencesList] = useState<IServerResidence[]>();
   // const [allRoomsList, setAllRoomsList] = useState<IServerRoom[]>();
   const [eligibleRoomsToBeListed, setEligibleRoomsToBeListed] = useState<IServerRoom[]>();
@@ -356,17 +365,32 @@ function EditResidenceCalendar() {
   useEffect(() => {
     if (!!dataOfCalendar) {
       if (dataOfCalendar?.status === "error") {
+        setCalendarFailed(true);
         exception.message([
           { type: EXCEPTIONTYPES.ERROR, title: dataOfCalendar?.err_msg || defaultError },
         ]);
       } else {
         const serverCalendarData: IServerCalendarData = dataOfCalendar?.params;
 
+        setCalendarFailed(false);
         setCalendarData(serverCalendarData);
       }
     }
   }, [dataOfCalendar]);
 
+  /**
+   * Which listing the calendar is showing.
+   *
+   * The page used to be entered only from a button on a listing card, so a
+   * `residenceId` was always in the URL and nothing needed to happen without
+   * one. It is a destination of its own now — opened from the menu with no
+   * query at all — and in that case nothing was ever selected, no calendar
+   * was ever fetched, and the loading guard below never let go. The page
+   * simply span.
+   *
+   * So: honour the URL when it says something, and otherwise fall to the
+   * host's first active listing, which is the one they almost always mean.
+   */
   useEffect(() => {
     if (router?.query?.residenceId) {
       if (router?.query?.residenceId === "all") {
@@ -374,8 +398,20 @@ function EditResidenceCalendar() {
       } else {
         setSelectedResidenceValue(Number(router?.query?.residenceId));
       }
+      return;
     }
-  }, [router?.query?.residenceId]);
+
+    if (selectedResidenceValue !== undefined) return;
+
+    const firstActive = residencesList?.find((res) => res.state === ResidenceStates_enum.ACTIVE);
+    if (firstActive) {
+      setSelectedResidenceValue(firstActive.id);
+      return;
+    }
+    const firstRoom = eligibleRoomsToBeListed?.[0];
+    if (firstRoom) setSelectedResidenceValue(firstRoom.id as number);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [router?.query?.residenceId, residencesList, eligibleRoomsToBeListed]);
 
   function resetAllSelectedDays() {
     setSelectedIndividualDays([]);
@@ -536,6 +572,23 @@ function EditResidenceCalendar() {
               اقامتگاه‌های من
             </Link>
           </div>
+        ) : calendarFailed && !calendarData ? (
+          <div className="py-48 text-center">
+            <i className="icon-Warning text-40 text-warning" />
+            <p className="text-14 leading-26 font-m text-black mt-16 mb-20">
+              تقویم این اقامتگاه بارگذاری نشد.
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                setCalendarFailed(false);
+                refetchCalendarData();
+              }}
+              className="h-[44px] px-24 rounded-12 bg-primary-main text-14 font-b text-black"
+            >
+              تلاش دوباره
+            </button>
+          </div>
         ) : calendarDataIsFetching || (!calendarData && selectedResidenceValue !== "all") ? (
           <TinyLoader />
         ) : (
@@ -556,8 +609,11 @@ function EditResidenceCalendar() {
                   currntValue={selectedResidenceValue || 0}
                   onChange={(e, value, allChildProps) => {
                     // setSelectedResidenceValue(value as number | "all")
+                    // Stay on whichever route the host opened — the menu
+                    // entry is /residences/calendar, and bouncing them to the
+                    // old /edit URL on every pick is a needless redirect.
                     router.replace(
-                      `/residences/calendar/edit?residenceId=${value}&residenceType=${allChildProps?.type}`
+                      `${router.pathname}?residenceId=${value}&residenceType=${allChildProps?.type}`
                     );
                   }}
                 >
