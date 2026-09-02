@@ -13,6 +13,9 @@ export const Routes_Without_Header_InMobile = [
   // "/residences/calendar",
   "/residences/suggest/[id]",
   "/residences/[id]/edit",
+  // The page carries its own ModalHeader — back button and «ویرایش تقویم» —
+  // so the app header on top of it is a second one.
+  "/residences/calendar",
   "/residences/calendar/edit",
   "/residences/submit",
   "/residences/[id]/general-pricing/edit",

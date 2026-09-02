@@ -32,6 +32,7 @@ function EditCalendarBottomSheet({
 
       <div className="w-full">
         <RoundedTabs
+          type="brand"
           activeIndex={activeTab}
           onChange={(idx: number) => {
             setActiveTab(idx);

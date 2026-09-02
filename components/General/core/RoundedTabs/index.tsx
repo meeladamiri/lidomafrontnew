@@ -21,9 +21,16 @@ export function RoundedTab(props: ITab) {
     <div
       style={{
         flex: "1 1 0px",
+        /**
+         * "brand" is the site's own teal, for tabs that sit under a teal
+         * heading — the amber below is the default and reads as a warning
+         * next to one.
+         */
         background:
           props.currentActiveIndex === props.tabIndex
-            ? props.type === "primary"
+            ? props.type === "brand"
+              ? "linear-gradient(180deg, #03D6BB 0%, #00AEBF 100%)"
+              : props.type === "primary"
               ? "linear-gradient(180deg, #FFC120 0%, #FCAC12 100%)"
               : "white"
             : "",
@@ -32,7 +39,7 @@ export function RoundedTab(props: ITab) {
           flex items-center justify-center cursor-pointer py-8 px-4 text-black
           ${
             props.currentActiveIndex === props.tabIndex
-              ? props.type === "primary"
+              ? props.type === "primary" || props.type === "brand"
                 ? "rounded-50 !text-white"
                 : "rounded-12 !text-blue-main"
               : ""
