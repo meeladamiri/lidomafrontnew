@@ -29,6 +29,14 @@ export const sideNavbarItems_ForHostAccount: {
     },
     {
       icon: {
+        src: <i className="icon-Calendar text-24" />,
+        size: 18,
+      },
+      name: "تقویم اقامتگاه",
+      linkTo: "/residences/calendar",
+    },
+    {
+      icon: {
         src: <i className="icon-Reserve text-24" />,
         size: 18,
       },

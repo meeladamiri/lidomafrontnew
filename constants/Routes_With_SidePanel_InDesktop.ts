@@ -6,6 +6,9 @@ export const Routes_With_SidePanel_InDesktop = [
   "/residences/submit",
   "/comments",
   "/residences/list",
+  // The calendar is a top-level destination now; the /edit route is the same
+  // page reached from an old link.
+  "/residences/calendar",
   "/residences/calendar/edit",
   "/residences/fast-reserve/edit",
   "/residences/[id]/general-pricing/edit",

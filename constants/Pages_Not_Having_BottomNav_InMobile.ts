@@ -12,7 +12,6 @@ export const Pages_Not_Having_BottomNav_InMobile = [
   "/chats/[id]",
   "/my-trips/[id]",
   "/residences/calendar/edit",
-  "/residences/fast-reserve/edit",
   "/residences/[id]/general-pricing/edit",
   "/general-pricing",
   "/residences/[id]/edit",

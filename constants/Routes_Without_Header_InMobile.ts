@@ -17,7 +17,6 @@ export const Routes_Without_Header_InMobile = [
   "/residences/submit",
   "/residences/[id]/general-pricing/edit",
   "/general-pricing",
-  "/residences/fast-reserve/edit",
   "/chats/[id]",
   "/b-room/[id]/edit",
   "/nowruz-pricing",

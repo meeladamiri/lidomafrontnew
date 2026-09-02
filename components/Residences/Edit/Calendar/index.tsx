@@ -9,6 +9,7 @@ import Cart from "components/General/core/DropDown/DropdownCart";
 import ModalHeader from "components/General/core/ModalHeader";
 import { Switch } from "components/General/core/Switch";
 import { TinyLoader } from "components/General/Loader/TinyLoader";
+import InstantBookingToggle from "./InstantBookingToggle";
 import { useFormik } from "formik";
 import moment from "moment-jalaali";
 import { useRouter } from "next/router";
@@ -483,6 +484,15 @@ function EditResidenceCalendar() {
         ) : (
           <>
             <div className="pb-[88px] md:pb-0">
+              {/*
+                «رزرو آنی» lives here rather than on the listing card: it is a
+                property of how the listing takes bookings, and the exceptions
+                to it are set on the calendar directly below. "All residences"
+                has no single answer to show, so it appears only for one.
+              */}
+              {typeof selectedResidenceValue === "number" && (
+                <InstantBookingToggle residenceId={selectedResidenceValue} />
+              )}
               {((!!residencesList && !!residencesList.length) ||
                 (!!eligibleRoomsToBeListed && !!eligibleRoomsToBeListed.length)) && (
                 <DropDown

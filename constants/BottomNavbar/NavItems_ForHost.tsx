@@ -29,11 +29,19 @@ export const NavItems_ForHost: INavItem[] = [
     },
     href: "/residences/list",
   },
+  /**
+   * The calendar takes the profile's place.
+   *
+   * Keeping availability current is the thing a host comes back to do — most
+   * days, for most listings — while the profile is edited once and then not
+   * again. The profile is still reachable from the side menu, which is where
+   * settings belong.
+   */
   {
-    name: "پروفایل",
+    name: "تقویم",
     icon: {
-      src: <i className="icon-Profile text-24" />,
+      src: <i className="icon-Calendar text-24" />,
     },
-    href: "/profile",
+    href: "/residences/calendar",
   },
 ];
