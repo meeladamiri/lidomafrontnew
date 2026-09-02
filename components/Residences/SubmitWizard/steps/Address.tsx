@@ -261,14 +261,23 @@ export default function AddressStep() {
         title="محل دقیق روی نقشه"
         description="روی نقشه بزنید یا نشانگر را بکشید تا محل دقیق اقامتگاه مشخص شود."
       >
-        <div className="rounded-16 overflow-hidden border border-gray-DBDFE5">
+        {/*
+          The height lives here, not on the map.
+
+          ProjectMap renders its container with an inline `height: 100%`, which
+          beats any Tailwind class passed as `mapClassname` — so the map is
+          exactly as tall as whatever wraps it. Given a wrapper with no height
+          of its own, it resolves to zero and the map is invisible while every
+          other part of the step looks fine.
+        */}
+        <div className="h-[320px] md:h-[400px] rounded-16 overflow-hidden border border-gray-DBDFE5">
           <ProjectMap
             name="location"
             userLat={lat}
             userLang={lng}
             setUserLat={setLat as any}
             setUserLang={setLng as any}
-            mapClassname="h-[320px] md:h-[400px] w-full"
+            mapClassname="w-full h-full"
             showZoomControl
             automaticallyNavigateToCustomLatLng={flyTo}
           />

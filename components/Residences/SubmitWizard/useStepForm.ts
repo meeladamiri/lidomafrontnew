@@ -86,6 +86,25 @@ export function useStepForm<V extends Record<string, any>>({
   const [dirty, setDirty] = useState(false);
   const [rescued, setRescued] = useState(false);
   const seeded = useRef(false);
+  /**
+   * Readiness is state, not the ref above, and that distinction is the whole
+   * bug this comment exists for.
+   *
+   * It used to be reported straight off `seeded.current`. The effect set the
+   * ref and then called `setValuesState(initial)` to trigger the re-render
+   * that would show it — except when the draft was already in the query cache
+   * at mount, in which case `useState` had *already* initialised `values` to
+   * that exact object. Setting state to the value it already holds is a
+   * no-op: React bails out, no re-render happens, and a ref change cannot
+   * schedule one. The step sat on its loading skeleton forever.
+   *
+   * It only reproduced when the draft arrived before the step mounted, which
+   * is what happens on every step after the first — so the wizard worked when
+   * walked slowly and hung when walked normally.
+   *
+   * `false` to `true` always re-renders.
+   */
+  const [ready, setReady] = useState(false);
 
   // ------------------------------------------------------------- seeding ---
 
@@ -104,10 +123,12 @@ export function useStepForm<V extends Record<string, any>>({
         setValuesState({ ...initial, ...(saved as V) });
         setRescued(true);
         setDirty(true);
+        setReady(true);
         return;
       }
     }
     setValuesState(initial);
+    setReady(true);
   }, [initial, rescueKey]);
 
   // ---------------------------------------------------------- validation ---
@@ -157,12 +178,27 @@ export function useStepForm<V extends Record<string, any>>({
     setTouched((previous) => ({ ...previous, [key]: true }));
   }, []);
 
+  /**
+   * Marks everything touched and reports whether the step passes.
+   *
+   * Server errors are cleared first, and deliberately do not gate this. They
+   * describe the *previous* attempt, and the step cannot always show them: a
+   * rejection naming a field this screen does not render — `latitude` on a
+   * step whose coordinate boxes were removed, or `invoiceAddress`, which is
+   * derived rather than typed — has nowhere to appear. Keeping it would block
+   * «ادامه» permanently with nothing on screen explaining why, which is
+   * exactly the dead end this wizard was rebuilt to remove.
+   *
+   * So a retry is always allowed to reach the server. If the input is still
+   * wrong, the server says so again and the answer is shown — next to the
+   * field when it has one, in the step's error banner when it does not.
+   */
   const submit = useCallback(() => {
     setAttempted(true);
+    setServerErrorsState({});
     const found = validate ? validate(values) : {};
-    const merged = { ...found, ...serverErrors };
-    return Object.values(merged).every((message) => !message);
-  }, [validate, values, serverErrors]);
+    return Object.values(found).every((message) => !message);
+  }, [validate, values]);
 
   const markSaved = useCallback(() => {
     setDirty(false);
@@ -199,7 +235,7 @@ export function useStepForm<V extends Record<string, any>>({
     errors,
     visibleErrors,
     isValid,
-    ready: seeded.current,
+    ready,
     setField,
     setValues,
     touch,
