@@ -1,4 +1,4 @@
-import ResidenceCalendar from "components/Residences/Calendar";
+import ResidenceCalendar from "components/Residences/Edit/Calendar";
 import { PROJECTNAMEFA } from "configs/info";
 import type { GetServerSideProps, NextPage } from "next";
 

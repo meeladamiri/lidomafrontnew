@@ -56,21 +56,28 @@ const getCalendarData = async ({
   const fromStr = toIsoDate(from);
   const toStr = toIsoDate(to);
 
-  const [calendarResp, residenceResp] = await Promise.all([
-    apiBuilder
-      .setUrl(`/api/residences/${residenceId}/calendar`)
-      .setCallMethod("GET")
-      .setParams({ from: fromStr, to: toStr })
-      .call(),
-    apiBuilder.setUrl(`/api/residences/${residenceId}`).setCallMethod("GET").call(),
-  ]);
+  /**
+   * One request, to the host's own endpoint.
+   *
+   * This used to be two — the public calendar plus the public listing — and
+   * neither of them knew anything about bookings. `GET /api/host/residences/
+   * :id/calendar` answers with the day overrides, the listing's rates and the
+   * booked ranges together, which is what lets the two arrays below actually
+   * mean different things.
+   */
+  const resp = await apiBuilder
+    .setUrl(`/api/host/residences/${residenceId}/calendar`)
+    .setCallMethod("GET")
+    .setParams({ from: fromStr, to: toStr })
+    .call();
 
-  if (calendarResp?.status !== "success" || residenceResp?.status !== "success") {
+  if (resp?.status !== "success") {
     return { status: "error", err_msg: "خطا در دریافت اطلاعات تقویم" };
   }
 
-  const residence = residenceResp?.data?.residence || {};
-  const days: any[] = calendarResp?.data || [];
+  const residence = resp?.data?.residence || {};
+  const days: any[] = resp?.data?.days || [];
+  const bookings: { from: string; to: string }[] = resp?.data?.reservations || [];
 
   const filled_dates: string[] = [];
   const fast_days: string[] = [];
@@ -92,9 +99,28 @@ const getCalendarData = async ({
     }
   }
 
-  // The new backend doesn't model host-blocked-vs-reserved separately, nor peak-date
-  // ranges tied to the calendar (peak price is a flat per-residence override, not
-  // scheduled) — reuse `filled_dates` for `reserved_dates` and leave `peak_dates` empty.
+  /**
+   * Nights a guest has actually booked.
+   *
+   * These used to be the same array as `filled_dates`, with a comment saying
+   * the backend could not tell them apart — so the calendar drew a sold night
+   * and a night the host had closed identically, and "opening" one would have
+   * put a sold night back on sale. The backend distinguishes them now.
+   *
+   * The checkout day is not a night: a booking 10th→12th occupies 10 and 11.
+   */
+  const reserved_dates: string[] = [];
+  for (const booking of bookings) {
+    const cursor = new Date(booking.from);
+    const end = new Date(booking.to);
+    while (cursor < end) {
+      reserved_dates.push(toIsoDate(cursor));
+      cursor.setDate(cursor.getDate() + 1);
+    }
+  }
+
+  // peak_dates stays empty: peak price is a flat per-listing override, not a
+  // schedule the calendar can show.
   const data: IServerCalendarData = {
     capacity: residence.capacity ?? 0,
     discounted_days,
@@ -111,7 +137,7 @@ const getCalendarData = async ({
       weekend_price: residence.weekendPrice ?? 0,
       weekly_discount: residence.weeklyDiscount ?? 0,
     },
-    reserved_dates: filled_dates,
+    reserved_dates,
     special_dates,
   };
 
