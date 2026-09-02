@@ -113,10 +113,16 @@ export default function DocumentsStep() {
   const isRequired = (slot: (typeof SLOTS)[number]) =>
     slot.required || (slot.key === "ownerNationalCard" && ownerIsSomeoneElse);
 
-  /** The owner's card is not on screen at all until it applies. */
-  const applicable = SLOTS.filter(
-    (slot) => slot.key !== "ownerNationalCard" || ownerIsSomeoneElse
-  );
+  /**
+   * The two every listing needs, then the question, then the one it unlocks.
+   *
+   * Asking "is the owner someone else?" above the documents put a conditional
+   * in front of two slots it has nothing to do with. It belongs after them,
+   * where it reads as a follow-up rather than a gate.
+   */
+  const always = SLOTS.filter((slot) => slot.key !== "ownerNationalCard");
+  const ownerSlot = SLOTS.find((slot) => slot.key === "ownerNationalCard")!;
+  const applicable = ownerIsSomeoneElse ? [...always, ownerSlot] : always;
 
   const missing = applicable.filter(
     (slot) => isRequired(slot) && !files[slot.key] && !storedUrl(slot)
@@ -150,6 +156,116 @@ export default function DocumentsStep() {
 
   if (!draft) return <StepSkeleton />;
 
+  /**
+   * One document row.
+   *
+   * A function rather than an inline map body because it is used twice: for
+   * the two documents every listing needs, and again below the ownership
+   * question for the one that question unlocks. Two copies of this markup
+   * would be two places to fix the next time a row changes.
+   */
+  function renderSlot(slot: (typeof SLOTS)[number]) {
+    const chosen = files[slot.key];
+    const stored = storedUrl(slot);
+    const preview = previews[slot.key] || stored;
+    const required = isRequired(slot);
+    const showMissing = attempted && required && !chosen && !stored;
+
+    return (
+      <div
+        key={slot.key}
+        data-slot={slot.key}
+        className={`rounded-16 border p-14 transition-colors ${
+          showMissing || errors[slot.key]
+            ? "border-error-light"
+            : chosen || stored
+            ? "border-primary-main bg-primary-light/20"
+            : "border-gray-DBDFE5"
+        }`}
+      >
+        <div className="flex items-start gap-x-12">
+          {/*
+                  A thumbnail that opens the full document. Telling a host
+                  «قبلاً بارگذاری شده» and nothing else asks them to take our
+                  word for which file it was.
+                */}
+          {preview ? (
+            <a
+              href={preview}
+              target="_blank"
+              rel="noreferrer"
+              aria-label={`مشاهده ${slot.label}`}
+              className="w-56 h-56 shrink-0 rounded-10 bg-gray-F3F5F7 overflow-hidden grid place-items-center relative group"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={preview} alt="" className="w-full h-full object-cover" />
+              <span className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity grid place-items-center">
+                <i className="icon-See text-16 text-white" />
+              </span>
+            </a>
+          ) : (
+            <span className="w-56 h-56 shrink-0 rounded-10 bg-gray-F3F5F7 grid place-items-center">
+              <i className={`${slot.icon} text-20 text-gray-A9B1BC`} />
+            </span>
+          )}
+
+          <div className="grow min-w-0">
+            <p className="text-14 font-m text-black">
+              {slot.label}
+              {required ? (
+                <span className="text-error-light mr-2" aria-hidden="true">
+                  *
+                </span>
+              ) : (
+                <span className="text-12 font-l text-gray-77828F mr-6">(اختیاری)</span>
+              )}
+            </p>
+            <p className="text-12 leading-20 font-l text-gray-77828F mt-2">{slot.hint}</p>
+
+            {errors[slot.key] ? (
+              <p role="alert" className="text-12 font-m text-error-light mt-6">
+                {errors[slot.key]}
+              </p>
+            ) : chosen ? (
+              <p className="text-12 font-m text-primary-dark mt-6">
+                <i className="icon-Tick text-12 ml-4" />
+                انتخاب شد · {humanSize(chosen.size)}
+              </p>
+            ) : stored ? (
+              <p className="flex items-center gap-x-8 text-12 font-m text-success mt-6">
+                <span>
+                  <i className="icon-Success text-12 ml-4" />
+                  بارگذاری شده
+                </span>
+                <a
+                  href={stored}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-blue-main underline font-m"
+                >
+                  مشاهده
+                </a>
+              </p>
+            ) : null}
+          </div>
+
+          <label className="shrink-0 self-center">
+            <span className="h-[36px] px-14 rounded-10 border border-gray-DBDFE5 text-12 font-m text-black flex items-center cursor-pointer transition-colors hover:border-primary-main">
+              {chosen || stored ? "تغییر" : "انتخاب"}
+            </span>
+            <input
+              type="file"
+              accept="image/*"
+              className="sr-only"
+              onChange={(e) => pick(slot.key, e.target.files?.[0])}
+              aria-label={slot.label}
+            />
+          </label>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <StepLayout
       onNext={onNext}
@@ -174,6 +290,8 @@ export default function DocumentsStep() {
         کارشناسان لیدوما به آن دسترسی دارند.
       </Callout>
 
+      <div className="flex flex-col gap-y-12 mt-16">{always.map(renderSlot)}</div>
+
       <label className="flex items-center gap-x-12 mt-16 rounded-12 border border-gray-DBDFE5 px-14 py-12 cursor-pointer">
         <input
           type="checkbox"
@@ -189,108 +307,7 @@ export default function DocumentsStep() {
         </span>
       </label>
 
-      <div className="flex flex-col gap-y-12 mt-12">
-        {applicable.map((slot) => {
-          const chosen = files[slot.key];
-          const stored = storedUrl(slot);
-          const preview = previews[slot.key] || stored;
-          const required = isRequired(slot);
-          const showMissing = attempted && required && !chosen && !stored;
-
-          return (
-            <div
-              key={slot.key}
-              className={`rounded-16 border p-14 transition-colors ${
-                showMissing || errors[slot.key]
-                  ? "border-error-light"
-                  : chosen || stored
-                    ? "border-primary-main bg-primary-light/20"
-                    : "border-gray-DBDFE5"
-              }`}
-            >
-              <div className="flex items-start gap-x-12">
-                {/*
-                  A thumbnail that opens the full document. Telling a host
-                  «قبلاً بارگذاری شده» and nothing else asks them to take our
-                  word for which file it was.
-                */}
-                {preview ? (
-                  <a
-                    href={preview}
-                    target="_blank"
-                    rel="noreferrer"
-                    aria-label={`مشاهده ${slot.label}`}
-                    className="w-56 h-56 shrink-0 rounded-10 bg-gray-F3F5F7 overflow-hidden grid place-items-center relative group"
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={preview} alt="" className="w-full h-full object-cover" />
-                    <span className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity grid place-items-center">
-                      <i className="icon-See text-16 text-white" />
-                    </span>
-                  </a>
-                ) : (
-                  <span className="w-56 h-56 shrink-0 rounded-10 bg-gray-F3F5F7 grid place-items-center">
-                    <i className={`${slot.icon} text-20 text-gray-A9B1BC`} />
-                  </span>
-                )}
-
-                <div className="grow min-w-0">
-                  <p className="text-14 font-m text-black">
-                    {slot.label}
-                    {required ? (
-                      <span className="text-error-light mr-2" aria-hidden="true">
-                        *
-                      </span>
-                    ) : (
-                      <span className="text-12 font-l text-gray-77828F mr-6">(اختیاری)</span>
-                    )}
-                  </p>
-                  <p className="text-12 leading-20 font-l text-gray-77828F mt-2">{slot.hint}</p>
-
-                  {errors[slot.key] ? (
-                    <p role="alert" className="text-12 font-m text-error-light mt-6">
-                      {errors[slot.key]}
-                    </p>
-                  ) : chosen ? (
-                    <p className="text-12 font-m text-primary-dark mt-6">
-                      <i className="icon-Tick text-12 ml-4" />
-                      انتخاب شد · {humanSize(chosen.size)}
-                    </p>
-                  ) : stored ? (
-                    <p className="flex items-center gap-x-8 text-12 font-m text-success mt-6">
-                      <span>
-                        <i className="icon-Success text-12 ml-4" />
-                        بارگذاری شده
-                      </span>
-                      <a
-                        href={stored}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-blue-main underline font-m"
-                      >
-                        مشاهده
-                      </a>
-                    </p>
-                  ) : null}
-                </div>
-
-                <label className="shrink-0 self-center">
-                  <span className="h-[36px] px-14 rounded-10 border border-gray-DBDFE5 text-12 font-m text-black flex items-center cursor-pointer transition-colors hover:border-primary-main">
-                    {chosen || stored ? "تغییر" : "انتخاب"}
-                  </span>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="sr-only"
-                    onChange={(e) => pick(slot.key, e.target.files?.[0])}
-                    aria-label={slot.label}
-                  />
-                </label>
-              </div>
-            </div>
-          );
-        })}
-      </div>
+      {ownerIsSomeoneElse && <div className="mt-12">{renderSlot(ownerSlot)}</div>}
 
       {saveState === "saving" && (
         <p className="flex items-center justify-center gap-x-8 text-12 font-l text-gray-77828F mt-16">

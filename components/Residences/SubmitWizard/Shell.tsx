@@ -49,8 +49,8 @@ function StepRail() {
                     current
                       ? "border-primary-main bg-primary-main text-white"
                       : done
-                        ? "border-primary-main bg-white text-primary-dark"
-                        : "border-gray-E9ECF0 bg-white text-gray-A9B1BC"
+                      ? "border-primary-main bg-white text-primary-dark"
+                      : "border-gray-E9ECF0 bg-white text-gray-A9B1BC"
                   }`}
                 >
                   {done && !current ? (
@@ -61,7 +61,11 @@ function StepRail() {
                 </span>
                 <span
                   className={`text-13 leading-22 ${
-                    current ? "font-b text-black" : done ? "font-m text-black" : "font-l text-gray-A9B1BC"
+                    current
+                      ? "font-b text-black"
+                      : done
+                      ? "font-m text-black"
+                      : "font-l text-gray-A9B1BC"
                   }`}
                 >
                   {step.short}
@@ -109,7 +113,7 @@ function MobileProgress() {
 // ----------------------------------------------------------------- shell ---
 
 export function WizardShell({ children }: { children: React.ReactNode }) {
-  const { index, draft, residenceId } = useWizard();
+  const { index, draft, residenceId, hasFailedSave, retryFailed, saveState } = useWizard();
 
   return (
     <div className="pb-[104px] md:pb-40">
@@ -118,11 +122,33 @@ export function WizardShell({ children }: { children: React.ReactNode }) {
       <div className="hidden md:flex md:items-baseline md:justify-between md:mb-24">
         <h1 className="text-22 leading-34 font-b text-black">ثبت اقامتگاه</h1>
         {residenceId && draft?.reference && (
-          <span className="text-12 font-l text-gray-77828F">
-            پیش‌نویس {draft.reference}
-          </span>
+          <span className="text-12 font-l text-gray-77828F">پیش‌نویس {draft.reference}</span>
         )}
       </div>
+
+      {/*
+        Saves go out behind the navigation, so a failure arrives on a screen
+        the host has already left. It follows them until it is resolved —
+        anything quieter would let someone reach the end believing a step was
+        stored when it was not.
+      */}
+      {hasFailedSave && (
+        <div className="px-16 md:px-0 mb-16">
+          <Callout tone="error">
+            <div className="flex items-center justify-between gap-x-12">
+              <span>یکی از مراحل ذخیره نشد. تا رفع آن، ثبت نهایی ممکن نیست.</span>
+              <button
+                type="button"
+                onClick={retryFailed}
+                disabled={saveState === "saving"}
+                className="shrink-0 h-[32px] px-14 rounded-8 bg-white border border-error-light text-12 font-m text-error-light disabled:opacity-50"
+              >
+                {saveState === "saving" ? "در حال تلاش…" : "تلاش دوباره"}
+              </button>
+            </div>
+          </Callout>
+        </div>
+      )}
 
       <div className="flex items-start md:gap-x-32">
         <div className="hidden md:block sticky top-24">

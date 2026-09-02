@@ -3,7 +3,16 @@ import { savePricing } from "@/api/Residences/hostWizard";
 import { StepLayout } from "../Shell";
 import { useWizard } from "../useWizard";
 import { useStepForm } from "../useStepForm";
-import { Callout, Field, MoneyInput, NumberInput, Section, StepSkeleton, faDigits, grouped } from "../ui";
+import {
+  Callout,
+  Field,
+  MoneyInput,
+  NumberInput,
+  Section,
+  StepSkeleton,
+  faDigits,
+  grouped,
+} from "../ui";
 
 /**
  * Step six: what a night costs.
@@ -56,7 +65,7 @@ function validate(values: Values): Partial<Record<keyof Values, string>> {
 }
 
 export default function PricingStep() {
-  const { draft, residenceId, save, saveState, next, setDirty, progressMarker } = useWizard();
+  const { draft, residenceId, commit, saveState, next, setDirty, progressMarker } = useWizard();
 
   const initial = useMemo<Values | undefined>(() => {
     if (!draft) return undefined;
@@ -93,7 +102,7 @@ export default function PricingStep() {
     if (!form.submit()) return;
     const number = (value: string) => (value ? Number(value) : undefined);
 
-    const ok = await save(async (id) => {
+    commit(async (id) => {
       const result = await savePricing(id, {
         weekPrice: number(form.values.weekPrice),
         weekendPrice: number(form.values.weekendPrice),
@@ -108,10 +117,8 @@ export default function PricingStep() {
       else if (result.fieldErrors) form.setServerErrors(result.fieldErrors);
       return result;
     });
-    if (ok) {
-      setDirty(false);
-      next();
-    }
+    setDirty(false);
+    next();
   }
 
   if (!form.ready) return <StepSkeleton />;
@@ -164,13 +171,12 @@ export default function PricingStep() {
         {money("extraGuestsPeakPrice", "نرخ نفر اضافه ( ایام پیک )")}
       </Section>
 
-      <Section title="تخفیف اقامت طولانی" description="اختیاری، ولی رزروهای بلندمدت را زیاد می‌کند.">
+      <Section
+        title="تخفیف اقامت طولانی"
+        description="اختیاری، ولی رزروهای بلندمدت را زیاد می‌کند."
+      >
         <div className="grid grid-cols-2 gap-x-16">
-          <Field
-            label="تخفیف هفتگی"
-            optionalNote
-            error={form.visibleErrors.weeklyDiscount}
-          >
+          <Field label="تخفیف هفتگی" optionalNote error={form.visibleErrors.weeklyDiscount}>
             {(props) => (
               <NumberInput
                 {...props}
@@ -183,11 +189,7 @@ export default function PricingStep() {
               />
             )}
           </Field>
-          <Field
-            label="تخفیف ماهانه"
-            optionalNote
-            error={form.visibleErrors.monthlyDiscount}
-          >
+          <Field label="تخفیف ماهانه" optionalNote error={form.visibleErrors.monthlyDiscount}>
             {(props) => (
               <NumberInput
                 {...props}

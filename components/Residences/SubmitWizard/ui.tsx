@@ -121,11 +121,7 @@ export const TextInput = React.forwardRef<HTMLInputElement, InputProps>(function
   ref
 ) {
   return (
-    <input
-      ref={ref}
-      {...rest}
-      className={`${inputBase} ${borderFor(invalid)} ${className}`}
-    />
+    <input ref={ref} {...rest} className={`${inputBase} ${borderFor(invalid)} ${className}`} />
   );
 });
 
@@ -274,12 +270,18 @@ export function OptionCard({
 
       <span className="flex items-start gap-x-12 p-16">
         {icon && !imageUrl && (
-          <i className={`${icon} text-24 shrink-0 ${selected ? "text-primary-dark" : "text-gray-77828F"}`} />
+          <i
+            className={`${icon} text-24 shrink-0 ${
+              selected ? "text-primary-dark" : "text-gray-77828F"
+            }`}
+          />
         )}
         <span className="grow">
           <span className="block text-14 leading-24 font-b text-black">{title}</span>
           {description && (
-            <span className="block text-12 leading-20 font-l text-gray-77828F mt-4">{description}</span>
+            <span className="block text-12 leading-20 font-l text-gray-77828F mt-4">
+              {description}
+            </span>
           )}
         </span>
         <span
@@ -452,7 +454,11 @@ export function SaveStatus({ state }: { state: "idle" | "saving" | "saved" | "er
   const { icon, text, tone } = map[state];
 
   return (
-    <span className={`flex items-center gap-x-6 text-12 font-m ${tone}`} role="status" aria-live="polite">
+    <span
+      className={`flex items-center gap-x-6 text-12 font-m ${tone}`}
+      role="status"
+      aria-live="polite"
+    >
       <i className={`${icon} text-14`} />
       {text}
     </span>

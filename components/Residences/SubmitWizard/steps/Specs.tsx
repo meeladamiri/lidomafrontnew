@@ -46,7 +46,7 @@ function validate(values: Values): Partial<Record<keyof Values, string>> {
 }
 
 export default function SpecsStep() {
-  const { draft, residenceId, save, saveState, next, setDirty, progressMarker, fieldErrors } =
+  const { draft, residenceId, commit, saveState, next, setDirty, progressMarker, fieldErrors } =
     useWizard();
 
   const initial = useMemo<Values | undefined>(() => {
@@ -90,7 +90,7 @@ export default function SpecsStep() {
   useDebouncedAutosave(
     () => {
       if (!form.dirty || !form.isValid) return;
-      void save(async (id) => {
+      commit(async (id) => {
         const result = await saveSpecs(id, patch());
         if (result.ok) form.markSaved();
         return result;
@@ -110,16 +110,14 @@ export default function SpecsStep() {
 
   async function onNext() {
     if (!form.submit()) return;
-    const ok = await save(async (id) => {
+    commit(async (id) => {
       const result = await saveSpecs(id, patch(progressMarker));
       if (result.ok) form.markSaved();
       else if (!result.ok && result.fieldErrors) form.setServerErrors(result.fieldErrors);
       return result;
     });
-    if (ok) {
-      setDirty(false);
-      next();
-    }
+    setDirty(false);
+    next();
   }
 
   if (!form.ready) return <StepSkeleton />;

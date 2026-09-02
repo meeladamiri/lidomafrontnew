@@ -102,8 +102,12 @@ export default function DetailsStep() {
   const imageFor = useMemo(() => {
     const map = new Map<string, string>();
     const usable = (url: string | null) => !!url && !url.includes("res-placeholder");
-    (content?.options?.RES_TYPE ?? []).forEach((o) => usable(o.image_url) && map.set(o.name, o.image_url as string));
-    (content?.options?.REGION ?? []).forEach((o) => usable(o.image_url) && map.set(o.name, o.image_url as string));
+    (content?.options?.RES_TYPE ?? []).forEach(
+      (o) => usable(o.image_url) && map.set(o.name, o.image_url as string)
+    );
+    (content?.options?.REGION ?? []).forEach(
+      (o) => usable(o.image_url) && map.set(o.name, o.image_url as string)
+    );
     return (name: string) => map.get(name) ?? null;
   }, [content]);
 

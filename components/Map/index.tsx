@@ -1,6 +1,6 @@
 import "leaflet/dist/leaflet.css";
 import { DomEvent, icon } from "leaflet";
-import { Dispatch, SetStateAction, useEffect, useMemo, useRef, useState } from "react";
+import { Dispatch, SetStateAction, useEffect, useMemo, useRef } from "react";
 import { IRAN_Lat_Long } from "constants/Residences/Submit/Steps/Step_8";
 import { LinkButton } from "../General/core/Button";
 import { useMap, TileLayer, Marker, Popup, useMapEvents, MapContainer } from "react-leaflet";
@@ -50,8 +50,6 @@ const ProjectMap = ({
     // shadowUrl: "/icons/Leaflet-Icons/marker-shadow.png",
     // shadowSize: [50, 64], // size of the shadow
   });
-
-  const [customFlyingHasBeenDone, setCustomFlyingHasBeenDone] = useState<boolean>(false);
 
   const markerRef = useRef<any>(null);
 
@@ -173,23 +171,30 @@ const ProjectMap = ({
     );
   }
 
+  /**
+   * Recentres the map when the caller points somewhere new.
+   *
+   * This used to call flyTo() and setState() *during render*, guarded by a
+   * boolean that latched after the first flight. Two consequences: the map
+   * would never move again however the target changed, so the only way to
+   * recentre it was to remount the whole map — and remounting a map with a
+   * draggable marker is what throws "Cannot read properties of undefined
+   * (reading 'classList')", because Leaflet tears down a marker whose icon
+   * React has already removed.
+   *
+   * An effect keyed on the coordinates does the same job with no latch, no
+   * remount, and no writes during render.
+   */
   function HandleCustomFlyTo() {
     const map = useMap();
+    const lat = Number(automaticallyNavigateToCustomLatLng?.lat);
+    const lng = Number(automaticallyNavigateToCustomLatLng?.lng);
 
-    if (!customFlyingHasBeenDone) {
-      map.flyTo(
-        [
-          Number(automaticallyNavigateToCustomLatLng!.lat),
-          Number(automaticallyNavigateToCustomLatLng!.lng),
-        ],
-        14,
-        {
-          duration: 3,
-        }
-      );
-    }
-
-    setCustomFlyingHasBeenDone(true);
+    useEffect(() => {
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+      // A second is enough to read as movement; three felt like waiting.
+      map.flyTo([lat, lng], 12, { duration: 1 });
+    }, [map, lat, lng]);
 
     return null;
   }

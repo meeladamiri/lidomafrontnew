@@ -22,7 +22,7 @@ import { Callout, faDigits, grouped, Section, StepSkeleton } from "../ui";
  */
 
 export default function ReviewStep() {
-  const { draft, save, saveState, goTo, reload, residenceId } = useWizard();
+  const { draft, save, saveState, goTo, reload, residenceId, hasFailedSave } = useWizard();
   const [submitted, setSubmitted] = useState(false);
 
   // The summary is the one screen where stale is worse than slow: a host is
@@ -45,6 +45,9 @@ export default function ReviewStep() {
   const cover = draft.images?.find((image) => image.isMain) ?? draft.images?.[0];
 
   async function onSubmit() {
+    // An earlier step's write is still outstanding. Submitting now would hand
+    // a reviewer a listing missing whatever that step held.
+    if (hasFailedSave) return;
     if (gaps.length > 0) {
       goTo(gaps[0].index);
       return;
@@ -63,8 +66,8 @@ export default function ReviewStep() {
         </span>
         <h2 className="text-20 font-b text-black mt-20">اقامتگاه شما ثبت شد</h2>
         <p className="text-14 leading-26 font-l text-gray-77828F mt-8 max-w-[420px] mx-auto">
-          کارشناسان لیدوما آن را بررسی می‌کنند و نتیجه را به شما اطلاع می‌دهیم. تا آن زمان
-          می‌توانید اطلاعات را ویرایش کنید.
+          کارشناسان لیدوما آن را بررسی می‌کنند و نتیجه را به شما اطلاع می‌دهیم. تا آن زمان می‌توانید
+          اطلاعات را ویرایش کنید.
         </p>
         {draft.reference && (
           <p className="text-12 font-m text-gray-77828F mt-12">کد پیگیری: {draft.reference}</p>
@@ -104,7 +107,9 @@ export default function ReviewStep() {
     {
       label: "شهر",
       value: draft.location
-        ? `${draft.location.parent?.name ? draft.location.parent.name + "، " : ""}${draft.location.name}`
+        ? `${draft.location.parent?.name ? draft.location.parent.name + "، " : ""}${
+            draft.location.name
+          }`
         : "—",
       step: "address",
     },
@@ -165,6 +170,7 @@ export default function ReviewStep() {
     <StepLayout
       onNext={onSubmit}
       busy={saveState === "saving"}
+      nextDisabled={hasFailedSave}
       nextLabel={gaps.length > 0 ? "تکمیل موارد باقی‌مانده" : "ثبت نهایی اقامتگاه"}
       footerNote={
         gaps.length === 0 ? (
@@ -232,16 +238,10 @@ export default function ReviewStep() {
         </article>
       </Section>
 
-      <Section
-        title="خلاصه اطلاعات"
-        description="هر سطر را از همین‌جا می‌توانید ویرایش کنید."
-      >
+      <Section title="خلاصه اطلاعات" description="هر سطر را از همین‌جا می‌توانید ویرایش کنید.">
         <dl className="rounded-16 border border-gray-DBDFE5 divide-y divide-gray-F3F5F7">
           {rows.map((row) => (
-            <div
-              key={row.label}
-              className="flex items-center justify-between gap-x-12 px-16 py-12"
-            >
+            <div key={row.label} className="flex items-center justify-between gap-x-12 px-16 py-12">
               <dt className="text-13 font-l text-gray-77828F shrink-0">{row.label}</dt>
               <dd className="flex items-center gap-x-10 min-w-0">
                 <span className="text-13 font-m text-black text-left truncate">{row.value}</span>

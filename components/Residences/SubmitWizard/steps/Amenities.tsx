@@ -1,39 +1,54 @@
 import React, { useEffect, useMemo, useState } from "react";
+import dynamic from "next/dynamic";
 import { useQuery } from "@tanstack/react-query";
-import {
-  getAmenityCatalog,
-  saveAmenities,
-  type CatalogAmenity,
-} from "@/api/Residences/hostWizard";
+import { getAmenityCatalog, saveAmenities, type CatalogAmenity } from "@/api/Residences/hostWizard";
+import type { THandleSmoothClose } from "@/components/General/core/BottomSheet";
+import type { ISelectedExtraFeatures } from "@/interfaces/Residences/Submit/Steps/Step_6";
 import { StepLayout } from "../Shell";
 import { useWizard } from "../useWizard";
-import { CheckCard, Field, Section, StepSkeleton, TextArea, TextInput, faDigits } from "../ui";
+import { Field, Section, StepSkeleton, TextArea, faDigits } from "../ui";
+
+const BottomSheet = dynamic(() => import("@/components/General/core/BottomSheet"), { ssr: true });
+const FacilityDetailsBottomSheet = dynamic(
+  () => import("@/components/Residences/Edit/shared/FacilityDetailsBottomSheet"),
+  { ssr: true }
+);
 
 /**
  * Step five: what the place has.
  *
- * Not in the list the host was given, and here anyway: 150,066 amenity links
- * across the estate feed the search filters, and a listing that answers none
- * of them is filtered out of every search that mentions a pool, a parking
- * space or a kitchen. Dropping the step would have quietly cost new hosts
- * their visibility.
+ * 150,066 amenity links across the estate feed the search filters, so a
+ * listing that answers none of them is filtered out of every search that
+ * mentions a pool, a parking space or a kitchen.
+ *
+ * The details open in a sheet rather than inline, because inline does not fit:
+ * «وسایل آشپزخانه» alone carries nineteen sub-questions. An earlier version of
+ * this screen rendered them under the tile and got their shape wrong as well —
+ * eighteen of those nineteen are CHECKBOX fields whose catalogue entry is the
+ * pair «دارد, ندارد», and they were being stored as true/false. Both problems
+ * are why the previous wizard put this behind a button, so this reuses that
+ * same sheet rather than reimplementing it.
  *
  * ⚠️ `PATCH /amenities` deletes every amenity on the listing and recreates the
- * list it is handed. Sending only this grid's answers would therefore wipe
- * «نوع اقامتگاه» and «منطقه اقامتگاه» — the two the SEO tag pages are built
- * from — which step one has just written. `scopeIds` limits the replace to the
- * ids this screen actually owns.
+ * list it is handed, so `scopeIds` limits the replace to the ids this screen
+ * owns — otherwise «نوع اقامتگاه» and «منطقه اقامتگاه», written on step one and
+ * read by the SEO tag engine, would be deleted here.
  */
 
 const CLASSIFICATION_KEYS = ["type", "area"];
 
-interface Answer {
-  value?: string | number | boolean;
-  extra?: Record<string, string | number | boolean>;
-}
+/** The catalogue says CHECKBOX; the sheet was written against "checkbox". */
+const toLegacyFeature = (feature: CatalogAmenity["features"][number]) => ({
+  field_type: (feature.fieldType || "").toLowerCase(),
+  name: feature.name,
+  values: feature.values ?? "",
+  placeholder: feature.placeholder ?? undefined,
+});
+
+const SHEET_CLOSED = { show: false, amenity: null as CatalogAmenity | null };
 
 export default function AmenitiesStep() {
-  const { draft, residenceId, save, saveState, next, setDirty, progressMarker } = useWizard();
+  const { draft, commit, saveState, next, setDirty, progressMarker } = useWizard();
 
   const { data: catalog, isLoading } = useQuery({
     queryKey: ["amenityCatalog"],
@@ -50,72 +65,62 @@ export default function AmenitiesStep() {
     [catalog]
   );
 
-  /**
-   * One list, not four.
-   *
-   * The catalogue's own `category` is a finer grouping — «رفاهی» (2 items),
-   * «فضای اقامتگاه» (3), «امکانات بوم گردی» (1), «امکانات» (36) — and
-   * rendering it produced three headings with one or two tiles under each. The
-   * previous wizard flattened all of them under «امکانات» for exactly that
-   * reason, and this keeps that.
-   */
   const sorted = useMemo(
     () => [...grid].sort((a, b) => a.name.localeCompare(b.name, "fa")),
     [grid]
   );
 
-  const [selected, setSelected] = useState<Record<number, Answer>>({});
+  const [ticked, setTicked] = useState<number[]>([]);
+  const [extras, setExtras] = useState<ISelectedExtraFeatures>({});
   const [other, setOther] = useState("");
   const [seeded, setSeeded] = useState(false);
+  const [sheet, setSheet] = useState(SHEET_CLOSED);
 
   useEffect(() => {
     if (seeded || !draft) return;
-    const next: Record<number, Answer> = {};
+    const ids: number[] = [];
+    const answers: ISelectedExtraFeatures = {};
     (draft.amenities ?? []).forEach((row) => {
-      next[row.amenityId] = (row.extraFeatures as Answer) ?? {};
+      ids.push(row.amenityId);
+      const extra = (row.extraFeatures as { extra?: Record<string, string | number> })?.extra;
+      if (extra) answers[row.amenityId] = extra;
     });
-    setSelected(next);
+    setTicked(ids);
+    setExtras(answers);
     setOther(draft.otherAmenities ?? "");
     setSeeded(true);
   }, [draft, seeded]);
 
   const toggle = (id: number) => {
     setDirty(true);
-    setSelected((previous) => {
-      const next = { ...previous };
-      if (id in next) delete next[id];
-      else next[id] = {};
-      return next;
-    });
+    setTicked((previous) =>
+      previous.includes(id) ? previous.filter((x) => x !== id) : [...previous, id]
+    );
   };
 
-  const setExtra = (id: number, field: string, value: string | boolean) => {
-    setDirty(true);
-    setSelected((previous) => ({
-      ...previous,
-      [id]: { ...previous[id], extra: { ...previous[id]?.extra, [field]: value } },
-    }));
-  };
+  /** How many sub-answers a tile is carrying, for the button's label. */
+  const answeredCount = (id: number) =>
+    Object.values(extras[id] ?? {}).filter((v) => v !== "" && v !== undefined).length;
 
-  const count = Object.keys(selected).length;
-
-  async function onNext() {
-    const ok = await save(async (id) =>
+  function onNext() {
+    commit(async (id) =>
       saveAmenities(id, {
-        amenities: Object.entries(selected).map(([amenityId, answer]) => ({
-          amenityId: Number(amenityId),
-          extraFeatures: Object.keys(answer).length ? answer : undefined,
-        })),
+        amenities: ticked.map((amenityId) => {
+          const extra = extras[amenityId];
+          return {
+            amenityId,
+            // The stored shape is { value, extra } — `extra` holds the
+            // sub-answers, keyed by the feature's own name.
+            extraFeatures: extra && Object.keys(extra).length ? { extra } : undefined,
+          };
+        }),
         other: other.trim() || undefined,
         step: progressMarker,
-        // Without this, the classification written on step one is deleted.
         scopeIds: grid.map((a) => a.id),
       })
     );
-    if (ok) {
-      setDirty(false);
-      next();
-    }
+    setDirty(false);
+    next();
   }
 
   if (isLoading || !seeded) return <StepSkeleton />;
@@ -124,11 +129,11 @@ export default function AmenitiesStep() {
     <StepLayout
       onNext={onNext}
       busy={saveState === "saving"}
-      nextLabel={count === 0 ? "فعلاً رد کن" : "ذخیره و ادامه"}
+      nextLabel={ticked.length === 0 ? "فعلاً رد کن" : "ذخیره و ادامه"}
       footerNote={
-        count > 0 ? (
+        ticked.length > 0 ? (
           <p className="text-12 font-l text-gray-77828F text-center">
-            {faDigits(count)} مورد انتخاب شده
+            {faDigits(ticked.length)} مورد انتخاب شده
           </p>
         ) : null
       }
@@ -136,83 +141,60 @@ export default function AmenitiesStep() {
       <Section title="امکانات">
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 gap-10">
           {sorted.map((amenity) => {
-              const answer = selected[amenity.id];
-              const isOn = !!answer;
-              return (
-                <CheckCard
-                  key={amenity.id}
-                  checked={isOn}
-                  onToggle={() => toggle(amenity.id)}
-                  label={amenity.name}
-                  icon={amenity.iconUrl}
-                >
-                  {amenity.features.length > 0 && (
-                    <div className="pt-10 border-t border-white/60 grid grid-cols-2 gap-x-10 gap-y-8">
-                      {amenity.features.map((feature) => {
-                        const current = answer?.extra?.[feature.name];
-                        const options = (feature.values || "")
-                          .split(",")
-                          .map((v) => v.trim())
-                          .filter(Boolean);
+            const on = ticked.includes(amenity.id);
+            const hasDetails = amenity.features.length > 0;
+            const answered = answeredCount(amenity.id);
 
-                        if (feature.fieldType?.toLowerCase() === "switch" ||
-                            feature.fieldType?.toLowerCase() === "checkbox") {
-                          return (
-                            <label
-                              key={feature.id}
-                              className="flex items-center gap-x-6 text-12 font-l text-black"
-                            >
-                              <input
-                                type="checkbox"
-                                checked={current === true}
-                                onChange={(e) => setExtra(amenity.id, feature.name, e.target.checked)}
-                                className="w-16 h-16 accent-primary-main"
-                              />
-                              {feature.name}
-                            </label>
-                          );
-                        }
+            return (
+              <div
+                key={amenity.id}
+                className={`rounded-12 border transition-colors ${
+                  on ? "border-primary-main bg-primary-light/30" : "border-gray-DBDFE5 bg-white"
+                }`}
+              >
+                <label className="flex items-center gap-x-12 p-14 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={on}
+                    onChange={() => toggle(amenity.id)}
+                    className="w-20 h-20 shrink-0 accent-primary-main cursor-pointer"
+                  />
+                  {amenity.iconUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={amenity.iconUrl}
+                      alt=""
+                      className="w-24 h-24 object-contain shrink-0"
+                      loading="lazy"
+                    />
+                  ) : null}
+                  <span className="grow text-14 leading-24 font-m text-black">{amenity.name}</span>
+                </label>
 
-                        if (options.length > 0) {
-                          return (
-                            <label key={feature.id} className="block col-span-2">
-                              <span className="block text-12 font-m text-gray-77828F mb-4">
-                                {feature.name}
-                              </span>
-                              <select
-                                value={String(current ?? "")}
-                                onChange={(e) => setExtra(amenity.id, feature.name, e.target.value)}
-                                className="w-full h-[40px] px-12 rounded-10 border border-gray-DBDFE5 bg-white text-13 font-m text-black outline-none focus:border-primary-main"
-                              >
-                                <option value="">انتخاب کنید</option>
-                                {options.map((option) => (
-                                  <option key={option} value={option}>
-                                    {option}
-                                  </option>
-                                ))}
-                              </select>
-                            </label>
-                          );
-                        }
-
-                        return (
-                          <label key={feature.id} className="block col-span-2">
-                            <span className="block text-12 font-m text-gray-77828F mb-4">
-                              {feature.name}
-                            </span>
-                            <TextInput
-                              value={String(current ?? "")}
-                              onChange={(e) => setExtra(amenity.id, feature.name, e.target.value)}
-                              placeholder={feature.placeholder || ""}
-                              className="!h-[40px] !text-13"
-                            />
-                          </label>
-                        );
-                      })}
-                    </div>
-                  )}
-                </CheckCard>
-              );
+                {/*
+                  Only once the amenity is ticked. Offering to configure
+                  something the listing does not have is a question about
+                  nothing.
+                */}
+                {on && hasDetails && (
+                  <div className="px-14 pb-14">
+                    <button
+                      type="button"
+                      onClick={() => setSheet({ show: true, amenity })}
+                      className="w-full h-[40px] rounded-10 border border-primary-main bg-white text-13 font-m text-primary-dark flex items-center justify-center gap-x-6 transition-colors hover:bg-primary-light/40"
+                    >
+                      <i className="icon-Setting text-16" />
+                      ویژگی‌ها
+                      {answered > 0 && (
+                        <span className="text-11 font-l text-gray-77828F">
+                          ({faDigits(answered)} مورد)
+                        </span>
+                      )}
+                    </button>
+                  </div>
+                )}
+              </div>
+            );
           })}
         </div>
       </Section>
@@ -231,6 +213,28 @@ export default function AmenitiesStep() {
           />
         )}
       </Field>
+
+      {sheet.show && sheet.amenity && (
+        <BottomSheet
+          open={sheet.show}
+          handleClose={() => setSheet(SHEET_CLOSED)}
+          headerTitle={sheet.amenity.name}
+          body={({ handleSmoothClose }: { handleSmoothClose: THandleSmoothClose }) => (
+            <FacilityDetailsBottomSheet
+              handleSmoothClose={handleSmoothClose}
+              extraFeaturesData={sheet.amenity!.features.map(toLegacyFeature) as never}
+              selectedExtraFeatures={extras}
+              setSelectedExtraFeatures={
+                ((updater: never) => {
+                  setDirty(true);
+                  setExtras(updater);
+                }) as never
+              }
+              facilityId={sheet.amenity!.id}
+            />
+          )}
+        />
+      )}
     </StepLayout>
   );
 }

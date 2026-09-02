@@ -57,7 +57,7 @@ function validate(values: Values): Partial<Record<keyof Values, string>> {
 }
 
 export default function AddressStep() {
-  const { draft, residenceId, save, saveState, next, setDirty, progressMarker } = useWizard();
+  const { draft, residenceId, commit, saveState, next, setDirty, progressMarker } = useWizard();
 
   const { data: provinces, isLoading: provincesLoading } = useQuery({
     queryKey: ["provincesAndCities"],
@@ -103,12 +103,10 @@ export default function AddressStep() {
    * being defensive about.
    */
   const cities: string[] = useMemo(() => {
-    const province = (provinces ?? []).find(
-      (p: any) => String(p.id) === form.values.provinceId
-    );
-    return (province?.cities ?? []).map((city: any) =>
-      typeof city === "string" ? city : (city?.name ?? "")
-    ).filter(Boolean);
+    const province = (provinces ?? []).find((p: any) => String(p.id) === form.values.provinceId);
+    return (province?.cities ?? [])
+      .map((city: any) => (typeof city === "string" ? city : city?.name ?? ""))
+      .filter(Boolean);
   }, [provinces, form.values.provinceId]);
 
   // The map talks in numbers; the form stores strings so a half-typed value is
@@ -153,17 +151,9 @@ export default function AddressStep() {
     return { lat: province.latitude, lng: province.longitude };
   }, [province, lat, lng]);
 
-  /**
-   * ProjectMap flies to `automaticallyNavigateToCustomLatLng` once and then
-   * latches an internal flag, so changing the province after the map has
-   * mounted moves nothing. Keying it on the province remounts it at the new
-   * centre, which is the only lever the component exposes.
-   */
-  const mapKey = `${form.values.provinceId || "none"}`;
-
   async function onNext() {
     if (!form.submit()) return;
-    const ok = await save(
+    commit(
       async (id) => {
         const result = await saveSpecs(id, {
           cityName: form.values.city || undefined,
@@ -183,10 +173,8 @@ export default function AddressStep() {
       // The city was sent by name; only a re-read tells us what it resolved to.
       { reload: true }
     );
-    if (ok) {
-      setDirty(false);
-      next();
-    }
+    setDirty(false);
+    next();
   }
 
   if (!form.ready || provincesLoading) return <StepSkeleton />;
@@ -294,7 +282,6 @@ export default function AddressStep() {
         */}
         <div className="h-[320px] md:h-[400px] rounded-16 overflow-hidden border border-gray-DBDFE5">
           <ProjectMap
-            key={mapKey}
             name="location"
             userLat={lat}
             userLang={lng}
@@ -332,13 +319,12 @@ export default function AddressStep() {
             </div>
           ) : (
             <Callout tone="info">
-              بدون مشخص‌کردن محل روی نقشه، اقامتگاه شما در جست‌وجوی نقشه‌ای دیده نمی‌شود.
-              اجباری نیست، ولی توصیه می‌شود.
+              بدون مشخص‌کردن محل روی نقشه، اقامتگاه شما در جست‌وجوی نقشه‌ای دیده نمی‌شود. اجباری
+              نیست، ولی توصیه می‌شود.
             </Callout>
           )}
         </div>
       </Section>
-
     </StepLayout>
   );
 }

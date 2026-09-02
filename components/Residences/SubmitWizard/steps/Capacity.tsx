@@ -66,7 +66,7 @@ function validate(values: Values): Partial<Record<keyof Values, string>> {
 }
 
 export default function CapacityStep() {
-  const { draft, residenceId, save, saveState, next, setDirty, progressMarker } = useWizard();
+  const { draft, residenceId, commit, saveState, next, setDirty, progressMarker } = useWizard();
 
   const initial = useMemo<Values | undefined>(() => {
     if (!draft) return undefined;
@@ -128,8 +128,7 @@ export default function CapacityStep() {
     bedsIn(form.values.shared) > 0 || form.values.shared.description.trim() !== "";
 
   const beds =
-    form.values.rooms.reduce((total, room) => total + bedsIn(room), 0) +
-    bedsIn(form.values.shared);
+    form.values.rooms.reduce((total, room) => total + bedsIn(room), 0) + bedsIn(form.values.shared);
 
   async function onNext() {
     if (!form.submit()) return;
@@ -158,7 +157,7 @@ export default function CapacityStep() {
       })),
     ];
 
-    const ok = await save(
+    commit(
       async (id) => {
         const result = await saveRooms(id, {
           capacity: form.values.capacity,
@@ -179,10 +178,8 @@ export default function CapacityStep() {
       // Rooms come back with server-assigned ids; the cached draft needs them.
       { reload: true }
     );
-    if (ok) {
-      setDirty(false);
-      next();
-    }
+    setDirty(false);
+    next();
   }
 
   if (!form.ready) return <StepSkeleton />;
@@ -220,10 +217,7 @@ export default function CapacityStep() {
         )}
       </Section>
 
-      <Section
-        title="فضای مشترک"
-        description="جای خوابی که در اتاق نیست — پذیرایی، هال، تراس."
-      >
+      <Section title="فضای مشترک" description="جای خوابی که در اتاق نیست — پذیرایی، هال، تراس.">
         <div className="rounded-16 border border-gray-DBDFE5 px-16">
           <CounterRow
             label="تخت یک‌نفره"
@@ -356,8 +350,8 @@ export default function CapacityStep() {
           <div className="mt-12">
             <Callout tone="warning">
               مجموع خواب‌های اتاق‌ها {faDigits(beds)} نفر است، ولی ظرفیت را{" "}
-              {faDigits(form.values.capacity)} نفر گفته‌اید. اگر جای خواب دیگری هست (پذیرایی،
-              تشک اضافه) در توضیحات بنویسید.
+              {faDigits(form.values.capacity)} نفر گفته‌اید. اگر جای خواب دیگری هست (پذیرایی، تشک
+              اضافه) در توضیحات بنویسید.
             </Callout>
           </div>
         )}

@@ -349,3 +349,12 @@ export const getAmenityCatalog = () =>
 
 export const getRuleCatalog = () =>
   request<CatalogRule[]>(() => client.get("/api/residences/rules"));
+
+/**
+ * Renaming a photo.
+ *
+ * The caption is what a guest reads under the image in the gallery, so it is
+ * worth being able to fix without deleting and re-uploading.
+ */
+export const updateImageTitle = (id: number, imageId: number, title: string) =>
+  request<DraftImage>(() => client.patch(`${base}/${id}/images/${imageId}`, { title }));

@@ -64,6 +64,11 @@ interface WizardValue {
     run: (residenceId: number) => Promise<Result<T>>,
     options?: SaveOptions
   ) => Promise<boolean>;
+  /** Fire-and-continue: the step advances now, the write follows. */
+  commit: <T>(run: (residenceId: number) => Promise<Result<T>>, options?: SaveOptions) => void;
+  /** True while a background write has failed and not yet been retried. */
+  hasFailedSave: boolean;
+  retryFailed: () => void;
   saveState: SaveState;
   error?: Err;
   clearError: () => void;
@@ -177,6 +182,19 @@ export function WizardProvider({ children }: { children: React.ReactNode }) {
   const [error, setError] = useState<Err | undefined>();
   const savedTimer = useRef<ReturnType<typeof setTimeout>>();
 
+  /**
+   * A save that went out after the host had already moved on, and failed.
+   *
+   * Held with the call that produced it so it can simply be tried again,
+   * rather than asking the host to walk back and retype a screen they have
+   * left. Mirrored into a ref because the retry handler is memoised.
+   */
+  const [failure, setFailure] = useState<
+    { run: (residenceId: number) => Promise<Result<unknown>>; options?: SaveOptions } | undefined
+  >();
+  const failureRef = useRef(failure);
+  failureRef.current = failure;
+
   useEffect(() => () => clearTimeout(savedTimer.current), []);
 
   const mutation = useMutation({
@@ -201,13 +219,11 @@ export function WizardProvider({ children }: { children: React.ReactNode }) {
     },
   });
 
-  const save = useCallback(
+  const runSave = useCallback(
     async <T,>(
       run: (residenceId: number) => Promise<Result<T>>,
       options?: SaveOptions
     ): Promise<boolean> => {
-      // A second press while the first is in flight is the same press.
-      if (mutation.isLoading) return false;
       setSaveState("saving");
       setError(undefined);
       try {
@@ -230,12 +246,77 @@ export function WizardProvider({ children }: { children: React.ReactNode }) {
     [mutation]
   );
 
+  /**
+   * Save, and wait for it.
+   *
+   * For the two writes where waiting is the point: creating the listing, which
+   * mints the id the rest of the wizard is keyed by, and the final submit.
+   */
+  const save = useCallback(
+    async <T,>(
+      run: (residenceId: number) => Promise<Result<T>>,
+      options?: SaveOptions
+    ): Promise<boolean> => {
+      // A second press while the first is in flight is the same press.
+      if (mutation.isLoading) return false;
+      return runSave(run, options);
+    },
+    [mutation.isLoading, runSave]
+  );
+
+  /**
+   * Save, and do not wait for it.
+   *
+   * The wizard used to hold the host on the current screen until the server
+   * answered — a round trip, and two on the steps that re-read afterwards.
+   * That is a second or more of nothing happening after every «ادامه», on
+   * every one of ten steps, and it is the single thing that made the flow feel
+   * slow. Nothing about the next screen depends on the answer: the steps write
+   * to different fields, and each seeds itself from the draft already in the
+   * cache.
+   *
+   * So the navigation happens now and the request goes out behind it. What
+   * that costs is that a failure arrives after the host has moved on — so it
+   * is not swallowed: `failure` holds the message and the exact call to try
+   * again, the banner follows them across steps, and the final submit refuses
+   * to run while one is outstanding. A save that silently did not happen is
+   * the only outcome worse than a slow one.
+   */
+  const commit = useCallback(
+    <T,>(run: (residenceId: number) => Promise<Result<T>>, options?: SaveOptions) => {
+      setFailure(undefined);
+      void runSave(run, options).then((ok) => {
+        if (!ok) setFailure({ run: run as (id: number) => Promise<Result<unknown>>, options });
+      });
+    },
+    [runSave]
+  );
+
+  const retryFailed = useCallback(() => {
+    if (!failureRef.current) return;
+    const { run, options } = failureRef.current;
+    setFailure(undefined);
+    void runSave(run, options).then((ok) => {
+      if (!ok) setFailure({ run, options });
+    });
+  }, [runSave]);
+
   // --------------------------------------------------- unsaved-work guard ---
 
   const [dirty, setDirty] = useState(false);
 
+  /**
+   * Closing the tab on top of work the server has not got.
+   *
+   * "Dirty" is no longer the whole story: a step marks itself clean the moment
+   * it hands its write to `commit`, and that write is still in the air. A save
+   * in flight, or one that failed and has not been retried, is exactly as
+   * unsaved as an untouched form.
+   */
+  const atRisk = dirty || mutation.isLoading || !!failure;
+
   useEffect(() => {
-    if (!dirty) return;
+    if (!atRisk) return;
     const warn = (event: BeforeUnloadEvent) => {
       event.preventDefault();
       event.returnValue = "";
@@ -243,7 +324,7 @@ export function WizardProvider({ children }: { children: React.ReactNode }) {
     };
     window.addEventListener("beforeunload", warn);
     return () => window.removeEventListener("beforeunload", warn);
-  }, [dirty]);
+  }, [atRisk]);
 
   useEffect(() => {
     if (!dirty) return;
@@ -276,6 +357,9 @@ export function WizardProvider({ children }: { children: React.ReactNode }) {
     maxReachable,
 
     save,
+    commit,
+    hasFailedSave: !!failure,
+    retryFailed,
     saveState,
     error,
     clearError: () => {

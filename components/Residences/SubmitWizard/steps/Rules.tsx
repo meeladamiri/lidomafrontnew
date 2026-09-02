@@ -68,7 +68,7 @@ function validate(values: Values): Partial<Record<keyof Values, string>> {
 }
 
 export default function RulesStep() {
-  const { draft, residenceId, save, saveState, next, setDirty, progressMarker } = useWizard();
+  const { draft, residenceId, commit, saveState, next, setDirty, progressMarker } = useWizard();
 
   const { data: catalog, isLoading } = useQuery({
     queryKey: ["ruleCatalog"],
@@ -152,12 +152,15 @@ export default function RulesStep() {
       const before = Number(custom["before-start-time"]);
       if (!Number.isFinite(full) || !Number.isFinite(before)) return;
       if (before >= full) {
-        customFormik.setFieldError("before-start-time", "مقدار فیلد دوم باید کمتر از فیلد اول باشد.");
+        customFormik.setFieldError(
+          "before-start-time",
+          "مقدار فیلد دوم باید کمتر از فیلد اول باشد."
+        );
         return;
       }
     }
 
-    const ok = await save(async (id) => {
+    commit(async (id) => {
       const result = await saveRules(id, {
         rules: form.values.ruleIds.map((ruleId) => ({ ruleId })),
         rulesDesc: form.values.rulesDesc.trim(),
@@ -185,10 +188,8 @@ export default function RulesStep() {
       else if (result.fieldErrors) form.setServerErrors(result.fieldErrors);
       return result;
     });
-    if (ok) {
-      setDirty(false);
-      next();
-    }
+    setDirty(false);
+    next();
   }
 
   if (isLoading || !form.ready) return <StepSkeleton />;
@@ -360,10 +361,21 @@ export default function RulesStep() {
       </Section>
 
       <div
-        className={`rounded-12 border p-14 ${
-          form.visibleErrors.acceptedTerms ? "border-error-light" : "border-gray-DBDFE5"
+        className={`rounded-12 border-2 p-14 transition-colors ${
+          form.visibleErrors.acceptedTerms
+            ? "border-error-light bg-red-light/40"
+            : form.values.acceptedTerms
+            ? "border-primary-main bg-primary-light/40"
+            : "border-gray-DBDFE5"
         }`}
       >
+        {/*
+          The state has to be readable at a glance, because this is the one
+          box a host is asked to actively agree to. A bare native checkbox
+          renders differently in every browser and reads as furniture; a tile
+          that changes colour and shows a filled tick says "you have agreed"
+          without anyone having to look closely.
+        */}
         <label className="flex items-start gap-x-12 cursor-pointer">
           <input
             type="checkbox"
@@ -371,8 +383,18 @@ export default function RulesStep() {
             onChange={(e) => form.setField("acceptedTerms", e.target.checked)}
             onBlur={() => form.touch("acceptedTerms")}
             aria-invalid={!!form.visibleErrors.acceptedTerms}
-            className="w-20 h-20 mt-2 shrink-0 accent-primary-main cursor-pointer"
+            className="sr-only peer"
           />
+          <span
+            aria-hidden="true"
+            className={`w-24 h-24 mt-1 shrink-0 rounded-6 border-2 grid place-items-center transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-primary-main peer-focus-visible:ring-offset-2 ${
+              form.values.acceptedTerms
+                ? "border-primary-main bg-primary-main"
+                : "border-gray-A9B1BC bg-white"
+            }`}
+          >
+            {form.values.acceptedTerms && <i className="icon-Tick text-12 text-white" />}
+          </span>
           <span className="text-13 leading-24 font-l text-black">
             <Link href="/rules" target="_blank" className="text-blue-main underline font-m">
               قوانین و مقررات لیدوما
@@ -393,8 +415,8 @@ export default function RulesStep() {
       {form.values.minReservableDays > 3 && (
         <div className="mt-16">
           <Callout tone="warning">
-            حداقل {faDigits(form.values.minReservableDays)} شب، بخش بزرگی از جست‌وجوهای آخر هفته
-            را از اقامتگاه شما حذف می‌کند.
+            حداقل {faDigits(form.values.minReservableDays)} شب، بخش بزرگی از جست‌وجوهای آخر هفته را
+            از اقامتگاه شما حذف می‌کند.
           </Callout>
         </div>
       )}
