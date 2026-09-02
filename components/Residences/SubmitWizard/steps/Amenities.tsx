@@ -50,14 +50,19 @@ export default function AmenitiesStep() {
     [catalog]
   );
 
-  const groups = useMemo(() => {
-    const byCategory = new Map<string, CatalogAmenity[]>();
-    grid.forEach((amenity) => {
-      const key = amenity.category || "سایر";
-      byCategory.set(key, [...(byCategory.get(key) ?? []), amenity]);
-    });
-    return [...byCategory.entries()];
-  }, [grid]);
+  /**
+   * One list, not four.
+   *
+   * The catalogue's own `category` is a finer grouping — «رفاهی» (2 items),
+   * «فضای اقامتگاه» (3), «امکانات بوم گردی» (1), «امکانات» (36) — and
+   * rendering it produced three headings with one or two tiles under each. The
+   * previous wizard flattened all of them under «امکانات» for exactly that
+   * reason, and this keeps that.
+   */
+  const sorted = useMemo(
+    () => [...grid].sort((a, b) => a.name.localeCompare(b.name, "fa")),
+    [grid]
+  );
 
   const [selected, setSelected] = useState<Record<number, Answer>>({});
   const [other, setOther] = useState("");
@@ -128,10 +133,9 @@ export default function AmenitiesStep() {
         ) : null
       }
     >
-      {groups.map(([category, items]) => (
-        <Section key={category} title={category}>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 gap-10">
-            {items.map((amenity) => {
+      <Section title="امکانات">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 gap-10">
+          {sorted.map((amenity) => {
               const answer = selected[amenity.id];
               const isOn = !!answer;
               return (
@@ -143,7 +147,7 @@ export default function AmenitiesStep() {
                   icon={amenity.iconUrl}
                 >
                   {amenity.features.length > 0 && (
-                    <div className="flex flex-col gap-y-10 pt-10 border-t border-white/60">
+                    <div className="pt-10 border-t border-white/60 grid grid-cols-2 gap-x-10 gap-y-8">
                       {amenity.features.map((feature) => {
                         const current = answer?.extra?.[feature.name];
                         const options = (feature.values || "")
@@ -156,7 +160,7 @@ export default function AmenitiesStep() {
                           return (
                             <label
                               key={feature.id}
-                              className="flex items-center gap-x-8 text-13 font-l text-black"
+                              className="flex items-center gap-x-6 text-12 font-l text-black"
                             >
                               <input
                                 type="checkbox"
@@ -171,7 +175,7 @@ export default function AmenitiesStep() {
 
                         if (options.length > 0) {
                           return (
-                            <label key={feature.id} className="block">
+                            <label key={feature.id} className="block col-span-2">
                               <span className="block text-12 font-m text-gray-77828F mb-4">
                                 {feature.name}
                               </span>
@@ -192,7 +196,7 @@ export default function AmenitiesStep() {
                         }
 
                         return (
-                          <label key={feature.id} className="block">
+                          <label key={feature.id} className="block col-span-2">
                             <span className="block text-12 font-m text-gray-77828F mb-4">
                               {feature.name}
                             </span>
@@ -209,10 +213,9 @@ export default function AmenitiesStep() {
                   )}
                 </CheckCard>
               );
-            })}
-          </div>
-        </Section>
-      ))}
+          })}
+        </div>
+      </Section>
 
       <Field label="امکانات دیگر" optionalNote hint="هر چیزی که در فهرست بالا نبود.">
         {(props) => (

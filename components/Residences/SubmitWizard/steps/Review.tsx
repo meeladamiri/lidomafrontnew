@@ -4,7 +4,7 @@ import { submitForReview } from "@/api/Residences/hostWizard";
 import { StepLayout } from "../Shell";
 import { legacyStep, requiredSteps, STEPS, TOTAL_STEPS } from "../steps";
 import { useWizard } from "../useWizard";
-import { policyByValue } from "../cancellation";
+import { policyLabel } from "../cancellation";
 import { Callout, faDigits, grouped, Section, StepSkeleton } from "../ui";
 
 /**
@@ -43,7 +43,6 @@ export default function ReviewStep() {
 
   const alreadyPending = draft.state === "PENDING" || submitted;
   const cover = draft.images?.find((image) => image.isMain) ?? draft.images?.[0];
-  const policy = policyByValue(draft.cancellationPolicy);
 
   async function onSubmit() {
     if (gaps.length > 0) {
@@ -89,38 +88,77 @@ export default function ReviewStep() {
     );
   }
 
-  const rows: [string, React.ReactNode][] = [
-    ["نوع", draft.region || "—"],
-    [
-      "شهر",
-      draft.location
+  /**
+   * Every line says where it came from, and goes back there.
+   *
+   * A summary that can only be read sends a host who spots a wrong price
+   * hunting through ten steps for the one that owns it. The step key is the
+   * same one the rail uses, so a row can never point at a screen that has
+   * moved.
+   */
+  const stepIndex = (key: string) => STEPS.findIndex((s) => s.key === key);
+
+  const rows: { label: string; value: React.ReactNode; step: string }[] = [
+    { label: "نام", value: draft.name || "—", step: "specs" },
+    { label: "نوع و منطقه", value: draft.region || "—", step: "details" },
+    {
+      label: "شهر",
+      value: draft.location
         ? `${draft.location.parent?.name ? draft.location.parent.name + "، " : ""}${draft.location.name}`
         : "—",
-    ],
-    [
-      "ظرفیت",
-      draft.capacity
+      step: "address",
+    },
+    { label: "نشانی", value: draft.address || "—", step: "address" },
+    {
+      label: "ظرفیت",
+      value: draft.capacity
         ? `${faDigits(draft.capacity)} نفر${
             draft.maxCapacity && draft.maxCapacity > draft.capacity
               ? ` (تا ${faDigits(draft.maxCapacity)} نفر)`
               : ""
           }`
         : "—",
-    ],
-    ["اتاق", draft.rooms?.length ? `${faDigits(draft.rooms.length)} اتاق` : "—"],
-    ["نرخ پایه", draft.weekPrice ? `${grouped(draft.weekPrice)} تومان` : "—"],
-    [
-      "نرخ نفر اضافه",
-      draft.extraGuestsPrice ? `${grouped(draft.extraGuestsPrice)} تومان` : "—",
-    ],
-    ["امکانات", `${faDigits(draft.amenities?.length ?? 0)} مورد`],
-    [
-      "پذیرش و تخلیه",
-      draft.checkinFrom && draft.checkout
-        ? `از ${faDigits(draft.checkinFrom)} تا ${faDigits(draft.checkout)}`
-        : "—",
-    ],
-    ["قانون لغو", policy?.label ?? draft.cancellationPolicy ?? "—"],
+      step: "capacity",
+    },
+    {
+      label: "اتاق",
+      value: draft.rooms?.length ? `${faDigits(draft.rooms.length)} اتاق` : "—",
+      step: "capacity",
+    },
+    {
+      label: "امکانات",
+      value: `${faDigits(draft.amenities?.length ?? 0)} مورد`,
+      step: "amenities",
+    },
+    {
+      label: "نرخ پایه",
+      value: draft.weekPrice ? `${grouped(draft.weekPrice)} تومان` : "—",
+      step: "pricing",
+    },
+    {
+      label: "نرخ نفر اضافه",
+      value: draft.extraGuestsPrice ? `${grouped(draft.extraGuestsPrice)} تومان` : "—",
+      step: "pricing",
+    },
+    {
+      label: "تصاویر",
+      value: `${faDigits(draft.images?.length ?? 0)} تصویر`,
+      step: "images",
+    },
+    {
+      label: "مدارک",
+      value: draft.hostNationalCardUrl && draft.documentUrl ? "بارگذاری شده" : "ناقص",
+      step: "documents",
+    },
+    {
+      label: "پذیرش و تخلیه",
+      value:
+        draft.checkinFrom && draft.checkout
+          ? `از ${faDigits(draft.checkinFrom)} تا ${faDigits(draft.checkout)}`
+          : "—",
+      step: "rules",
+    },
+    { label: "قانون لغو", value: policyLabel(draft.cancellationPolicy), step: "rules" },
   ];
 
   return (
@@ -194,12 +232,28 @@ export default function ReviewStep() {
         </article>
       </Section>
 
-      <Section title="خلاصه اطلاعات">
+      <Section
+        title="خلاصه اطلاعات"
+        description="هر سطر را از همین‌جا می‌توانید ویرایش کنید."
+      >
         <dl className="rounded-16 border border-gray-DBDFE5 divide-y divide-gray-F3F5F7">
-          {rows.map(([label, value]) => (
-            <div key={label} className="flex items-baseline justify-between gap-x-16 px-16 py-12">
-              <dt className="text-13 font-l text-gray-77828F shrink-0">{label}</dt>
-              <dd className="text-13 font-m text-black text-left">{value}</dd>
+          {rows.map((row) => (
+            <div
+              key={row.label}
+              className="flex items-center justify-between gap-x-12 px-16 py-12"
+            >
+              <dt className="text-13 font-l text-gray-77828F shrink-0">{row.label}</dt>
+              <dd className="flex items-center gap-x-10 min-w-0">
+                <span className="text-13 font-m text-black text-left truncate">{row.value}</span>
+                <button
+                  type="button"
+                  onClick={() => goTo(stepIndex(row.step))}
+                  aria-label={`ویرایش ${row.label}`}
+                  className="w-28 h-28 shrink-0 rounded-8 grid place-items-center text-gray-A9B1BC hover:text-primary-dark transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-main"
+                >
+                  <i className="icon-Edit text-16" />
+                </button>
+              </dd>
             </div>
           ))}
         </dl>

@@ -1,4 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import Image from "next/image";
+import { DragDropContext, Draggable, Droppable } from "react-beautiful-dnd";
 import {
   deleteImage,
   reorderImages,
@@ -15,11 +17,14 @@ import { humanSize, shrink, validate } from "../imageTools";
 /**
  * Step seven: the photographs.
  *
- * The one screen where a host is most likely to give up, so it does the work
- * for them: files are checked and resized here, uploaded one at a time with
- * visible progress, and the gallery stays usable while they land.
+ * The card shape is the previous wizard's: a full-width cover picture with the
+ * position badge and the delete button over it, a drag handle in the corner,
+ * and a caption row underneath. Reordering uses react-beautiful-dnd, which the
+ * old step used and the edit flow still does — the HTML5 drag events this step
+ * shipped with dropped items when the pointer left the tile, which on a phone
+ * is most of the time.
  *
- * Order is committed on «ادامه» rather than after every drag — the reorder
+ * Order is committed on «ادامه» rather than after every drag: the reorder
  * endpoint also deletes anything missing from the list it is sent, so it is
  * not something to fire on every pointer move.
  */
@@ -35,16 +40,39 @@ interface Pending {
 
 let pendingSeed = 0;
 
+/** Next refuses hosts it was not told about; a plain img is the honest fallback. */
+function Photo({ src, alt }: { src: string; alt: string }) {
+  const [failed, setFailed] = useState(false);
+
+  if (failed) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img src={src} alt={alt} className="w-full h-full object-cover" loading="lazy" />
+    );
+  }
+  return (
+    <Image
+      src={src}
+      alt={alt}
+      fill
+      sizes="(min-width: 1024px) 480px, 100vw"
+      style={{ objectFit: "cover" }}
+      onError={() => setFailed(true)}
+      unoptimized={src.startsWith("blob:") || src.startsWith("data:")}
+    />
+  );
+}
+
 export default function ImagesStep() {
-  const { draft, save, saveState, next, reload, progressMarker } = useWizard();
+  const { draft, save, saveState, next, progressMarker } = useWizard();
   const [images, setImages] = useState<DraftImage[]>([]);
   const [pending, setPending] = useState<Pending[]>([]);
   const [rejected, setRejected] = useState<string[]>([]);
   const [dragOver, setDragOver] = useState(false);
   const [seeded, setSeeded] = useState(false);
   const [busyId, setBusyId] = useState<number | null>(null);
+  const [lightbox, setLightbox] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const dragIndex = useRef<number | null>(null);
 
   useEffect(() => {
     if (seeded || !draft) return;
@@ -52,8 +80,7 @@ export default function ImagesStep() {
     setSeeded(true);
   }, [draft, seeded]);
 
-  // Object URLs are a real allocation; a host who adds twenty photos and walks
-  // away should not leave twenty of them behind.
+  // Object URLs are a real allocation; twenty of them should not outlive the step.
   useEffect(
     () => () => {
       pending.forEach((item) => URL.revokeObjectURL(item.previewUrl));
@@ -97,7 +124,7 @@ export default function ImagesStep() {
             return previous.filter((item) => item.key !== key);
           });
         } else {
-          // The failed tile stays, with its reason and a way to try again —
+          // The failed tile stays, with its reason and a way to retry —
           // rather than vanishing and leaving the host to guess.
           setPending((previous) =>
             previous.map((item) =>
@@ -109,12 +136,6 @@ export default function ImagesStep() {
     },
     [draft]
   );
-
-  function onDrop(event: React.DragEvent) {
-    event.preventDefault();
-    setDragOver(false);
-    void upload([...event.dataTransfer.files]);
-  }
 
   async function remove(image: DraftImage) {
     if (!draft) return;
@@ -129,15 +150,11 @@ export default function ImagesStep() {
     setBusyId(image.id);
     const result = await setMainImage(draft.id, image.id);
     setBusyId(null);
-    if (result.ok) {
-      setImages((previous) =>
-        previous.map((i) => ({ ...i, isMain: i.id === image.id }))
-      );
-    }
+    if (result.ok) setImages((previous) => previous.map((i) => ({ ...i, isMain: i.id === image.id })));
   }
 
   const move = (from: number, to: number) => {
-    if (to < 0 || to >= images.length) return;
+    if (to < 0 || to >= images.length || from === to) return;
     setImages((previous) => {
       const copy = [...previous];
       const [moved] = copy.splice(from, 1);
@@ -173,14 +190,17 @@ export default function ImagesStep() {
         ) : null
       }
     >
-      {/* Drop zone. Also a real button, so it works without a pointer. */}
       <div
         onDragOver={(e) => {
           e.preventDefault();
           setDragOver(true);
         }}
         onDragLeave={() => setDragOver(false)}
-        onDrop={onDrop}
+        onDrop={(e) => {
+          e.preventDefault();
+          setDragOver(false);
+          void upload([...e.dataTransfer.files]);
+        }}
         className={`rounded-16 border-2 border-dashed transition-colors ${
           dragOver ? "border-primary-main bg-primary-light/30" : "border-gray-DBDFE5 bg-gray-F7F7F7"
         }`}
@@ -188,7 +208,7 @@ export default function ImagesStep() {
         <button
           type="button"
           onClick={() => inputRef.current?.click()}
-          className="w-full py-32 px-16 text-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-main rounded-16"
+          className="w-full py-32 px-16 text-center rounded-16 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-main"
         >
           <i className="icon-Photo-Upload text-40 text-primary-dark" />
           <span className="block text-14 font-b text-black mt-12">
@@ -206,8 +226,7 @@ export default function ImagesStep() {
           className="hidden"
           onChange={(e) => {
             void upload([...(e.target.files ?? [])]);
-            // Same file twice in a row must still fire a change event.
-            e.target.value = "";
+            e.target.value = ""; // same file twice in a row must still fire
           }}
         />
       </div>
@@ -228,137 +247,171 @@ export default function ImagesStep() {
       {(images.length > 0 || pending.length > 0) && (
         <div className="mt-20">
           <div className="flex items-baseline justify-between mb-10">
-            <h3 className="text-15 font-b text-black">
-              تصاویر ({faDigits(images.length)})
-            </h3>
+            <h3 className="text-15 font-b text-black">تصاویر ({faDigits(images.length)})</h3>
             <span className="text-12 font-l text-gray-77828F">
-              اولین تصویر، کاور اقامتگاه است.
+              با دسته‌ی گوشه‌ی تصویر جابه‌جا کنید.
             </span>
           </div>
 
-          <ul className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 gap-12">
-            {images.map((image, index) => (
-              <li
-                key={image.id}
-                draggable
-                onDragStart={() => (dragIndex.current = index)}
-                onDragOver={(e) => e.preventDefault()}
-                onDrop={() => {
-                  if (dragIndex.current !== null) move(dragIndex.current, index);
-                  dragIndex.current = null;
-                }}
-                className="relative group rounded-12 overflow-hidden border border-gray-DBDFE5 bg-gray-F7F7F7"
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={image.url}
-                  alt={image.title || `تصویر ${faDigits(index + 1)} اقامتگاه`}
-                  className="w-full aspect-[4/3] object-cover"
-                  loading="lazy"
-                />
+          <DragDropContext
+            onDragEnd={(result: any) => {
+              if (!result.destination) return;
+              move(result.source.index, result.destination.index);
+            }}
+          >
+            <Droppable droppableId="residence-images">
+              {(dropProvided: any) => (
+                <div ref={dropProvided.innerRef} {...dropProvided.droppableProps}>
+                  {images.map((image, index) => (
+                    <Draggable key={image.id} draggableId={String(image.id)} index={index}>
+                      {(provided: any, snapshot: any) => (
+                        <div
+                          ref={provided.innerRef}
+                          {...provided.draggableProps}
+                          className={`mb-16 last:mb-0 rounded-12 ${
+                            snapshot.isDragging ? "shadow-[0_8px_24px_rgba(0,0,0,0.18)]" : ""
+                          }`}
+                        >
+                          <div className="w-full h-[214px] relative rounded-tr-12 rounded-tl-12 overflow-hidden bg-gray-F3F5F7">
+                            <Photo
+                              src={image.url}
+                              alt={image.title || `تصویر ${faDigits(index + 1)} اقامتگاه`}
+                            />
 
-                {index === 0 && (
-                  <span className="absolute top-8 right-8 px-8 py-2 rounded-full bg-black/70 text-10 font-m text-white">
-                    کاور
-                  </span>
-                )}
+                            <div className="flex items-start justify-between absolute top-12 right-12 left-12">
+                              <div className="flex items-center gap-x-6">
+                                <span className="w-24 h-24 flex items-center justify-center rounded-full bg-white text-12 font-m text-black">
+                                  {faDigits(index + 1)}
+                                </span>
+                                {image.isMain && (
+                                  <span className="h-24 px-10 flex items-center rounded-full bg-white text-11 font-m text-black">
+                                    تصویر اصلی
+                                  </span>
+                                )}
+                              </div>
 
-                {busyId === image.id && (
-                  <span className="absolute inset-0 bg-white/70 grid place-items-center">
-                    <Spinner />
-                  </span>
-                )}
+                              <button
+                                type="button"
+                                onClick={() => void remove(image)}
+                                aria-label={`حذف تصویر ${faDigits(index + 1)}`}
+                                className="w-40 h-40 flex items-center justify-center rounded-full bg-error-light"
+                              >
+                                <i className="icon-Delete text-20 text-white" />
+                              </button>
+                            </div>
 
-                <div className="flex items-center justify-between gap-x-4 p-6 bg-white">
-                  <div className="flex items-center gap-x-2">
-                    <button
-                      type="button"
-                      onClick={() => move(index, index - 1)}
-                      disabled={index === 0}
-                      aria-label={`انتقال تصویر ${faDigits(index + 1)} به عقب`}
-                      className="w-28 h-28 rounded-8 grid place-items-center text-gray-77828F hover:text-black disabled:opacity-30"
-                    >
-                      <i className="icon-FlashRight text-14" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => move(index, index + 1)}
-                      disabled={index === images.length - 1}
-                      aria-label={`انتقال تصویر ${faDigits(index + 1)} به جلو`}
-                      className="w-28 h-28 rounded-8 grid place-items-center text-gray-77828F hover:text-black disabled:opacity-30"
-                    >
-                      <i className="icon-FlashLeft text-14" />
-                    </button>
-                  </div>
+                            {busyId === image.id && (
+                              <span className="absolute inset-0 bg-white/70 grid place-items-center">
+                                <Spinner />
+                              </span>
+                            )}
 
-                  <div className="flex items-center gap-x-2">
-                    <button
-                      type="button"
-                      onClick={() => void promote(image)}
-                      aria-label={`انتخاب تصویر ${faDigits(index + 1)} به‌عنوان تصویر اصلی`}
-                      aria-pressed={image.isMain}
-                      className={`w-28 h-28 rounded-8 grid place-items-center transition-colors ${
-                        image.isMain ? "text-warning" : "text-gray-77828F hover:text-warning"
-                      }`}
-                    >
-                      <i className={`${image.isMain ? "icon-StarFill" : "icon-Star"} text-14`} />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => void remove(image)}
-                      aria-label={`حذف تصویر ${faDigits(index + 1)}`}
-                      className="w-28 h-28 rounded-8 grid place-items-center text-gray-77828F hover:text-error-light transition-colors"
-                    >
-                      <i className="icon-Delete text-14" />
-                    </button>
-                  </div>
+                            <div
+                              {...provided.dragHandleProps}
+                              aria-label={`جابه‌جایی تصویر ${faDigits(index + 1)}`}
+                              className="w-40 h-40 rounded-full bg-white flex items-center justify-center absolute bottom-12 left-12 cursor-grab active:cursor-grabbing"
+                            >
+                              <i className="icon-Move text-20 text-black" />
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() => setLightbox(image.url)}
+                              aria-label={`مشاهده تصویر ${faDigits(index + 1)}`}
+                              className="w-40 h-40 rounded-full bg-white flex items-center justify-center absolute bottom-12 right-12"
+                            >
+                              <i className="icon-See text-20 text-black" />
+                            </button>
+                          </div>
+
+                          <div className="py-10 px-16 flex items-center justify-between bg-gray-F7F7F7 rounded-br-12 rounded-bl-12">
+                            <p className="text-13 font-m text-black truncate">
+                              {image.title || `تصویر ${faDigits(index + 1)}`}
+                            </p>
+
+                            <div className="flex items-center gap-x-4 shrink-0">
+                              <button
+                                type="button"
+                                onClick={() => void promote(image)}
+                                aria-pressed={image.isMain}
+                                aria-label={`انتخاب تصویر ${faDigits(index + 1)} به‌عنوان تصویر اصلی`}
+                                className={`w-32 h-32 rounded-8 grid place-items-center transition-colors ${
+                                  image.isMain
+                                    ? "text-warning"
+                                    : "text-gray-77828F hover:text-warning"
+                                }`}
+                              >
+                                <i className={`${image.isMain ? "icon-StarFill" : "icon-Star"} text-18`} />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => move(index, index - 1)}
+                                disabled={index === 0}
+                                aria-label={`انتقال تصویر ${faDigits(index + 1)} به عقب`}
+                                className="w-32 h-32 rounded-8 grid place-items-center text-gray-77828F hover:text-black disabled:opacity-30"
+                              >
+                                <i className="icon-FlashRight text-16" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => move(index, index + 1)}
+                                disabled={index === images.length - 1}
+                                aria-label={`انتقال تصویر ${faDigits(index + 1)} به جلو`}
+                                className="w-32 h-32 rounded-8 grid place-items-center text-gray-77828F hover:text-black disabled:opacity-30"
+                              >
+                                <i className="icon-FlashLeft text-16" />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </Draggable>
+                  ))}
+                  {dropProvided.placeholder}
                 </div>
-              </li>
-            ))}
+              )}
+            </Droppable>
+          </DragDropContext>
 
-            {pending.map((item) => (
-              <li
-                key={item.key}
-                className="relative rounded-12 overflow-hidden border border-gray-DBDFE5"
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={item.previewUrl}
-                  alt=""
-                  className="w-full aspect-[4/3] object-cover opacity-60"
-                />
-                <div className="absolute inset-0 bg-white/60 grid place-items-center px-10 text-center">
+          {pending.map((item) => (
+            <div
+              key={item.key}
+              className="mt-16 rounded-12 overflow-hidden border border-gray-DBDFE5"
+            >
+              <div className="w-full h-[140px] relative bg-gray-F3F5F7">
+                <Photo src={item.previewUrl} alt="" />
+                <div className="absolute inset-0 bg-white/70 grid place-items-center px-24 text-center">
                   {item.error ? (
                     <div>
-                      <i className="icon-ErrorFill text-20 text-error-light" />
-                      <p className="text-10 font-m text-error-light mt-4">{item.error}</p>
+                      <i className="icon-ErrorFill text-24 text-error-light" />
+                      <p className="text-12 font-m text-error-light mt-4">{item.error}</p>
                       <button
                         type="button"
                         onClick={() =>
                           setPending((previous) => previous.filter((p) => p.key !== item.key))
                         }
-                        className="text-10 font-m text-gray-77828F underline mt-4"
+                        className="text-11 font-m text-gray-77828F underline mt-4"
                       >
                         حذف از فهرست
                       </button>
                     </div>
                   ) : (
-                    <div className="w-full">
+                    <div className="w-full max-w-[260px]">
                       <div className="h-4 rounded-full bg-gray-DBDFE5 overflow-hidden">
                         <div
                           className="h-full bg-primary-main transition-all"
                           style={{ width: `${item.percent}%` }}
                         />
                       </div>
-                      <p className="text-10 font-l text-gray-77828F mt-6">
+                      <p className="text-11 font-l text-gray-77828F mt-6">
                         {faDigits(item.percent)}٪ · {humanSize(item.size)}
                       </p>
                     </div>
                   )}
                 </div>
-              </li>
-            ))}
-          </ul>
+              </div>
+            </div>
+          ))}
         </div>
       )}
 
@@ -368,6 +421,29 @@ export default function ImagesStep() {
             اقامتگاه‌هایی که تصویر روشن و روزانه دارند، بیشتر از بقیه رزرو می‌شوند. نمای بیرونی،
             اتاق‌ها، آشپزخانه و سرویس را نشان دهید.
           </Callout>
+        </div>
+      )}
+
+      {lightbox && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="نمایش تصویر"
+          onClick={() => setLightbox(null)}
+          onKeyDown={(e) => e.key === "Escape" && setLightbox(null)}
+          className="fixed inset-0 z-5 bg-black/80 grid place-items-center p-16"
+        >
+          <div className="relative w-full max-w-[900px] h-[70vh]">
+            <Photo src={lightbox} alt="تصویر اقامتگاه" />
+          </div>
+          <button
+            type="button"
+            onClick={() => setLightbox(null)}
+            aria-label="بستن"
+            className="absolute top-16 left-16 w-44 h-44 rounded-full bg-white grid place-items-center"
+          >
+            <i className="icon-Close text-20 text-black" />
+          </button>
         </div>
       )}
     </StepLayout>

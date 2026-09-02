@@ -28,8 +28,20 @@ interface RoomValue {
 interface Values {
   capacity: number;
   maxCapacity: number;
+  /**
+   * The beds that are not in a room — the living room, the hall, the terrace.
+   *
+   * A first-class section rather than one of the room cards, because most
+   * listings sleep people there and none of them would think to "add a room"
+   * called it. Stored as a room named exactly «فضای مشترک», which is how the
+   * previous wizard and the panel both recognise it.
+   */
+  shared: Omit<RoomValue, "key" | "name">;
   rooms: RoomValue[];
 }
+
+/** The name that marks a room row as the shared space, on both sides. */
+const SHARED_SPACE = "فضای مشترک";
 
 let roomKeySeed = 0;
 const newRoom = (index: number): RoomValue => ({
@@ -58,10 +70,20 @@ export default function CapacityStep() {
 
   const initial = useMemo<Values | undefined>(() => {
     if (!draft) return undefined;
+    const all = draft.rooms ?? [];
+    const sharedRow = all.find((room) => room.name === SHARED_SPACE);
+    const others = all.filter((room) => room.name !== SHARED_SPACE);
+
     return {
       capacity: draft.capacity ?? 2,
       maxCapacity: draft.maxCapacity ?? draft.capacity ?? 2,
-      rooms: (draft.rooms ?? []).map((room, index) => ({
+      shared: {
+        singleBed: sharedRow?.singleBed ?? 0,
+        doubleBed: sharedRow?.doubleBed ?? 0,
+        traditionalBed: sharedRow?.traditionalBed ?? 0,
+        description: sharedRow?.description ?? "",
+      },
+      rooms: others.map((room, index) => ({
         key: `room-${++roomKeySeed}-${index}`,
         name: room.name || `اتاق ${faDigits(index + 1)}`,
         singleBed: room.singleBed ?? 0,
@@ -96,20 +118,45 @@ export default function CapacityStep() {
       rooms: previous.rooms.map((room) => (room.key === key ? { ...room, ...patch } : room)),
     }));
 
-  const beds = form.values.rooms.reduce(
-    (total, room) => total + room.singleBed + room.doubleBed * 2 + room.traditionalBed,
-    0
-  );
+  const setShared = (patch: Partial<Values["shared"]>) =>
+    form.setValues((previous) => ({ ...previous, shared: { ...previous.shared, ...patch } }));
+
+  const bedsIn = (r: { singleBed: number; doubleBed: number; traditionalBed: number }) =>
+    r.singleBed + r.doubleBed * 2 + r.traditionalBed;
+
+  const sharedHasContent =
+    bedsIn(form.values.shared) > 0 || form.values.shared.description.trim() !== "";
+
+  const beds =
+    form.values.rooms.reduce((total, room) => total + bedsIn(room), 0) +
+    bedsIn(form.values.shared);
 
   async function onNext() {
     if (!form.submit()) return;
-    const rooms: DraftRoom[] = form.values.rooms.map((room) => ({
-      name: room.name.trim(),
-      singleBed: room.singleBed,
-      doubleBed: room.doubleBed,
-      traditionalBed: room.traditionalBed,
-      description: room.description.trim() || undefined,
-    }));
+
+    // The shared space is sent as a room only when it holds something. An
+    // empty «فضای مشترک» row on every listing would be a row that means
+    // "the host saw this section", which is not information.
+    const rooms: DraftRoom[] = [
+      ...(sharedHasContent
+        ? [
+            {
+              name: SHARED_SPACE,
+              singleBed: form.values.shared.singleBed,
+              doubleBed: form.values.shared.doubleBed,
+              traditionalBed: form.values.shared.traditionalBed,
+              description: form.values.shared.description.trim() || undefined,
+            },
+          ]
+        : []),
+      ...form.values.rooms.map((room) => ({
+        name: room.name.trim(),
+        singleBed: room.singleBed,
+        doubleBed: room.doubleBed,
+        traditionalBed: room.traditionalBed,
+        description: room.description.trim() || undefined,
+      })),
+    ];
 
     const ok = await save(
       async (id) => {
@@ -171,6 +218,40 @@ export default function CapacityStep() {
             {form.visibleErrors.maxCapacity}
           </p>
         )}
+      </Section>
+
+      <Section
+        title="فضای مشترک"
+        description="جای خوابی که در اتاق نیست — پذیرایی، هال، تراس."
+      >
+        <div className="rounded-16 border border-gray-DBDFE5 px-16">
+          <CounterRow
+            label="تخت یک‌نفره"
+            value={form.values.shared.singleBed}
+            onChange={(value) => setShared({ singleBed: value })}
+            max={20}
+          />
+          <CounterRow
+            label="تخت دونفره"
+            value={form.values.shared.doubleBed}
+            onChange={(value) => setShared({ doubleBed: value })}
+            max={20}
+          />
+          <CounterRow
+            label="رخت‌خواب سنتی"
+            value={form.values.shared.traditionalBed}
+            onChange={(value) => setShared({ traditionalBed: value })}
+            max={20}
+          />
+          <div className="py-14">
+            <TextInput
+              value={form.values.shared.description}
+              onChange={(e) => setShared({ description: e.target.value })}
+              placeholder="توضیح کوتاه (اختیاری)"
+              aria-label="توضیح فضای مشترک"
+            />
+          </div>
+        </div>
       </Section>
 
       <Section

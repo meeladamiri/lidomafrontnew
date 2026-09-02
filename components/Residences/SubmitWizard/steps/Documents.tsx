@@ -8,9 +8,8 @@ import { humanSize, shrink, validate } from "../imageTools";
 /**
  * Step eight: proof that the place is yours to let.
  *
- * Three files, one request. The owner's card is only asked for when the owner
- * is somebody else, because asking every host for a document two thirds of
- * them do not have is how a step gets abandoned.
+ * Three files, one request. The owner's card is asked for only once the host
+ * says the owner is someone else — see `ownerIsSomeoneElse` below.
  *
  * These are identity documents. The screen says who sees them, and nothing
  * here is mirrored into localStorage — the rescue copy the other steps keep
@@ -46,7 +45,8 @@ const SLOTS: {
   {
     key: "ownerNationalCard",
     label: "کارت ملی مالک",
-    hint: "فقط اگر مالک اقامتگاه شخص دیگری است.",
+    hint: "تصویر کارت ملی شخصی که سند به نام اوست.",
+    // Becomes required once the host ticks "the owner is someone else".
     required: false,
     icon: "icon-BirthCertificate",
     urlField: "ownerNationalCardUrl",
@@ -60,6 +60,26 @@ export default function DocumentsStep() {
   const [previews, setPreviews] = useState<Partial<Record<Slot, string>>>({});
   const [percent, setPercent] = useState(0);
   const [attempted, setAttempted] = useState(false);
+
+  /**
+   * "The owner is someone else."
+   *
+   * Asked rather than inferred. The previous step listed the owner's ID card
+   * as a permanently optional third box, which reads as "skip me" to a host
+   * who is in fact letting a relative's flat — so the document that matters
+   * most for exactly those listings was the one least likely to arrive.
+   *
+   * Seeded from the draft: a listing that already carries an owner card was
+   * submitted by someone who had answered yes.
+   */
+  const [ownerIsSomeoneElse, setOwnerIsSomeoneElse] = useState(false);
+  const [ownerSeeded, setOwnerSeeded] = useState(false);
+
+  useEffect(() => {
+    if (ownerSeeded || !draft) return;
+    setOwnerIsSomeoneElse(!!draft.ownerNationalCardUrl);
+    setOwnerSeeded(true);
+  }, [draft, ownerSeeded]);
 
   useEffect(
     () => () => {
@@ -90,8 +110,16 @@ export default function DocumentsStep() {
   const storedUrl = (slot: (typeof SLOTS)[number]) =>
     (draft?.[slot.urlField] as string | null) || null;
 
-  const missing = SLOTS.filter(
-    (slot) => slot.required && !files[slot.key] && !storedUrl(slot)
+  const isRequired = (slot: (typeof SLOTS)[number]) =>
+    slot.required || (slot.key === "ownerNationalCard" && ownerIsSomeoneElse);
+
+  /** The owner's card is not on screen at all until it applies. */
+  const applicable = SLOTS.filter(
+    (slot) => slot.key !== "ownerNationalCard" || ownerIsSomeoneElse
+  );
+
+  const missing = applicable.filter(
+    (slot) => isRequired(slot) && !files[slot.key] && !storedUrl(slot)
   );
 
   async function onNext() {
@@ -110,10 +138,9 @@ export default function DocumentsStep() {
       prepared[slot] = await shrink(file);
     }
 
-    const ok = await save(
-      async (id) => uploadDocuments(id, prepared, setPercent),
-      { reload: true }
-    );
+    const ok = await save(async (id) => uploadDocuments(id, prepared, setPercent), {
+      reload: true,
+    });
     if (ok) {
       setFiles({});
       setDirty(false);
@@ -147,12 +174,28 @@ export default function DocumentsStep() {
         کارشناسان لیدوما به آن دسترسی دارند.
       </Callout>
 
-      <div className="flex flex-col gap-y-12 mt-16">
-        {SLOTS.map((slot) => {
+      <label className="flex items-center gap-x-12 mt-16 rounded-12 border border-gray-DBDFE5 px-14 py-12 cursor-pointer">
+        <input
+          type="checkbox"
+          checked={ownerIsSomeoneElse}
+          onChange={(e) => setOwnerIsSomeoneElse(e.target.checked)}
+          className="w-20 h-20 shrink-0 accent-primary-main cursor-pointer"
+        />
+        <span>
+          <span className="block text-14 font-m text-black">مالک اقامتگاه شخص دیگری است</span>
+          <span className="block text-12 font-l text-gray-77828F mt-2">
+            در این صورت تصویر کارت ملی مالک هم لازم است.
+          </span>
+        </span>
+      </label>
+
+      <div className="flex flex-col gap-y-12 mt-12">
+        {applicable.map((slot) => {
           const chosen = files[slot.key];
           const stored = storedUrl(slot);
           const preview = previews[slot.key] || stored;
-          const showMissing = attempted && slot.required && !chosen && !stored;
+          const required = isRequired(slot);
+          const showMissing = attempted && required && !chosen && !stored;
 
           return (
             <div
@@ -166,19 +209,39 @@ export default function DocumentsStep() {
               }`}
             >
               <div className="flex items-start gap-x-12">
-                <span className="w-48 h-48 shrink-0 rounded-10 bg-gray-F3F5F7 overflow-hidden grid place-items-center">
-                  {preview ? (
-                    // eslint-disable-next-line @next/next/no-img-element
+                {/*
+                  A thumbnail that opens the full document. Telling a host
+                  «قبلاً بارگذاری شده» and nothing else asks them to take our
+                  word for which file it was.
+                */}
+                {preview ? (
+                  <a
+                    href={preview}
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label={`مشاهده ${slot.label}`}
+                    className="w-56 h-56 shrink-0 rounded-10 bg-gray-F3F5F7 overflow-hidden grid place-items-center relative group"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={preview} alt="" className="w-full h-full object-cover" />
-                  ) : (
+                    <span className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity grid place-items-center">
+                      <i className="icon-See text-16 text-white" />
+                    </span>
+                  </a>
+                ) : (
+                  <span className="w-56 h-56 shrink-0 rounded-10 bg-gray-F3F5F7 grid place-items-center">
                     <i className={`${slot.icon} text-20 text-gray-A9B1BC`} />
-                  )}
-                </span>
+                  </span>
+                )}
 
                 <div className="grow min-w-0">
                   <p className="text-14 font-m text-black">
                     {slot.label}
-                    {!slot.required && (
+                    {required ? (
+                      <span className="text-error-light mr-2" aria-hidden="true">
+                        *
+                      </span>
+                    ) : (
                       <span className="text-12 font-l text-gray-77828F mr-6">(اختیاری)</span>
                     )}
                   </p>
@@ -194,9 +257,19 @@ export default function DocumentsStep() {
                       انتخاب شد · {humanSize(chosen.size)}
                     </p>
                   ) : stored ? (
-                    <p className="text-12 font-m text-success mt-6">
-                      <i className="icon-Success text-12 ml-4" />
-                      قبلاً بارگذاری شده
+                    <p className="flex items-center gap-x-8 text-12 font-m text-success mt-6">
+                      <span>
+                        <i className="icon-Success text-12 ml-4" />
+                        بارگذاری شده
+                      </span>
+                      <a
+                        href={stored}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-blue-main underline font-m"
+                      >
+                        مشاهده
+                      </a>
                     </p>
                   ) : null}
                 </div>

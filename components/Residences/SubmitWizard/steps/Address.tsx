@@ -131,13 +131,35 @@ export default function AddressStep() {
     [form, lng]
   );
 
-  /** Centre the map on the chosen province the first time one is picked. */
+  /**
+   * Where the map opens.
+   *
+   * Centred on the chosen province rather than on the whole country — the
+   * host has already said roughly where they are, so making them zoom in from
+   * Iran is asking a question twice.
+   *
+   * Province, not city: no city in the estate has coordinates (0 of 519), so
+   * there is nothing to centre on at that level yet. Backfilling city
+   * coordinates would let this get one step closer.
+   */
+  const province = useMemo(
+    () => (provinces ?? []).find((p: any) => String(p.id) === form.values.provinceId),
+    [provinces, form.values.provinceId]
+  );
+
   const flyTo = useMemo(() => {
     if (lat && lng) return undefined;
-    const province = (provinces ?? []).find((p: any) => String(p.id) === form.values.provinceId);
     if (!province?.latitude || !province?.longitude) return undefined;
     return { lat: province.latitude, lng: province.longitude };
-  }, [provinces, form.values.provinceId, lat, lng]);
+  }, [province, lat, lng]);
+
+  /**
+   * ProjectMap flies to `automaticallyNavigateToCustomLatLng` once and then
+   * latches an internal flag, so changing the province after the map has
+   * mounted moves nothing. Keying it on the province remounts it at the new
+   * centre, which is the only lever the component exposes.
+   */
+  const mapKey = `${form.values.provinceId || "none"}`;
 
   async function onNext() {
     if (!form.submit()) return;
@@ -272,6 +294,7 @@ export default function AddressStep() {
         */}
         <div className="h-[320px] md:h-[400px] rounded-16 overflow-hidden border border-gray-DBDFE5">
           <ProjectMap
+            key={mapKey}
             name="location"
             userLat={lat}
             userLang={lng}
