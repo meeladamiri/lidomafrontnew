@@ -69,9 +69,7 @@ export default function InstantBookingToggle({ residenceId }: { residenceId: num
       <div className="grow">
         <p className="text-14 leading-24 font-m text-black">رزرو آنی</p>
         <p className="text-12 leading-20 font-l text-gray-77828F mt-2">
-          {isFast
-            ? "رزروها بدون تایید شما قطعی می‌شوند."
-            : "هر رزرو منتظر تایید شما می‌ماند."}
+          {isFast ? "رزروها بدون تایید شما قطعی می‌شوند." : "هر رزرو منتظر تایید شما می‌ماند."}
         </p>
         {error && (
           <p role="alert" className="text-12 font-m text-error-light mt-4">

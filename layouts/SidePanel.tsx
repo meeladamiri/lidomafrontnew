@@ -143,6 +143,12 @@ const sidePanelItems_ForHost = {
       icon: <i className="icon-Home text-24" />,
     },
     {
+      title: "تقویم اقامتگاه",
+      desc: "قیمت و روزهای باز و بسته",
+      url: "/residences/calendar",
+      icon: <i className="icon-Calendar text-24" />,
+    },
+    {
       title: "رزرو ها",
       desc: "لیست رزرو های اقامتگاه های شما",
       url: "/reservations",

@@ -70,9 +70,18 @@ const calendarPriceAndDiscount_MakeEmpty_InitV: ICalendarPriceAndDiscount_MakeEm
   "selected-days-discount_MakeEmpty": null,
 };
 
+/**
+ * What the host chose for «رزرو آنی» on the selected days.
+ *
+ * "none" is the default and rides along with every save: not touching the
+ * control must not change how those nights get booked.
+ */
+export type FastChoice = "on" | "off" | "none";
+
 function EditResidenceCalendar() {
   const router = useRouter();
   const [selectedResidenceValue, setSelectedResidenceValue] = useState<number | "all">(); // as residenceId
+  const [fastChoice, setFastChoice] = useState<FastChoice>("none");
   const [residencesList, setResidencesList] = useState<IServerResidence[]>();
   // const [allRoomsList, setAllRoomsList] = useState<IServerRoom[]>();
   const [eligibleRoomsToBeListed, setEligibleRoomsToBeListed] = useState<IServerRoom[]>();
@@ -135,6 +144,7 @@ function EditResidenceCalendar() {
       products,
       dates,
       enable,
+      isFast,
       resType,
       price,
       discount,
@@ -144,6 +154,7 @@ function EditResidenceCalendar() {
       dates: string[]; // ex: ["1401/09/22", "1401/09/20"]
       resType: ResidenceTypes_enum;
       enable: UpdateCalendar_TEnable;
+      isFast?: boolean;
       price?: number;
       discount?: number;
     }) => {
@@ -152,6 +163,7 @@ function EditResidenceCalendar() {
         products,
         dates,
         enable,
+        isFast,
         resType,
         price,
         discount,
@@ -183,6 +195,8 @@ function EditResidenceCalendar() {
               ?.map((product) => product.id), // ids of products
             dates: getAllUniqueSelectedDays_Array(selectedIndividualDays, selectedRanges),
             enable: undefined,
+
+            isFast: fastForRequest(),
             resType: ResidenceTypes_enum.PRODUCT,
             price: values["selected-days-price_NoChange"] || 0,
             discount: values["selected-days-discount_NoChange"] || 0,
@@ -193,6 +207,8 @@ function EditResidenceCalendar() {
             products: eligibleRoomsToBeListed?.map((room) => room.id as number), // ids of rooms
             dates: getAllUniqueSelectedDays_Array(selectedIndividualDays, selectedRanges),
             enable: undefined,
+
+            isFast: fastForRequest(),
             resType: ResidenceTypes_enum.ROOM,
             price: values["selected-days-price_NoChange"] || 0,
             discount: values["selected-days-discount_NoChange"] || 0,
@@ -211,6 +227,8 @@ function EditResidenceCalendar() {
             product_id: selectedResidenceValue as number, // id of the only-selected residence
             dates: getAllUniqueSelectedDays_Array(selectedIndividualDays, selectedRanges),
             enable: undefined,
+
+            isFast: fastForRequest(),
             resType: router.query.residenceType as ResidenceTypes_enum,
             price: values["selected-days-price_NoChange"] || 0,
             discount: values["selected-days-discount_NoChange"] || 0,
@@ -252,6 +270,8 @@ function EditResidenceCalendar() {
               .map((product) => product.id), // ids of products
             dates: getAllUniqueSelectedDays_Array(selectedIndividualDays, selectedRanges),
             enable: "empty",
+
+            isFast: fastForRequest(),
             resType: ResidenceTypes_enum.PRODUCT,
             price: values["selected-days-price_MakeEmpty"] || 0,
             discount: values["selected-days-discount_MakeEmpty"] || 0,
@@ -264,6 +284,8 @@ function EditResidenceCalendar() {
             products: eligibleRoomsToBeListed?.map((room) => room.id as number), // ids of rooms
             dates: getAllUniqueSelectedDays_Array(selectedIndividualDays, selectedRanges),
             enable: "empty",
+
+            isFast: fastForRequest(),
             resType: ResidenceTypes_enum.ROOM,
             price: values["selected-days-price_MakeEmpty"] || 0,
             discount: values["selected-days-discount_MakeEmpty"] || 0,
@@ -282,6 +304,8 @@ function EditResidenceCalendar() {
             product_id: selectedResidenceValue as number, // id of the only-selected residence
             dates: getAllUniqueSelectedDays_Array(selectedIndividualDays, selectedRanges),
             enable: "empty",
+
+            isFast: fastForRequest(),
             resType: router.query.residenceType as ResidenceTypes_enum,
             price: values["selected-days-price_MakeEmpty"] || 0,
             discount: values["selected-days-discount_MakeEmpty"] || 0,
@@ -411,6 +435,9 @@ function EditResidenceCalendar() {
 
   // editCalendarPriceAndDiscount_NoChange_Formik.handleSubmit
 
+  /** undefined when untouched, so the field is simply not sent. */
+  const fastForRequest = () => (fastChoice === "none" ? undefined : fastChoice === "on");
+
   async function handleFillingCalendarDates() {
     try {
       if (selectedResidenceValue === "all") {
@@ -421,6 +448,8 @@ function EditResidenceCalendar() {
             ?.map((product) => product.id), // ids of products
           dates: getAllUniqueSelectedDays_Array(selectedIndividualDays, selectedRanges),
           enable: "full",
+
+          isFast: fastForRequest(),
           resType: ResidenceTypes_enum.PRODUCT,
         });
 
@@ -431,6 +460,8 @@ function EditResidenceCalendar() {
           products: eligibleRoomsToBeListed?.map((room) => room.id as number), // ids of rooms
           dates: getAllUniqueSelectedDays_Array(selectedIndividualDays, selectedRanges),
           enable: "full",
+
+          isFast: fastForRequest(),
           resType: ResidenceTypes_enum.ROOM,
         });
 
@@ -447,6 +478,8 @@ function EditResidenceCalendar() {
           product_id: selectedResidenceValue as number, // id of the only-selected residence
           dates: getAllUniqueSelectedDays_Array(selectedIndividualDays, selectedRanges),
           enable: "full",
+
+          isFast: fastForRequest(),
           resType: router.query.residenceType as ResidenceTypes_enum,
         });
 
@@ -503,8 +536,7 @@ function EditResidenceCalendar() {
               اقامتگاه‌های من
             </Link>
           </div>
-        ) : calendarDataIsFetching ||
-          (!calendarData && selectedResidenceValue !== "all") ? (
+        ) : calendarDataIsFetching || (!calendarData && selectedResidenceValue !== "all") ? (
           <TinyLoader />
         ) : (
           <>
@@ -518,8 +550,7 @@ function EditResidenceCalendar() {
               {typeof selectedResidenceValue === "number" && (
                 <InstantBookingToggle residenceId={selectedResidenceValue} />
               )}
-              {(!!residencesList?.filter((r) => r.state === ResidenceStates_enum.ACTIVE)
-                .length ||
+              {(!!residencesList?.filter((r) => r.state === ResidenceStates_enum.ACTIVE).length ||
                 (!!eligibleRoomsToBeListed && !!eligibleRoomsToBeListed.length)) && (
                 <DropDown
                   currntValue={selectedResidenceValue || 0}
@@ -743,6 +774,8 @@ function EditResidenceCalendar() {
                     noChange_formik={editCalendarPriceAndDiscount_NoChange_Formik}
                     makeEmpty_formik={editCalendarPriceAndDiscount_MakeEmpty_Formik}
                     handleFillingCalendarDates={handleFillingCalendarDates}
+                    fastChoice={fastChoice}
+                    setFastChoice={setFastChoice}
                   />
                 );
               }}

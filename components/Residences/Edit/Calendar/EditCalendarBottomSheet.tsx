@@ -4,17 +4,22 @@ import RoundedTabs from "components/General/core/RoundedTabs";
 import { useState } from "react";
 import MakeEmptyForm from "./MakeEmptyForm";
 import NoChangeForm from "./NoChangeForm";
+import type { FastChoice } from "./index";
 
 function EditCalendarBottomSheet({
   handleSmoothClose,
   noChange_formik,
   makeEmpty_formik,
   handleFillingCalendarDates,
+  fastChoice,
+  setFastChoice,
 }: {
   handleSmoothClose: THandleSmoothClose;
   noChange_formik: any;
   makeEmpty_formik: any;
   handleFillingCalendarDates: () => Promise<void>;
+  fastChoice: FastChoice;
+  setFastChoice: (choice: FastChoice) => void;
 }) {
   const [activeTab, setActiveTab] = useState<number>(2); // Let 'بدون تغییر' be the default (Figma)
 
@@ -56,6 +61,31 @@ function EditCalendarBottomSheet({
             <NoChangeForm noChange_formik={noChange_formik} />
           </div>
         )}
+      </div>
+
+      {/*
+        «رزرو آنی» for the same selection, in the same shape as the block
+        above it. Three choices rather than a switch, because the third one —
+        «بدون تغییر» — is the default and the important one: a host opening
+        this to reprice a weekend must not silently change how those nights
+        get booked.
+      */}
+      <div className="mt-20 pt-20 border-t border-gray-F3F5F7">
+        <p className="flex items-center gap-x-6 text-14 leading-24 text-black font-r mb-12">
+          <i className="icon-Flash text-20 text-primary-dark" />
+          رزرو آنی روزهای انتخاب شده
+        </p>
+        <div className="w-full">
+          <RoundedTabs
+            activeIndex={fastChoice === "on" ? 0 : fastChoice === "off" ? 1 : 2}
+            onChange={(idx: number) => setFastChoice(idx === 0 ? "on" : idx === 1 ? "off" : "none")}
+            data={[
+              { tabLabel: `فعال`, tabIndex: 0 },
+              { tabLabel: `غیرفعال`, tabIndex: 1 },
+              { tabLabel: `بدون تغییر`, tabIndex: 2 },
+            ]}
+          />
+        </div>
       </div>
 
       <p className="text-12 leading-21 text-black font-l mt-24 text-center">
