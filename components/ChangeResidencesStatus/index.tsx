@@ -162,6 +162,7 @@ function ChangeResidencesStatus() {
         residenceType: router?.query?.residenceId
           ? ResidenceTypes_enum.PRODUCT
           : ResidenceTypes_enum.ROOM,
+        scope: "host",
       });
     },
     {

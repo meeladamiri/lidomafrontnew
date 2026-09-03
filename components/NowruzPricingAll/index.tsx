@@ -106,6 +106,7 @@ function NowruzPricingAll() {
           "parent_id" in elligibleResidencesToEditNowruzPricing?.[currentResBeingEdited]
             ? ResidenceTypes_enum.ROOM
             : ResidenceTypes_enum.PRODUCT,
+        scope: "host",
       });
     },
     {

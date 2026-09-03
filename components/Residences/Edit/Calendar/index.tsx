@@ -361,6 +361,7 @@ function EditResidenceCalendar() {
         residenceId: selectedResidenceValue as number | "all",
         // TODO: Waiting for backend reply for 'what value should be sent when "all" is selected'
         residenceType: router.query.residenceType as ResidenceTypes_enum,
+        scope: "host",
       });
     },
     {

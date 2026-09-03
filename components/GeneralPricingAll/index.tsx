@@ -111,6 +111,7 @@ function GeneralPricingAll() {
           "parent_id" in elligibleResidencesToEditGeneralPricing?.[currentResBeingEdited]
             ? ResidenceTypes_enum.ROOM
             : ResidenceTypes_enum.PRODUCT,
+        scope: "host",
       });
     },
     {

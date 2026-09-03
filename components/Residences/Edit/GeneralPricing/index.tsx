@@ -165,6 +165,7 @@ function EditResidenceGeneralPricing({
       return getCalendarData({
         residenceId: targetId,
         residenceType: targetType,
+        scope: "host",
       });
     },
     {

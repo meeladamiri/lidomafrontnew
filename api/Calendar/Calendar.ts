@@ -39,12 +39,30 @@ function toIsoDate(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
 
+/**
+ * Which of the two calendar endpoints to ask.
+ *
+ * They are not interchangeable and the difference is not only permissions:
+ * the public route is addressed by the **public** id and resolves legacy Odoo
+ * codes, the host route by the **internal** primary key. 1,640 Odoo codes are
+ * also some other listing's internal id, so sending one to the wrong route
+ * does not fail — it quietly answers about a different property.
+ *
+ * Public is the default because every page a guest can reach is public, and
+ * defaulting the other way is what took booking down: the host route needs
+ * `requireHost` plus ownership, so a visitor got 401 or 404 and the residence
+ * page showed «خطا در دریافت اطلاعات تقویم» with no way to book.
+ */
+export type CalendarScope = "public" | "host";
+
 const getCalendarData = async ({
   residenceId,
   residenceType,
+  scope = "public",
 }: {
   residenceId: number | "all";
   residenceType: ResidenceTypes_enum;
+  scope?: CalendarScope;
 }): Promise<any> => {
   if (residenceId === "all") {
     // Bulk cross-residence calendar (internal ops tooling) has no backend equivalent.
@@ -58,16 +76,20 @@ const getCalendarData = async ({
   const toStr = toIsoDate(to);
 
   /**
-   * One request, to the host's own endpoint.
+   * One request either way.
    *
    * This used to be two — the public calendar plus the public listing — and
-   * neither of them knew anything about bookings. `GET /api/host/residences/
-   * :id/calendar` answers with the day overrides, the listing's rates and the
-   * booked ranges together, which is what lets the two arrays below actually
-   * mean different things.
+   * neither knew anything about bookings. Both routes now answer with the day
+   * overrides, the listing's rates and the booked ranges together, which is
+   * what lets the two arrays below actually mean different things. The host
+   * route adds who booked; the public one deliberately does not.
    */
   const resp = await apiBuilder
-    .setUrl(`/api/host/residences/${residenceId}/calendar`)
+    .setUrl(
+      scope === "host"
+        ? `/api/host/residences/${residenceId}/calendar`
+        : `/api/residences/${residenceId}/calendar`
+    )
     .setCallMethod("GET")
     .setParams({ from: fromStr, to: toStr })
     .call();
