@@ -109,7 +109,8 @@ export default function SpecsStep() {
   }, [fieldErrors]);
 
   async function onNext() {
-    if (!form.submit()) return;
+    const problems = form.submit();
+    if (problems.length) return problems;
     commit(async (id) => {
       const result = await saveSpecs(id, patch(progressMarker));
       if (result.ok) form.markSaved();

@@ -1,8 +1,8 @@
-import React from "react";
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useRouter } from "next/router";
 import { STEPS, TOTAL_STEPS } from "./steps";
 import { useWizard } from "./useWizard";
-import { Callout, faDigits, SaveStatus, Spinner } from "./ui";
+import { Blockers, Callout, ConfirmDialog, faDigits, SaveStatus, Spinner } from "./ui";
 
 /**
  * The frame every step sits in.
@@ -79,6 +79,72 @@ function StepRail() {
   );
 }
 
+/** `useLayoutEffect` warns when it runs during SSR; the steps render client-side. */
+const useIsomorphicLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
+
+// ------------------------------------------------------------------ exit ---
+
+/**
+ * The way out.
+ *
+ * The wizard fills the screen on a phone, the app's own header is hidden on
+ * this route, and the only navigation left is the browser's back gesture —
+ * which walks back one `?step=` at a time and warns on every one of them. So
+ * there was no way out at all, short of closing the tab on top of a draft.
+ *
+ * Leaving is safe and worth saying so: finished steps are already on the
+ * server, and the listing is waiting under «اقامتگاه‌های من». What the dialog
+ * has to be clear about is the one case where it is not — a step still in
+ * flight or one whose save failed.
+ */
+function ExitControl({ variant }: { variant: "mobile" | "desktop" }) {
+  const { exit, atRisk } = useWizard();
+  const [asking, setAsking] = useState(false);
+  const close = useCallback(() => setAsking(false), []);
+
+  return (
+    <>
+      {variant === "mobile" ? (
+        <button
+          type="button"
+          onClick={() => setAsking(true)}
+          aria-label="خروج از ثبت اقامتگاه"
+          className="w-32 h-32 -ml-6 shrink-0 grid place-items-center rounded-full text-gray-77828F transition-colors hover:bg-gray-F3F5F7 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-main"
+        >
+          <i className="icon-Close text-20" />
+        </button>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setAsking(true)}
+          className="flex items-center gap-x-6 h-[36px] px-14 rounded-10 border border-gray-DBDFE5 text-13 font-m text-black transition-colors hover:border-gray-A9B1BC focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-main"
+        >
+          <i className="icon-Close text-16" />
+          خروج
+        </button>
+      )}
+
+      <ConfirmDialog
+        open={asking}
+        title="از ثبت اقامتگاه خارج می‌شوید؟"
+        description={
+          atRisk
+            ? "آخرین تغییرات این مرحله هنوز ذخیره نشده است. اگر الان خارج شوید، همان مرحله را باید دوباره پر کنید. مراحل قبلی ذخیره شده‌اند."
+            : "مراحلی که تکمیل کرده‌اید ذخیره شده‌اند و هر وقت خواستید می‌توانید از «اقامتگاه‌های من» ادامه دهید."
+        }
+        cancelLabel="انصراف"
+        confirmLabel="بله، بعداً ادامه می‌دهم"
+        tone={atRisk ? "danger" : "default"}
+        onCancel={close}
+        onConfirm={() => {
+          close();
+          exit();
+        }}
+      />
+    </>
+  );
+}
+
 // ---------------------------------------------------------------- header ---
 
 function MobileProgress() {
@@ -87,11 +153,12 @@ function MobileProgress() {
 
   return (
     <div className="md:hidden sticky top-0 z-3 bg-white border-b border-gray-F3F5F7">
-      <div className="flex items-center justify-between px-16 pt-12 pb-8">
-        <span className="text-12 font-m text-gray-77828F">
+      <div className="flex items-center gap-x-10 px-16 pt-12 pb-8">
+        <span className="grow min-w-0 truncate text-12 font-m text-gray-77828F">
           مرحله {faDigits(index + 1)} از {faDigits(TOTAL_STEPS)} · {step.short}
         </span>
         <SaveStatus state={saveState} />
+        <ExitControl variant="mobile" />
       </div>
       <div
         className="h-4 bg-gray-F3F5F7"
@@ -116,14 +183,17 @@ export function WizardShell({ children }: { children: React.ReactNode }) {
   const { index, draft, residenceId, hasFailedSave, retryFailed, saveState } = useWizard();
 
   return (
-    <div className="pb-[104px] md:pb-40">
+    <div className="md:pb-40">
       <MobileProgress />
 
-      <div className="hidden md:flex md:items-baseline md:justify-between md:mb-24">
+      <div className="hidden md:flex md:items-center md:justify-between md:mb-24">
         <h1 className="text-22 leading-34 font-b text-black">ثبت اقامتگاه</h1>
-        {residenceId && draft?.reference && (
-          <span className="text-12 font-l text-gray-77828F">پیش‌نویس {draft.reference}</span>
-        )}
+        <div className="flex items-center gap-x-16">
+          {residenceId && draft?.reference && (
+            <span className="text-12 font-l text-gray-77828F">پیش‌نویس {draft.reference}</span>
+          )}
+          <ExitControl variant="desktop" />
+        </div>
       </div>
 
       {/*
@@ -167,8 +237,13 @@ export function WizardShell({ children }: { children: React.ReactNode }) {
 
 interface StepLayoutProps {
   children: React.ReactNode;
-  /** Runs on «ادامه». Return false to stay put. */
-  onNext: () => void | Promise<void>;
+  /**
+   * Runs on «ادامه».
+   *
+   * Return a list of reasons to stay put; they are shown above the button that
+   * refused. Returning nothing means it moved on.
+   */
+  onNext: () => void | string[] | Promise<void | string[]>;
   nextLabel?: string;
   nextDisabled?: boolean;
   busy?: boolean;
@@ -188,6 +263,66 @@ export function StepLayout({
   footerNote,
 }: StepLayoutProps) {
   const { step, index, back, saveState, error, clearError } = useWizard();
+  const [blockers, setBlockers] = useState<string[]>([]);
+
+  /**
+   * The page has to reserve exactly as much room as the bar takes.
+   *
+   * On mobile the action bar is fixed to the bottom, and the shell used to
+   * reserve a fixed 104px for it. That was right until the bar grew: a
+   * footer note adds a line, and the list of blocking reasons adds several —
+   * so the taller the explanation, the more of the page it covered, and the
+   * field it was telling the host to fix was the last thing on the page and
+   * the first thing hidden. Measured instead of guessed, and re-measured
+   * whenever the bar changes size.
+   */
+  const barRef = useRef<HTMLDivElement>(null);
+  const [barHeight, setBarHeight] = useState(0);
+
+  const measure = useCallback(() => {
+    const node = barRef.current;
+    if (!node) return;
+    const height = node.getBoundingClientRect().height;
+    setBarHeight((previous) => (Math.abs(previous - height) < 1 ? previous : height));
+  }, []);
+
+  useIsomorphicLayoutEffect(measure);
+
+  useEffect(() => {
+    window.addEventListener("resize", measure);
+    window.addEventListener("orientationchange", measure);
+    return () => {
+      window.removeEventListener("resize", measure);
+      window.removeEventListener("orientationchange", measure);
+    };
+  }, [measure]);
+
+  /**
+   * Press «ادامه», and either move or be told why not.
+   *
+   * The steps already marked their fields red on a failed attempt. That is the
+   * right thing and it was not enough: the action bar is pinned to the bottom
+   * of a phone screen and the field that failed is usually above the fold, so
+   * the host taps a button and watches nothing happen. Two things fix it —
+   * the reasons appear right above the button, and the first bad field is
+   * scrolled to, so the list and the field agree about where to look.
+   */
+  const handleNext = useCallback(async () => {
+    const result = await onNext();
+    const problems = Array.isArray(result) ? result : [];
+    setBlockers(problems);
+    if (problems.length === 0) return;
+
+    // After the step has re-rendered with its errors marked.
+    requestAnimationFrame(() => {
+      const target = document.querySelector<HTMLElement>('[data-field-invalid="true"]');
+      if (!target) return;
+      target.scrollIntoView({ behavior: "smooth", block: "center" });
+      target.querySelector<HTMLElement>("input, textarea, select, button")?.focus({
+        preventScroll: true,
+      });
+    });
+  }, [onNext]);
 
   return (
     <>
@@ -223,13 +358,25 @@ export function StepLayout({
 
       <div>{children}</div>
 
+      {/* Reserves the bar's real height on mobile; nothing on desktop. */}
+      <div className="md:hidden" style={{ height: barHeight }} aria-hidden="true" />
+
       {/*
         Mobile: fixed to the bottom, above the safe area, on an opaque bar —
-        and the page reserves the same height, so the bar never covers the last
-        field. Desktop: it simply follows the content.
+        and the spacer above reserves the same height, so the bar never covers
+        the last field. Desktop: it simply follows the content.
       */}
-      <div className="fixed md:static bottom-0 right-0 left-0 z-3 md:z-0 bg-white md:bg-transparent border-t md:border-t-0 border-gray-F3F5F7 px-16 md:px-0 py-12 md:py-0 md:mt-32 pb-[max(12px,env(safe-area-inset-bottom))] md:pb-0">
-        {footerNote && <div className="mb-10">{footerNote}</div>}
+      <div
+        ref={barRef}
+        className="fixed md:static bottom-0 right-0 left-0 z-3 md:z-0 bg-white md:bg-transparent border-t md:border-t-0 border-gray-F3F5F7 px-16 md:px-0 py-12 md:py-0 md:mt-32 pb-[max(12px,env(safe-area-inset-bottom))] md:pb-0"
+      >
+        {blockers.length > 0 ? (
+          <div className="mb-10 max-h-[30vh] overflow-y-auto">
+            <Blockers items={blockers} />
+          </div>
+        ) : (
+          footerNote && <div className="mb-10">{footerNote}</div>
+        )}
         <div className="flex items-center gap-x-12">
           {!hideBack && index > 0 && (
             <button
@@ -242,7 +389,7 @@ export function StepLayout({
           )}
           <button
             type="button"
-            onClick={() => void onNext()}
+            onClick={() => void handleNext()}
             disabled={nextDisabled || busy}
             className="grow h-[52px] rounded-12 bg-primary-main text-14 font-b text-black transition-opacity hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-main focus-visible:ring-offset-2 flex items-center justify-center gap-x-8"
           >

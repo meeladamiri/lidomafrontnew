@@ -17,6 +17,9 @@ function UploadedResidenceImage({
   setUploadedImagePreviewBottomSheet,
   isBeingUploaded,
   isUploadSuccess,
+  displayNumber,
+  isMain = false,
+  onMakeMainClick,
 }: {
   uploadedResidenceImage: IUploadedResidenceImage;
   imageIndex: number;
@@ -26,6 +29,17 @@ function UploadedResidenceImage({
   setUploadedImagePreviewBottomSheet: Dispatch<SetStateAction<IUploadedImagePreviewBottomSheet>>;
   isBeingUploaded: boolean;
   isUploadSuccess: boolean;
+  /**
+   * The number drawn on the card. Defaults to `imageIndex + 2`, which is what
+   * the edit-residence page needs: there the cover is rendered above the list
+   * as its own card, so the list starts at two. The submission wizard shows
+   * one list with the cover inside it and passes `imageIndex + 1`.
+   */
+  displayNumber?: number;
+  /** Marks this card as the listing's cover photo. */
+  isMain?: boolean;
+  /** Offered on every card that is not already the cover. */
+  onMakeMainClick?: () => void;
 }) {
   return (
     <Draggable draggableId={id.toString()} index={imageIndex}>
@@ -55,13 +69,13 @@ function UploadedResidenceImage({
             <div className="flex items-start justify-between absolute top-12 right-12 left-12">
               <div className="flex items-center gap-x-4">
                 <p className="w-24 h-24 flex items-center justify-center rounded-full bg-white text-14 leading-24 text-black font-r">
-                  {imageIndex + 2}
+                  {displayNumber ?? imageIndex + 2}
                 </p>
-                {/* {imageIndex + 1 === 1 && (
-                  <p className="text-12 leading-21 text-black font-r px-12 flex items-center justify-center bg-white rounded-50 h-24">
+                {isMain && (
+                  <p className="text-12 leading-21 text-black font-r px-12 flex items-center justify-center bg-primary-main rounded-50 h-24">
                     تصویر اصلی
                   </p>
-                )} */}
+                )}
               </div>
 
               <div
@@ -90,10 +104,21 @@ function UploadedResidenceImage({
             </div>
           </div>
 
-          <div className="pt-9 pb-16 px-16 flex items-center justify-between typical-gray-bg rounded-br-12 rounded-bl-12">
-            <p className="text-14 leading-24 text-black font-m">
+          <div className="pt-9 pb-16 px-16 flex items-center justify-between gap-x-8 typical-gray-bg rounded-br-12 rounded-bl-12">
+            <p className="text-14 leading-24 text-black font-m truncate">
               {uploadedResidenceImage.title || defaultUploadedResidenceImageLabel}
             </p>
+
+            <div className="flex items-center gap-x-12 shrink-0">
+            {!!onMakeMainClick && !isMain && (
+              <button
+                type="button"
+                onClick={onMakeMainClick}
+                className="h-32 px-12 rounded-8 border border-primary-main bg-white text-12 leading-21 font-m text-primary-dark whitespace-nowrap"
+              >
+                تصویر اصلی شود
+              </button>
+            )}
 
             <div
               className="flex items-center cursor-pointer"
@@ -114,6 +139,7 @@ function UploadedResidenceImage({
               }
             >
               <i className="icon-Edit text-black text-24" />
+            </div>
             </div>
           </div>
         </div>

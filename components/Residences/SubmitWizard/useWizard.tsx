@@ -77,6 +77,16 @@ interface WizardValue {
 
   dirty: boolean;
   setDirty: (value: boolean) => void;
+  /** True while there is work the server has not acknowledged. */
+  atRisk: boolean;
+  /**
+   * Leave the wizard on purpose, having already asked.
+   *
+   * The route guard exists to catch someone leaving by accident; a host who
+   * pressed «خروج» and confirmed is not that person, and asking them a second
+   * time in a browser dialog reads as the app not having heard them.
+   */
+  exit: () => void;
 
   /** The value to send as `step` so the server's progress marker keeps up. */
   progressMarker: number;
@@ -306,6 +316,19 @@ export function WizardProvider({ children }: { children: React.ReactNode }) {
   const [dirty, setDirty] = useState(false);
 
   /**
+   * Set when the host leaves through the wizard's own exit, which has already
+   * asked. A ref rather than state: the guard has to see the new value inside
+   * the same tick as the `router.push` that follows it.
+   */
+  const leaving = useRef(false);
+
+  const exit = useCallback(() => {
+    leaving.current = true;
+    setDirty(false);
+    void router.push("/residences/list");
+  }, [router]);
+
+  /**
    * Closing the tab on top of work the server has not got.
    *
    * "Dirty" is no longer the whole story: a step marks itself clean the moment
@@ -318,6 +341,7 @@ export function WizardProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!atRisk) return;
     const warn = (event: BeforeUnloadEvent) => {
+      if (leaving.current) return;
       event.preventDefault();
       event.returnValue = "";
       return "";
@@ -329,6 +353,7 @@ export function WizardProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!dirty) return;
     const guard = (url: string) => {
+      if (leaving.current) return;
       // Moving between steps of this wizard is not leaving it.
       if (url.split("?")[0] === router.pathname) return;
       if (window.confirm("تغییرات ذخیره‌نشده دارید. از این صفحه خارج می‌شوید؟")) return;
@@ -370,6 +395,8 @@ export function WizardProvider({ children }: { children: React.ReactNode }) {
 
     dirty,
     setDirty,
+    atRisk,
+    exit,
 
     progressMarker: legacyStep(index),
   };

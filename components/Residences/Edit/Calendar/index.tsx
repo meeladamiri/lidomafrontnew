@@ -803,14 +803,6 @@ function EditResidenceCalendar() {
                   <i className="icon-FlashLeft text-24" />
                 </div>
               </Button>
-
-              <div className="mt-24">
-                <span className="text-14 leading-24 text-black font-m ml-4">توجه : </span>
-                <span className="text-12 leading-21 text-black font-l">
-                  به ‌روز نگه‌ داشتن تقویم باعث کاهش رد رزرو، افزایش رتبه و رزرو اقامتگاه در سایت
-                  می‌شود.
-                </span>
-              </div>
             </div>
 
             <div className="bg-white py-16 md:py-0 px-20 md:px-0 fixed bottom-0 right-0 left-0 z-2 md:static md:mt-40 md:w-[320px] md:mx-auto">
@@ -845,26 +837,30 @@ function EditResidenceCalendar() {
               )}
             </div>
 
-            <BottomSheet
-              open={showGeneralPricing}
-              handleClose={() => setShowGeneralPricing(false)}
-              headerTitle="نرخ گذاری کلی"
-              body={() => (
-                <EditResidenceGeneralPricing
-                  residenceId={selectedResidenceValue as number}
-                  residenceType={
-                    (router.query.residenceType as ResidenceTypes_enum) ||
-                    ResidenceTypes_enum.PRODUCT
-                  }
-                  onSaved={() => {
-                    setShowGeneralPricing(false);
-                    // The new base rates change what every unpriced day
-                    // shows, so the grid is re-read rather than left stale.
-                    refetchCalendarData();
-                  }}
-                />
-              )}
-            />
+            {/*
+              Its own panel, not a bottom sheet.
+
+              The sheet had no height cap and no scroll container, so on a
+              phone the last rate fields and the save button rendered below
+              the fold with nothing to scroll. The component now brings the
+              standard full-screen editor chrome — header, title, back — and
+              closes back onto the calendar either way.
+            */}
+            {showGeneralPricing && (
+              <EditResidenceGeneralPricing
+                residenceId={selectedResidenceValue as number}
+                residenceType={
+                  (router.query.residenceType as ResidenceTypes_enum) || ResidenceTypes_enum.PRODUCT
+                }
+                onCancel={() => setShowGeneralPricing(false)}
+                onSaved={() => {
+                  setShowGeneralPricing(false);
+                  // The new base rates change what every unpriced day shows,
+                  // so the grid is re-read rather than left stale.
+                  refetchCalendarData();
+                }}
+              />
+            )}
 
             <BottomSheet
               open={showEditCalendarBottomSheet}

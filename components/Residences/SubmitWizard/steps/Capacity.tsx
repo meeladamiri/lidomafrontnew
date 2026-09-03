@@ -131,7 +131,8 @@ export default function CapacityStep() {
     form.values.rooms.reduce((total, room) => total + bedsIn(room), 0) + bedsIn(form.values.shared);
 
   async function onNext() {
-    if (!form.submit()) return;
+    const problems = form.submit();
+    if (problems.length) return problems;
 
     // The shared space is sent as a room only when it holds something. An
     // empty «فضای مشترک» row on every listing would be a row that means

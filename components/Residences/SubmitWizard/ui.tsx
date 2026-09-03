@@ -1,4 +1,5 @@
 import React, { useId, useMemo } from "react";
+import { createPortal } from "react-dom";
 import { toEnDigit } from "@/utilities/Number_tools";
 
 /**
@@ -74,7 +75,10 @@ export function Field({
   const describedBy = [errorId, hintId].filter(Boolean).join(" ") || undefined;
 
   return (
-    <div className={className}>
+    <div
+      className={`scroll-mt-80 ${className}`}
+      data-field-invalid={error ? "true" : undefined}
+    >
       <label htmlFor={id} className="block text-14 leading-24 font-m text-black mb-8">
         {label}
         {required && (
@@ -543,5 +547,126 @@ export function TimeSelect({
         </option>
       ))}
     </select>
+  );
+}
+
+// ---------------------------------------------------------------- dialog ---
+
+/**
+ * A yes/no the host has to answer.
+ *
+ * Deliberately not `window.confirm`: on a phone that dialog is a browser chrome
+ * sheet with two English-ish buttons and no way to say what "OK" will do. This
+ * one names both outcomes, which is the whole point of asking — «انصراف» and
+ * «بله، بعداً ادامه می‌دهم» are a question a host can answer without guessing.
+ */
+export function ConfirmDialog({
+  open,
+  title,
+  description,
+  confirmLabel,
+  cancelLabel = "انصراف",
+  tone = "default",
+  onConfirm,
+  onCancel,
+}: {
+  open: boolean;
+  title: string;
+  description?: React.ReactNode;
+  confirmLabel: string;
+  cancelLabel?: string;
+  tone?: "default" | "danger";
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  const confirmRef = React.useRef<HTMLButtonElement>(null);
+
+  React.useEffect(() => {
+    if (!open) return;
+    // Focus the safe half of the choice, not the one that leaves.
+    confirmRef.current?.focus();
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onCancel();
+    };
+    document.addEventListener("keydown", onKey);
+    // The page behind must not scroll under the dialog on iOS.
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = previous;
+    };
+  }, [open, onCancel]);
+
+  if (!open || typeof document === "undefined") return null;
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[80] flex items-end md:items-center justify-center bg-black/40 px-16 pb-[max(16px,env(safe-area-inset-bottom))] md:pb-16"
+      onClick={onCancel}
+      role="presentation"
+    >
+      <div
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby="wizard-confirm-title"
+        onClick={(event) => event.stopPropagation()}
+        className="w-full md:max-w-[420px] bg-white rounded-16 p-20 shadow-lg"
+      >
+        <h2 id="wizard-confirm-title" className="text-16 leading-28 font-b text-black">
+          {title}
+        </h2>
+        {description && (
+          <div className="text-13 leading-24 font-l text-gray-77828F mt-8">{description}</div>
+        )}
+        <div className="flex items-center gap-x-12 mt-20">
+          <button
+            type="button"
+            ref={confirmRef}
+            onClick={onCancel}
+            className="grow h-[48px] rounded-12 bg-primary-main text-14 font-b text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-main focus-visible:ring-offset-2"
+          >
+            {cancelLabel}
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            className={`grow h-[48px] rounded-12 border text-14 font-m focus-visible:outline-none focus-visible:ring-2 ${
+              tone === "danger"
+                ? "border-error-light text-error-light focus-visible:ring-error-light"
+                : "border-gray-DBDFE5 text-black focus-visible:ring-primary-main"
+            }`}
+          >
+            {confirmLabel}
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+}
+
+/**
+ * Why «ادامه» did not do anything.
+ *
+ * Every step already showed its errors next to the fields they belong to, and
+ * that was not enough: on a step taller than a phone screen the field is above
+ * the fold and the button is pinned to the bottom, so the host taps and the
+ * page appears to ignore them. This sits directly above the button, lists the
+ * reasons in the host's own terms, and is announced to a screen reader.
+ */
+export function Blockers({ items }: { items: string[] }) {
+  if (items.length === 0) return null;
+  return (
+    <div role="alert" aria-live="assertive">
+      <Callout tone="error">
+        <p className="font-m mb-2">برای ادامه، این موارد را کامل کنید:</p>
+        <ul className="list-disc pr-16 space-y-2">
+          {items.map((item) => (
+            <li key={item}>{item}</li>
+          ))}
+        </ul>
+      </Callout>
+    </div>
   );
 }

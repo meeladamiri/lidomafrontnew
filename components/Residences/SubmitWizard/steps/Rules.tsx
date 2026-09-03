@@ -142,7 +142,8 @@ export default function RulesStep() {
     }));
 
   async function onNext() {
-    if (!form.submit()) return;
+    const problems = form.submit();
+    if (problems.length) return problems;
 
     const preset = policyByValue(form.values.cancellationPolicy);
     const custom = customFormik.values;
@@ -150,13 +151,15 @@ export default function RulesStep() {
     if (isCustom) {
       const full = Number(custom["full-return-time"]);
       const before = Number(custom["before-start-time"]);
-      if (!Number.isFinite(full) || !Number.isFinite(before)) return;
+      if (!Number.isFinite(full) || !Number.isFinite(before)) {
+        return ["دو مهلت قانون لغو دلخواه را وارد کنید."];
+      }
       if (before >= full) {
         customFormik.setFieldError(
           "before-start-time",
           "مقدار فیلد دوم باید کمتر از فیلد اول باشد."
         );
-        return;
+        return ["در قانون لغو دلخواه، مهلت دوم باید کمتر از مهلت اول باشد."];
       }
     }
 
@@ -361,7 +364,8 @@ export default function RulesStep() {
       </Section>
 
       <div
-        className={`rounded-12 border-2 p-14 transition-colors ${
+        data-field-invalid={form.visibleErrors.acceptedTerms ? "true" : undefined}
+        className={`rounded-12 border-2 p-14 scroll-mt-80 transition-colors ${
           form.visibleErrors.acceptedTerms
             ? "border-error-light bg-red-light/40"
             : form.values.acceptedTerms

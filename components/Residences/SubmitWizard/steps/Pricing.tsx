@@ -99,7 +99,8 @@ export default function PricingStep() {
       : undefined;
 
   async function onNext() {
-    if (!form.submit()) return;
+    const problems = form.submit();
+    if (problems.length) return problems;
     const number = (value: string) => (value ? Number(value) : undefined);
 
     commit(async (id) => {

@@ -37,8 +37,11 @@ export interface StepForm<V> {
   setField: <K extends keyof V>(key: K, value: V[K]) => void;
   setValues: (updater: (previous: V) => V) => void;
   touch: (key: keyof V) => void;
-  /** Marks everything touched and reports whether the step passes. */
-  submit: () => boolean;
+  /**
+   * Marks everything touched and returns what is blocking, in field order.
+   * Empty means the step passes.
+   */
+  submit: () => string[];
   /** True once the host has changed anything since the last save. */
   dirty: boolean;
   markSaved: () => void;
@@ -192,12 +195,20 @@ export function useStepForm<V extends Record<string, any>>({
    * So a retry is always allowed to reach the server. If the input is still
    * wrong, the server says so again and the answer is shown — next to the
    * field when it has one, in the step's error banner when it does not.
+   *
+   * It returns the messages rather than a bare `false`. The per-field error
+   * was always rendered, but on a long step the offending field is usually
+   * off-screen, so pressing «ادامه» looked like pressing a dead button. The
+   * caller hands these to `StepLayout`, which lists them directly above the
+   * button that just refused to work.
    */
   const submit = useCallback(() => {
     setAttempted(true);
     setServerErrorsState({});
     const found = validate ? validate(values) : {};
-    return Object.values(found).every((message) => !message);
+    const messages = Object.values(found).filter((m): m is string => !!m);
+    // Two fields can fail for the same reason; saying it twice helps nobody.
+    return Array.from(new Set(messages));
   }, [validate, values]);
 
   const markSaved = useCallback(() => {

@@ -8,6 +8,7 @@ import { LIDOMA_CANCELLED_IN_COORDINATION_WITH } from "constants/enums/reserves_
 import { RejectReasons_enum } from "constants/enums/reject_reasons";
 import { CancelReasons_enum } from "constants/enums/cancel_reasons";
 import Image from "next/image";
+import { getBlurHash } from "@/utilities/getBlurHash";
 
 import { useQueryClient } from "@tanstack/react-query";
 import { MyTripStates_enum } from "@/constants/enums/mytrip_states";
@@ -150,7 +151,7 @@ function MyTripCart({
           alt="" // TODO
           className="rounded-tr-16 rounded-tl-16"
           placeholder="blur"
-          blurDataURL={residenceImage}
+          blurDataURL={getBlurHash(residenceImage)}
         />
 
         <div className="flex flex-col justify-between h-full">

@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { getBlurHash } from "@/utilities/getBlurHash";
 import { useEffect, useMemo, useState } from "react";
 import { getCommentStatusIcon, getSatisfaction } from "components/Comments/utils";
 import { Textarea } from "components/General/core/Textarea";
@@ -143,7 +144,7 @@ function CommentDetails({ commentId }: { commentId: number }) {
                 alt="" // TODO
                 className="rounded-16"
                 placeholder="blur"
-                blurDataURL={commentInfo?.residence_image}
+                blurDataURL={getBlurHash(commentInfo?.residence_image)}
               />
 
               <div className="flex flex-col justify-between h-full">

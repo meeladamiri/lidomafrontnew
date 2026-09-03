@@ -152,7 +152,8 @@ export default function AddressStep() {
   }, [province, lat, lng]);
 
   async function onNext() {
-    if (!form.submit()) return;
+    const problems = form.submit();
+    if (problems.length) return problems;
     commit(
       async (id) => {
         const result = await saveSpecs(id, {

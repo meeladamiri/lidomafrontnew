@@ -8,6 +8,8 @@ export interface IEditResidenceGeneralPricing {
   weekend_price: number;
   peak_price: number;
   extra_price: number;
+  /** Optional: the other pricing screens do not collect it. */
+  extra_peak_price?: number;
   weekly_discount: number;
   monthly_discount: number;
 }
@@ -19,6 +21,7 @@ const editResidenceGeneralPricing = async ({
   weekend_price,
   peak_price,
   extra_price,
+  extra_peak_price,
   weekly_discount,
   monthly_discount,
 }: IEditResidenceGeneralPricing): Promise<any> => {
@@ -33,7 +36,10 @@ const editResidenceGeneralPricing = async ({
       weekPrice: week_price,
       weekendPrice: weekend_price,
       peakPrice: peak_price,
-      extraPrice: extra_price,
+      // NOT `extraPrice`: that is a separate, unread column. The panel, the
+      // wizard and the calendar all use these two.
+      extraGuestsPrice: extra_price,
+      ...(extra_peak_price === undefined ? {} : { extraGuestsPeakPrice: extra_peak_price }),
       weeklyDiscount: weekly_discount,
       monthlyDiscount: monthly_discount,
     })

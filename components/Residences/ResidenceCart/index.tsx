@@ -8,6 +8,7 @@ import { residenceStatesMap, ResidenceStates_enum } from "constants/enums/reside
 import { CircularProgressbar, buildStyles } from "react-circular-progressbar";
 import "react-circular-progressbar/dist/styles.css";
 import Image from "next/image";
+import { getBlurHash } from "@/utilities/getBlurHash";
 import ThreeDotsSelect from "components/General/core/ThreeDotsSelect";
 import { useRouter } from "next/router";
 import BottomSheet, { THandleSmoothClose } from "components/General/core/BottomSheet";
@@ -231,17 +232,26 @@ function ResidenceCart({
   return (
     <div className="rounded-16 h-full flex flex-col" ref={cartRef}>
       <div className="w-full h-[214px] p-12 relative rounded-tr-16 rounded-tl-16 shrink-0">
-        <Image
-          src={imageUrl}
-          fill
-          style={{
-            objectFit: "cover",
-          }}
-          alt={resName || ""}
-          className="rounded-tr-16 rounded-tl-16"
-          placeholder="blur"
-          blurDataURL={imageUrl}
-        />
+        {imageUrl ? (
+          <Image
+            src={imageUrl}
+            fill
+            style={{
+              objectFit: "cover",
+            }}
+            alt={resName || ""}
+            className="rounded-tr-16 rounded-tl-16"
+            placeholder="blur"
+            blurDataURL={getBlurHash(imageUrl)}
+          />
+        ) : (
+          <div
+            aria-hidden="true"
+            className="absolute inset-0 rounded-tr-16 rounded-tl-16 bg-gray-F3F5F7 grid place-items-center"
+          >
+            <i className="icon-Photo text-40 text-gray-A9B1BC" />
+          </div>
+        )}
 
         <div className="flex flex-col justify-between h-full">
           <div className="z-3">

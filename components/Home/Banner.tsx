@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { getBlurHash } from "@/utilities/getBlurHash";
 import Link from "next/link";
 
 function HomePageBanner({
@@ -29,7 +30,7 @@ function HomePageBanner({
           alt={linkTo}
           className="rounded-12 md:rounded-16"
           placeholder="blur"
-          blurDataURL={mobile_image}
+          blurDataURL={getBlurHash(mobile_image)}
         />
       </div>
 
@@ -42,7 +43,7 @@ function HomePageBanner({
           alt={linkTo}
           className="rounded-12 md:rounded-16"
           placeholder="blur"
-          blurDataURL={pc_image}
+          blurDataURL={getBlurHash(pc_image)}
         />
       </div>
     </Link>

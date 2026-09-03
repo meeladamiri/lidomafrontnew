@@ -130,7 +130,9 @@ export default function DocumentsStep() {
 
   async function onNext() {
     setAttempted(true);
-    if (missing.length > 0) return;
+    if (missing.length > 0) {
+      return missing.map((slot) => `${slot.label} را بارگذاری کنید.`);
+    }
 
     // Nothing new to send: the documents already on the listing are enough.
     if (Object.keys(files).length === 0) {
@@ -175,6 +177,7 @@ export default function DocumentsStep() {
       <div
         key={slot.key}
         data-slot={slot.key}
+        data-field-invalid={showMissing || errors[slot.key] ? "true" : undefined}
         className={`rounded-16 border p-14 transition-colors ${
           showMissing || errors[slot.key]
             ? "border-error-light"
@@ -271,11 +274,7 @@ export default function DocumentsStep() {
       onNext={onNext}
       busy={saveState === "saving"}
       footerNote={
-        attempted && missing.length > 0 ? (
-          <p role="alert" className="text-12 font-m text-error-light text-center">
-            {missing.map((slot) => slot.label).join(" و ")} هنوز بارگذاری نشده است.
-          </p>
-        ) : percent > 0 && percent < 100 && saveState === "saving" ? (
+        percent > 0 && percent < 100 && saveState === "saving" ? (
           <div className="h-4 rounded-full bg-gray-DBDFE5 overflow-hidden">
             <div
               className="h-full bg-primary-main transition-all"

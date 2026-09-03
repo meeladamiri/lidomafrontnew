@@ -21,6 +21,7 @@ export interface IServerCalendarData {
   ][];
   prices: {
     extra_guests_price: number;
+    extra_guests_peak_price?: number;
     monthly_discount: number;
     peak_price: number;
     week_price: number;
@@ -131,6 +132,7 @@ const getCalendarData = async ({
     peak_dates: [],
     prices: {
       extra_guests_price: residence.extraGuestsPrice ?? 0,
+      extra_guests_peak_price: residence.extraGuestsPeakPrice ?? 0,
       monthly_discount: residence.monthlyDiscount ?? 0,
       peak_price: residence.peakPrice ?? 0,
       week_price: residence.weekPrice ?? 0,

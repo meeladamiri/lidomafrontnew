@@ -14,6 +14,8 @@ function UploadedResidenceImages({
   setUploadedImagePreviewBottomSheet,
   imagesBeingUploaded,
   uploadedImagesToServer,
+  coverInList = false,
+  onMakeMain,
 }: {
   setConfirmDeleteImageBottomSheet: Dispatch<SetStateAction<IConfirmDeleteImageBottomSheet>>;
   uploadedResidenceImages: IUploadedResidenceImage[];
@@ -25,6 +27,16 @@ function UploadedResidenceImages({
     origin_id: string;
     product_id: number;
   }[];
+  /**
+   * Present when the cover lives inside this list rather than above it.
+   *
+   * The edit-residence page renders the cover separately and passes neither,
+   * so it keeps its old numbering and no promote button. The submission wizard
+   * passes both: one list, position one is the cover, and every other card
+   * offers to become it.
+   */
+  coverInList?: boolean;
+  onMakeMain?: (image: IUploadedResidenceImage) => void;
 }) {
   return (
     <div>
@@ -54,6 +66,9 @@ function UploadedResidenceImages({
                 setUploadedImagePreviewBottomSheet={setUploadedImagePreviewBottomSheet}
                 isBeingUploaded={!!imagesBeingUploaded.find((el) => el.id === u_image.id)}
                 isUploadSuccess={!!uploadedImagesToServer.find((el) => el.origin_id === u_image.id)}
+                displayNumber={coverInList ? index + 1 : undefined}
+                isMain={coverInList && index === 0}
+                onMakeMainClick={onMakeMain ? () => onMakeMain(u_image) : undefined}
               />
             ))}
             {provided.placeholder}

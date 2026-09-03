@@ -42,7 +42,7 @@ function DropDown({
           border-1 border-solid border-[rgba(28,52,84,0.26)] rounded-tr-12 rounded-tl-12 relative
           ${
             isDropdownOpen
-              ? "border-b-none shadow-[0px_4px_15px_rgba(0,0,0,0.1)]"
+              ? "z-[60] border-b-none shadow-[0px_4px_15px_rgba(0,0,0,0.1)]"
               : "rounded-br-12 rounded-bl-12"
           }
           ${wrapperClassname}

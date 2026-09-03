@@ -47,7 +47,9 @@ export default function ReviewStep() {
   async function onSubmit() {
     // An earlier step's write is still outstanding. Submitting now would hand
     // a reviewer a listing missing whatever that step held.
-    if (hasFailedSave) return;
+    if (hasFailedSave) {
+      return ["یکی از مراحل ذخیره نشده است. ابتدا «تلاش دوباره» را بزنید."];
+    }
     if (gaps.length > 0) {
       goTo(gaps[0].index);
       return;
@@ -170,7 +172,6 @@ export default function ReviewStep() {
     <StepLayout
       onNext={onSubmit}
       busy={saveState === "saving"}
-      nextDisabled={hasFailedSave}
       nextLabel={gaps.length > 0 ? "تکمیل موارد باقی‌مانده" : "ثبت نهایی اقامتگاه"}
       footerNote={
         gaps.length === 0 ? (

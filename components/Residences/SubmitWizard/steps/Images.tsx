@@ -21,10 +21,6 @@ import { Callout, Section, StepSkeleton, faDigits } from "../ui";
 import { shrink, validate } from "../imageTools";
 
 const BottomSheet = dynamic(() => import("@/components/General/core/BottomSheet"), { ssr: true });
-const ResidenceMainImage = dynamic(
-  () => import("@/components/Residences/Edit/shared/ResidenceMainImage"),
-  { ssr: false }
-);
 const UploadedResidenceImages = dynamic(
   () => import("@/components/Residences/Edit/shared/UploadedResidenceImages"),
   { ssr: false }
@@ -37,20 +33,24 @@ const ConfirmDeleteImageBottomSheet = dynamic(
   () => import("@/components/Residences/Edit/shared/ConfirmDeleteImageBottomSheet"),
   { ssr: true }
 );
-const EditMainImageBottomSheet = dynamic(
-  () => import("@/components/Residences/Edit/shared/EditMainImageBottomSheet"),
-  { ssr: true }
-);
 
 /**
  * Step seven: the photographs.
  *
  * The cards, the drag handle, the caption sheet and the delete confirmation
  * are the previous wizard's own components. An earlier attempt at this screen
- * rebuilt them and lost two things in the process — the handle looked like a
- * drag handle but nothing was listening for a drag, and there was no way to
- * edit a caption at all. Reusing them is both closer to what hosts already
- * know and one implementation instead of two.
+ * rebuilt them and lost two things — the handle looked like a drag handle but
+ * nothing was listening for a drag, and there was no way to edit a caption at
+ * all. Reusing them is both closer to what hosts already know and one
+ * implementation instead of two.
+ *
+ * ONE LIST. The cover used to be a separate box above the gallery, which made
+ * the host answer a question they never asked: two upload targets, two mental
+ * slots, and a photo dropped in the wrong one could only be moved by deleting
+ * it. Now position one is the cover, full stop — the first photo uploaded
+ * becomes it on its own, dragging a photo to the top makes it the cover, and
+ * every other card carries «تصویر اصلی شود» for hosts who would rather not
+ * drag.
  *
  * The order is committed by `POST /images/order`, which also DELETES any
  * non-main image missing from the list it is given. So the list sent is always
@@ -66,7 +66,7 @@ const emptyDeleteSheet: IConfirmDeleteImageBottomSheet = {
 export default function ImagesStep() {
   const { draft, residenceId, commit, save, saveState, next, reload, progressMarker } = useWizard();
 
-  /** Gallery order held locally so a drag is instant; the server follows. */
+  /** Every photo, cover first. Held locally so a drag is instant. */
   const [gallery, setGallery] = useState<IUploadedResidenceImage[]>([]);
   const [seeded, setSeeded] = useState(false);
   const [uploading, setUploading] = useState<string[]>([]);
@@ -74,17 +74,26 @@ export default function ImagesStep() {
   const [previewSheet, setPreviewSheet] =
     useState<IUploadedImagePreviewBottomSheet>(emptyPreviewSheet);
   const [deleteSheet, setDeleteSheet] = useState<IConfirmDeleteImageBottomSheet>(emptyDeleteSheet);
-  const [coverSheet, setCoverSheet] = useState(false);
 
-  const main = useMemo(() => draft?.images?.find((image) => image.isMain), [draft]);
+  /** What the server currently has flagged, which may lag a local promote. */
+  const serverMainId = useMemo(
+    () => draft?.images?.find((image) => image.isMain)?.id,
+    [draft?.images]
+  );
 
   useEffect(() => {
     if (!draft) return;
-    // Re-seeded whenever the server list changes length: an upload or a delete
-    // has landed and the local order needs to include it.
-    const server = (draft.images ?? [])
-      .filter((image) => !image.isMain)
-      .sort((a, b) => a.sortOrder - b.sortOrder);
+    /**
+     * Re-seeded when the server list changes length — an upload or a delete
+     * has landed. Promoting and reordering are applied locally first and both
+     * leave the length alone, so this cannot stamp on them.
+     *
+     * `isMain` decides position one, `sortOrder` decides the rest. Sorting on
+     * `sortOrder` alone would put the cover wherever it happened to sit.
+     */
+    const server = [...(draft.images ?? [])].sort(
+      (a, b) => Number(b.isMain) - Number(a.isMain) || a.sortOrder - b.sortOrder
+    );
     if (seeded && server.length === gallery.length) return;
     setGallery(
       server.map((image) => ({
@@ -100,7 +109,7 @@ export default function ImagesStep() {
   // ------------------------------------------------------------ uploading ---
 
   const addFiles = useCallback(
-    async (files: FileList | null, asCover = false) => {
+    async (files: FileList | null) => {
       if (!files?.length || !residenceId) return;
       setUploadError(undefined);
 
@@ -115,9 +124,10 @@ export default function ImagesStep() {
         // Shrunk in the browser: a phone photo is 4–8 MB and the site never
         // shows it above 1600px.
         const prepared = await shrink(file);
-        const result = await uploadImage(residenceId, prepared, {
-          isMain: asCover || undefined,
-        });
+        // No `isMain`: the server flags the first photo a listing ever gets,
+        // which is the same rule this screen states. Sending it from here as
+        // well would be a second opinion about the same thing.
+        const result = await uploadImage(residenceId, prepared);
         setUploading((previous) => previous.filter((t) => t !== token));
         if (!result.ok) {
           setUploadError(result.message);
@@ -129,26 +139,52 @@ export default function ImagesStep() {
     [residenceId, reload]
   );
 
-  // ------------------------------------------------------------ reordering ---
+  // ------------------------------------------------------------- the cover ---
+
+  /**
+   * Position one is the cover.
+   *
+   * Called after anything that can change what sits there — a drag, a promote,
+   * or deleting the photo that held it. The server keeps `isMain` on a row and
+   * `sortOrder` separately, so letting them disagree means the listing card
+   * shows one photo while this screen shows another.
+   */
+  const syncCover = useCallback(
+    (list: IUploadedResidenceImage[]) => {
+      const first = list[0];
+      if (!first || !residenceId) return;
+      if (serverMainId !== undefined && String(serverMainId) === first.id) return;
+      commit(async (id) => setMainImage(id, Number(first.id)));
+    },
+    [commit, residenceId, serverMainId]
+  );
 
   function onDragEnd(result: any) {
     if (!result.destination) return;
-    const next = [...gallery];
-    const [moved] = next.splice(result.source.index, 1);
-    next.splice(result.destination.index, 0, moved);
-    setGallery(next);
+    const reordered = [...gallery];
+    const [moved] = reordered.splice(result.source.index, 1);
+    reordered.splice(result.destination.index, 0, moved);
+    setGallery(reordered);
+    syncCover(reordered);
+  }
+
+  function promoteToCover(imageId: string) {
+    const promoted = gallery.find((image) => image.id === imageId);
+    if (!promoted) return;
+    const reordered = [promoted, ...gallery.filter((image) => image.id !== imageId)];
+    setGallery(reordered);
+    syncCover(reordered);
   }
 
   /**
    * Sends the whole gallery, always.
    *
    * `POST /images/order` deletes any non-main image absent from the list, so a
-   * partial list is a delete instruction. The main image is included too: it
-   * is excluded from that deletion rule, and sending it keeps its sortOrder
-   * consistent with everything else.
+   * partial list is a delete instruction.
    */
   function commitOrder() {
-    const ids = [...(main ? [main.id] : []), ...gallery.map((image) => Number(image.id))];
+    const ids = gallery.map((image) => Number(image.id)).filter((id) => Number.isFinite(id));
+    if (ids.length === 0) return;
     commit(async (id) => reorderImages(id, ids, progressMarker));
   }
 
@@ -156,12 +192,19 @@ export default function ImagesStep() {
 
   async function removeImage(imageId: string) {
     setDeleteSheet(emptyDeleteSheet);
-    setGallery((previous) => previous.filter((image) => image.id !== imageId));
+    const wasCover = gallery[0]?.id === imageId;
+    const remaining = gallery.filter((image) => image.id !== imageId);
+    setGallery(remaining);
     if (!residenceId) return;
     await save(async (id) => deleteImage(id, Number(imageId)), { reload: true });
+    // Deleting the cover leaves the listing with no flagged photo at all, and
+    // nothing on the server promotes a replacement.
+    if (wasCover && remaining.length > 0) {
+      commit(async (id) => setMainImage(id, Number(remaining[0].id)));
+    }
   }
 
-  async function renameImage(imageId: string, title: string) {
+  function renameImage(imageId: string, title: string) {
     setGallery((previous) =>
       previous.map((image) => (image.id === imageId ? { ...image, title } : image))
     );
@@ -169,34 +212,37 @@ export default function ImagesStep() {
     commit(async (id) => updateImageTitle(id, Number(imageId), title));
   }
 
-  async function promoteToCover(imageId: string) {
-    if (!residenceId) return;
-    await save(async (id) => setMainImage(id, Number(imageId)), { reload: true });
-  }
-
   function onNext() {
+    if (uploading.length > 0) {
+      return ["تا پایان بارگذاری تصاویر صبر کنید."];
+    }
+    if (gallery.length === 0) {
+      return ["حداقل یک تصویر بارگذاری کنید. تصویر اول، تصویر اصلی اقامتگاه است."];
+    }
+    if (gallery.length < MIN_IMAGES) {
+      return [
+        `حداقل ${faDigits(MIN_IMAGES)} تصویر بارگذاری کنید — الان ${faDigits(
+          gallery.length
+        )} تصویر دارید.`,
+      ];
+    }
     commitOrder();
     next();
   }
 
   if (!draft) return <StepSkeleton />;
 
-  const total = (main ? 1 : 0) + gallery.length;
-  const short = total < MIN_IMAGES;
+  const short = gallery.length > 0 && gallery.length < MIN_IMAGES;
 
   return (
     <StepLayout
       onNext={onNext}
-      busy={saveState === "saving"}
-      nextDisabled={!main}
+      busy={saveState === "saving" || uploading.length > 0}
       footerNote={
-        !main ? (
+        short ? (
           <p className="text-12 font-l text-gray-77828F text-center">
-            برای ادامه حداقل یک تصویر لازم است.
-          </p>
-        ) : short ? (
-          <p className="text-12 font-l text-gray-77828F text-center">
-            {faDigits(total)} تصویر — پیشنهاد ما حداقل {faDigits(MIN_IMAGES)} تصویر است.
+            {faDigits(gallery.length)} تصویر — برای ادامه حداقل {faDigits(MIN_IMAGES)} تصویر لازم
+            است.
           </p>
         ) : null
       }
@@ -207,55 +253,30 @@ export default function ImagesStep() {
         </div>
       )}
 
-      {/* ---------------------------------------------------------- cover --- */}
-      <Section title="تصویر اصلی" description="اولین چیزی که مهمان در نتایج جست‌وجو می‌بیند.">
-        {main ? (
-          <ResidenceMainImage
-            uploadedResidenceImage={{
-              id: String(main.id),
-              title: main.title ?? "",
-              data: main.url,
-            }}
-            imageIndex={0}
-            canBeDeleted={false}
-            onEditMainImageBtnClick={() => setCoverSheet(true)}
-            id={main.id}
-            setUploadedImagePreviewBottomSheet={setPreviewSheet}
-            isBeingUploaded={false}
-            isUploadSuccess={false}
-          />
-        ) : (
-          <label className="block rounded-16 border-2 border-dashed border-gray-DBDFE5 py-32 text-center cursor-pointer transition-colors hover:border-primary-main">
-            <i className="icon-Photo-Upload text-36 text-gray-A9B1BC" />
-            <p className="text-14 font-m text-black mt-10">افزودن تصویر اصلی</p>
-            <p className="text-12 font-l text-gray-77828F mt-4">JPG یا PNG، حداکثر ۱۰ مگابایت</p>
-            <input
-              type="file"
-              accept="image/*"
-              className="sr-only"
-              onChange={(e) => void addFiles(e.target.files, true)}
-            />
-          </label>
-        )}
-      </Section>
-
-      {/* -------------------------------------------------------- gallery --- */}
       <Section
-        title="تصاویر دیگر"
-        description="با کشیدن دستگیره‌ی گوشه‌ی هر تصویر، ترتیب را عوض کنید."
+        title="تصاویر اقامتگاه"
+        description="تصویر اول، تصویر اصلی اقامتگاه است و در نتایج جست‌وجو دیده می‌شود. با کشیدن دستگیره‌ی گوشه‌ی هر تصویر، ترتیب را عوض کنید."
       >
-        <DragDropContext onDragEnd={onDragEnd}>
-          <UploadedResidenceImages
-            uploadedResidenceImages={gallery}
-            setUploadedResidenceImages={setGallery}
-            setUploadedImagePreviewBottomSheet={setPreviewSheet}
-            setConfirmDeleteImageBottomSheet={setDeleteSheet}
-            imagesBeingUploaded={[]}
-            uploadedImagesToServer={[]}
-          />
-        </DragDropContext>
+        {gallery.length > 0 && (
+          <DragDropContext onDragEnd={onDragEnd}>
+            <UploadedResidenceImages
+              uploadedResidenceImages={gallery}
+              setUploadedResidenceImages={setGallery}
+              setUploadedImagePreviewBottomSheet={setPreviewSheet}
+              setConfirmDeleteImageBottomSheet={setDeleteSheet}
+              imagesBeingUploaded={[]}
+              uploadedImagesToServer={[]}
+              coverInList
+              onMakeMain={(image) => promoteToCover(image.id)}
+            />
+          </DragDropContext>
+        )}
 
-        <label className="block rounded-16 border-2 border-dashed border-gray-DBDFE5 py-24 text-center cursor-pointer transition-colors hover:border-primary-main mt-12">
+        <label
+          className={`block rounded-16 border-2 border-dashed border-gray-DBDFE5 text-center cursor-pointer transition-colors hover:border-primary-main ${
+            gallery.length > 0 ? "py-24 mt-12" : "py-32"
+          }`}
+        >
           {uploading.length > 0 ? (
             <>
               <i className="icon-Refresh text-28 text-primary-main animate-spin" />
@@ -265,10 +286,12 @@ export default function ImagesStep() {
             </>
           ) : (
             <>
-              <i className="icon-Plus text-28 text-gray-A9B1BC" />
-              <p className="text-13 font-m text-black mt-8">افزودن تصویر</p>
-              <p className="text-11 font-l text-gray-77828F mt-2">
-                می‌توانید چند تصویر با هم انتخاب کنید
+              <i className="icon-Photo-Upload text-32 text-gray-A9B1BC" />
+              <p className="text-14 font-m text-black mt-8">
+                {gallery.length > 0 ? "افزودن تصویر" : "افزودن تصویر اقامتگاه"}
+              </p>
+              <p className="text-12 font-l text-gray-77828F mt-4">
+                می‌توانید چند تصویر با هم انتخاب کنید · JPG یا PNG، حداکثر ۱۰ مگابایت
               </p>
             </>
           )}
@@ -299,16 +322,15 @@ export default function ImagesStep() {
                   uploadedImageTitle={item.title}
                   isFirstTimeBeingEdited={item.isFirstTime}
                   onSubmit={(title: string) => {
-                    void renameImage(String(item.id), title);
+                    renameImage(String(item.id), title);
                     setPreviewSheet(emptyPreviewSheet);
                   }}
                 />
-                {/* Promoting a gallery photo is only meaningful here. */}
-                {String(item.id) !== String(main?.id) && (
+                {gallery[0]?.id !== String(item.id) && (
                   <button
                     type="button"
                     onClick={() => {
-                      void promoteToCover(String(item.id));
+                      promoteToCover(String(item.id));
                       handleSmoothClose();
                     }}
                     className="w-full h-[44px] mt-12 rounded-12 border border-primary-main text-13 font-m text-primary-dark"
@@ -332,26 +354,6 @@ export default function ImagesStep() {
               handleSmoothClose={handleSmoothClose}
               uploadedImageData={deleteSheet.payload.data as File | string}
               onDeleteConfirm={() => void removeImage(String(deleteSheet.payload.id))}
-            />
-          )}
-        />
-      )}
-
-      {coverSheet && main && (
-        <BottomSheet
-          open
-          handleClose={() => setCoverSheet(false)}
-          headerTitle="تغییر تصویر اصلی"
-          body={({ handleSmoothClose }: { handleSmoothClose: THandleSmoothClose }) => (
-            <EditMainImageBottomSheet
-              handleSmoothClose={handleSmoothClose}
-              uploadedImageData={main.url}
-              onNewImageConfirm={(file: File) => {
-                const list = new DataTransfer();
-                list.items.add(file);
-                void addFiles(list.files, true);
-                setCoverSheet(false);
-              }}
             />
           )}
         />

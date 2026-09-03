@@ -76,11 +76,25 @@ export default function AmenitiesStep() {
   const [seeded, setSeeded] = useState(false);
   const [sheet, setSheet] = useState(SHEET_CLOSED);
 
+  /**
+   * Seeded only from what this grid can show.
+   *
+   * `draft.amenities` also carries the two classification rows step one owns.
+   * Ticking them here meant sending them back on save as ordinary choices —
+   * with no `value`, because this screen never had one to send — so «نوع
+   * اقامتگاه» and «منطقه اقامتگاه» came back blank. A tile the host cannot see
+   * must not be one the host can be said to have chosen.
+   *
+   * Waits for the catalogue: seeding from an empty grid would drop every real
+   * answer the listing already has.
+   */
   useEffect(() => {
-    if (seeded || !draft) return;
+    if (seeded || !draft || grid.length === 0) return;
+    const inGrid = new Set(grid.map((a) => a.id));
     const ids: number[] = [];
     const answers: ISelectedExtraFeatures = {};
     (draft.amenities ?? []).forEach((row) => {
+      if (!inGrid.has(row.amenityId)) return;
       ids.push(row.amenityId);
       const extra = (row.extraFeatures as { extra?: Record<string, string | number> })?.extra;
       if (extra) answers[row.amenityId] = extra;
@@ -89,7 +103,7 @@ export default function AmenitiesStep() {
     setExtras(answers);
     setOther(draft.otherAmenities ?? "");
     setSeeded(true);
-  }, [draft, seeded]);
+  }, [draft, seeded, grid]);
 
   const toggle = (id: number) => {
     setDirty(true);

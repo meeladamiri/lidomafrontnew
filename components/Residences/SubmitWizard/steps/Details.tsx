@@ -140,7 +140,19 @@ export default function DetailsStep() {
   }
 
   async function onNext() {
-    if (!canContinue) return;
+    /**
+     * Said out loud rather than by greying the button out.
+     *
+     * A disabled «ادامه» is the least informative thing a form can do: on a
+     * screen of tiles the host has no way to tell which of the two groups they
+     * missed, and on a phone the other group is off the bottom of the screen.
+     */
+    if (!canContinue) {
+      const problems: string[] = [];
+      if (types.length === 0) problems.push("نوع اقامتگاه را انتخاب کنید.");
+      if (areas.length === 0) problems.push("منطقه اقامتگاه را انتخاب کنید.");
+      return problems;
+    }
 
     // First visit: mint the listing the rest of the wizard is keyed by.
     if (!residenceId) {
@@ -183,15 +195,15 @@ export default function DetailsStep() {
     <StepLayout
       onNext={onNext}
       nextLabel={residenceId ? "ذخیره و ادامه" : "شروع کنیم"}
-      nextDisabled={!canContinue || nothingConfigured}
+      nextDisabled={nothingConfigured}
       busy={creating || saveState === "saving"}
       footerNote={
-        !canContinue && !nothingConfigured ? (
+        createError ? (
+          <Callout tone="error">{createError}</Callout>
+        ) : !canContinue ? (
           <p className="text-12 font-l text-gray-77828F text-center">
             برای ادامه، یک نوع و یک منطقه انتخاب کنید.
           </p>
-        ) : createError ? (
-          <Callout tone="error">{createError}</Callout>
         ) : null
       }
     >

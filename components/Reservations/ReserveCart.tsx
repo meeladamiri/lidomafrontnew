@@ -28,6 +28,7 @@ import { CancelReasons_enum } from "constants/enums/cancel_reasons";
 import { LidomaCancelledWithHostCoordination } from "./LidomaCancelledWithHostCoordination";
 import { LidomaCancelledWithGuestCoordination } from "./LidomaCancelledWithGuestCoordination";
 import Image from "next/image";
+import { getBlurHash } from "@/utilities/getBlurHash";
 import {
   applySessionStorageValues_reserves_list,
   ReservesList_ClickedReserve_Id_KEYWORD,
@@ -175,7 +176,7 @@ IReserveCart) {
           alt="" // TODO
           className="rounded-tr-16 rounded-tl-16"
           placeholder="blur"
-          blurDataURL={residenceImage}
+          blurDataURL={getBlurHash(residenceImage)}
         />
 
         <div className="flex flex-col justify-between h-full">
