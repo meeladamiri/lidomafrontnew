@@ -51,7 +51,8 @@ export function mapReservationCard(r: any) {
     days_to_start: 0,
     guests_count: r.guestsCount ?? 0,
     extra_guests_count: r.extraGuestsCount ?? 0,
-    total_amount: r.totalAmount ?? 0,
+    // The guest's own bill, not the rent alone — see `guestPayable`.
+    total_amount: guestPayable(r),
     host_share: r.hostShare ?? 0,
     customer: { name: r.guest?.name || "", phone: r.guest?.phone },
     product: {
@@ -84,17 +85,33 @@ export function bucketHostReservations(list: any[]) {
   return { current_reserves: current, succeed_reserves: succeed, failed_reserves: failed };
 }
 
+/**
+ * What the guest actually owes: the rent plus the fee added on top for them.
+ *
+ * `r.totalAmount` alone is the rent — the same number the host's share is a
+ * percentage of. `r.guestCommission` is a separate, independent charge (see
+ * `computeBreakdown` on the backend: the host's share never reads it and it
+ * never reads the host's share). A guest shown only the rent would be quoted
+ * a bill smaller than the one the admin panel and the payment ledger agree
+ * on, by exactly the fee — invisible while `guestCommissionPercent` is 0,
+ * which is the only reason it went unnoticed.
+ */
+function guestPayable(r: any): number {
+  return (r.totalAmount ?? 0) + (r.guestCommission ?? 0);
+}
+
 /** Builds the 9-slot `TReserveCheckout` tuple. New backend only stores a final total
  * (no per-category day-by-day breakdown), so everything is folded into the first
  * "normal weekdays" slot and the rest are present-but-zero — this keeps every
  * `.find()` call downstream safe (array always has all 9 shapes) while the total
- * shown to the user still matches `total_amount` exactly. */
+ * shown to the user still matches `total_amount` exactly (see `guestPayable`). */
 function buildCheckoutPrices(r: any) {
   const days = r.daysCount || 1;
-  const unit = (r.totalAmount ?? 0) / days;
+  const due = guestPayable(r);
+  const unit = due / days;
 
   return [
-    { weekdays: days, unit_price: unit, total_price: r.totalAmount ?? 0 },
+    { weekdays: days, unit_price: unit, total_price: due },
     { weekends: 0, unit_price: 0, total_price: 0 },
     { peaks: 0, unit_price: 0, total_price: 0 },
     { specials: 0, unit_price: 0, total_price: 0 },
@@ -115,7 +132,15 @@ export function mapReservationDetail(r: any) {
     order_details: {
       paid_amount: r.paidAmount ?? 0,
       remaining_amount: r.remainingAmount ?? 0,
-      total_amount: r.totalAmount ?? 0,
+      // The guest's own bill, not the rent alone — see `guestPayable`. Both
+      // `remaining_amount` and `paid_amount` already come straight off
+      // `Reservation.remainingAmount`/`paidAmount`, and those two columns are
+      // kept accurate against this exact sum by `payments.service.ts`'s
+      // `recompute()` — this just needs to agree with them, not recompute.
+      total_amount: guestPayable(r),
+      // Broken out so a screen that wants to *say* "شامل X تومان کارمزد" can,
+      // without re-deriving it from the difference of two other numbers.
+      guest_commission: r.guestCommission ?? 0,
       alters: [],
       cancel_desc: r.cancelDesc || undefined,
       cancel_reason: r.cancelReason || undefined,

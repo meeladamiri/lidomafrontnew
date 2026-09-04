@@ -112,7 +112,9 @@ function MyTripCart({
   useEffect(() => {
     if (!!expiryDate) {
       timerRef.current = setInterval(() => {
-        const diff = getTimeDiff(Date.now(), new Date(`${expiryDate}Z`).getTime());
+        // Already a "...Z"-terminated ISO string — see MyTripDetails/index.tsx
+        // for why appending a second one breaks the parse.
+        const diff = getTimeDiff(Date.now(), new Date(expiryDate || "").getTime());
 
         if (diff === 0) {
           // So this reserve's expiryDate has been reached, so let's refetch the reserves list.

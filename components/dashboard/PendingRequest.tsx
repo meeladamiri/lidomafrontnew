@@ -21,7 +21,9 @@ function PendingRequest({ title, from, to, reserveId, image, expiry_date }: IPen
   useEffect(() => {
     if (!!expiry_date) {
       timerRef.current = setInterval(() => {
-        const diff = getTimeDiff(Date.now(), new Date(`${expiry_date}Z`).getTime());
+        // Already a "...Z"-terminated ISO string — see MyTripDetails/index.tsx
+        // for why appending a second one breaks the parse.
+        const diff = getTimeDiff(Date.now(), new Date(expiry_date || "").getTime());
 
         if (diff === 0) {
           // So this reserve's expiry_date has been reached, so let's refetch the reserves list.

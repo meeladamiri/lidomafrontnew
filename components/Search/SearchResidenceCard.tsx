@@ -1,7 +1,6 @@
 import LikeOrNot from "components/General/LikeOrNot";
 import Link from "next/link";
 import { getPropertyPageUrl } from "@/utilities/getPropertyPageUrl";
-import moment from "moment-jalaali";
 
 import { I_Residence_display_type } from "@/interfaces/Residences";
 import BedNMaxCapacityCode from "../General/BedNMaxCapacityCode";
@@ -17,12 +16,11 @@ const FastReserveBox = dynamic(() => import("components/General/FastReserveBox")
 const ResIsFull = dynamic(() => import("./ResIsFull"), {
   ssr: true,
 });
-const FinalCheckoutTotal = dynamic(() => import("./FinalCheckoutTotal"), {
+const StayPriceBreakdown = dynamic(() => import("./StayPriceBreakdown"), {
   ssr: true,
 });
 import SearchCardGallery from "./SearchCardGallery";
 import { useRouter } from "next/router";
-import { IPrices } from "@/interfaces/Search/SearchResp";
 
 interface I_SearchResidenceCard {
   name: string;
@@ -36,7 +34,6 @@ interface I_SearchResidenceCard {
   commentsN: number;
   price: number;
   nowruzPrice: number;
-  prices: IPrices;
   bedN: number;
   referenceCode: number;
   maxCapacity: number;
@@ -53,11 +50,6 @@ interface I_SearchResidenceCard {
   stay?: StayQuote | null;
   resPureNameAlone: string;
   isFull: boolean;
-  capacity: number;
-  peak_dates: [
-    string, // start of range --> ex:
-    string // end of range
-  ][];
 }
 
 function SearchResidenceCard({
@@ -69,7 +61,6 @@ function SearchResidenceCard({
   commentsN,
   price,
   nowruzPrice,
-  prices,
   bedN,
   referenceCode,
   maxCapacity,
@@ -85,8 +76,6 @@ function SearchResidenceCard({
   isOffscreen,
   resPureNameAlone,
   isFull,
-  capacity,
-  peak_dates,
   priority,
   stay,
 }: I_SearchResidenceCard) {
@@ -168,41 +157,17 @@ function SearchResidenceCard({
           />
         </footer>
 
-        {!!router?.query?.start &&
-          !!router?.query?.end &&
-          // router?.query?.guests_count &&
-          displayType === "suit" && (
-            <FinalCheckoutTotal
-              calculatedCheckoutDataParams={{
-                serverCalendarData: {
-                  peak_dates,
-                  prices: {
-                    extra_guests_price: prices?.extra_guests_price,
-                    monthly_discount: prices?.monthly_discount,
-                    peak_price: prices?.peak_price,
-                    week_price: prices?.week_price,
-                    weekend_price: prices?.weekend_price,
-                    weekly_discount: prices?.weekly_discount,
-                  },
-                  special_dates: prices?.special_dates,
-                },
-                theRangeSelected: [
-                  moment(router?.query?.start, "jYYYY/jMM/jDD"),
-                  moment(router?.query?.end, "jYYYY/jMM/jDD"),
-                ],
-                numberOfPeople: !!router?.query?.guests_count
-                  ? Number(router?.query?.guests_count)
-                  : capacity,
-                baseCapacity: capacity,
-                extraGuestUnitPrice: prices?.extra_guests_price,
-                discountedDays: prices?.discounted_days.map((day) => ({
-                  ...day,
-                  date: moment(day.date),
-                })),
-              }}
-              basePrice={price}
-            />
-          )}
+        {/*
+          One condition, not three. The old gate also required
+          `displayType === "suit"`, which meant a بوم‌گردی listing with the
+          same dates picked never got a total at all — not because its price
+          is computed differently (it is not; `stay` comes from the same
+          `calculateStayPrice` regardless of type) but because nobody had
+          reason to notice the gap. `stay` is already null whenever there is
+          no date range or the quote could not be priced, so it is the one
+          condition that means what it says.
+        */}
+        {!!stay && <StayPriceBreakdown stay={stay} />}
       </article>
     </Link>
   );

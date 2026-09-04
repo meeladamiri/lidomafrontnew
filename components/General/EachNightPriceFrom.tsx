@@ -10,6 +10,18 @@ export interface StayQuote {
   total: number;
   perNight: number;
   discountPercent: number;
+  guests: number;
+  breakdown: {
+    weekdayNights: number;
+    weekdayTotal: number;
+    weekendNights: number;
+    weekendTotal: number;
+    peakNights: number;
+    peakTotal: number;
+    extraGuests: number;
+    extraGuestsTotal: number;
+    discountAmount: number;
+  };
 }
 
 /**
@@ -41,17 +53,6 @@ function EachNightPriceFromWithDiscount({
           <p className="text-12 text-gray-6C6A7D leading-14 font-r">هر شب</p>
           {!!stay.discountPercent && <PercentBox value={stay.discountPercent} />}
         </div>
-        {/*
-          Spelled out rather than "۳ شب · ۵,۹۰۰,۰۰۰ تومان". The total is the
-          number the reader is deciding on, and a middle dot between two figures
-          leaves it ambiguous which one is the total and which the nightly rate
-          — especially directly under a line that is itself a price.
-        */}
-        <p className="text-12 text-gray-6C6A7D leading-18 font-r">
-          مبلغ کل{" "}
-          <span className="text-black font-m">{stay.total?.toLocaleString("en-US")} تومان</span> برای{" "}
-          {stay.nights} شب
-        </p>
       </div>
     );
   }

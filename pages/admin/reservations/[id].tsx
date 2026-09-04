@@ -351,6 +351,7 @@ export default function AdminReservationDetailPage() {
             <PaymentsPanel
               reservationId={data.id}
               canRecord={data.state !== "CANCEL"}
+              guestWalletBalance={data.guestProfile?.walletBalance}
               onChanged={() => {
                 mutate();
                 setLogVersion((v) => v + 1);
@@ -883,6 +884,8 @@ function DecisionPanel({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [extending, setExtending] = useState(false);
+  /** Set once a DONE transition lands and the ledger still shows a balance. */
+  const [unpaidRemaining, setUnpaidRemaining] = useState<number | null>(null);
 
   const decision = DECISION[data.state];
   const left = data.expiryDate
@@ -892,6 +895,7 @@ function DecisionPanel({
 
   async function approve() {
     if (!decision) return;
+    const goingToDone = decision.to === "DONE";
     setBusy(true);
     setError(null);
     try {
@@ -902,6 +906,27 @@ function DecisionPanel({
       setConfirming(false);
       setNote("");
       onChanged();
+
+      /**
+       * «ثبت پرداخت مهمان» confirms the booking — it does not mean the guest
+       * has paid. The state change above no longer stamps `remainingAmount`
+       * as settled (see stateChange.service.ts), so what the ledger says right
+       * after landing on «قطعی» is whatever it actually said before: a real
+       * balance if one was there. The ledger endpoint, not `data.remainingAmount`
+       * from the page's own (not-yet-refetched) SWR cache, because this needs
+       * the number the transition just produced, not the one from before it.
+       */
+      if (goingToDone) {
+        try {
+          const ledger = await apiFetch<{ summary: { remaining: number } }>(
+            `/api/admin/reservations/${data.id}/payments`
+          );
+          if (ledger.summary.remaining > 0) setUnpaidRemaining(ledger.summary.remaining);
+        } catch {
+          // The confirmation already succeeded; a failed follow-up check is
+          // not worth blocking on or surfacing as an error of its own.
+        }
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : "ثبت نشد");
     } finally {
@@ -926,22 +951,71 @@ function DecisionPanel({
     }
   }
 
+  /*
+   * The unpaid-balance reminder is deliberately rendered outside the
+   * `!decision` branch below, not inside the card that branch replaces.
+   * Confirming a booking to «قطعی» is exactly the transition that makes
+   * `decision` fall out of `DECISION` (DONE has no entry — there is nothing
+   * further to decide), so the moment the reminder needs to appear is the
+   * same moment the card that used to hold it stops rendering at all. It
+   * showed the ledger's real remaining balance and then discarded the JSX
+   * meant to say so before that render ever reached the screen.
+   */
+  const reminderModal = (
+    <Modal
+      open={unpaidRemaining != null}
+      onClose={() => setUnpaidRemaining(null)}
+      title="مهمان هنوز پرداخت را کامل نکرده"
+      width="max-w-[460px]"
+    >
+      <p className="text-13 leading-22 text-gray-6C6A7D mb-4">
+        رزرو <b className="text-black">{data.reference}</b> قطعی شد، اما طبق دفتر پرداخت‌ها هنوز{" "}
+        <b className="text-[#C62828]">{unpaidRemaining != null && faMoney(unpaidRemaining)}</b> از
+        مهمان دریافت نشده است.
+      </p>
+      <p className="text-12 leading-20 text-gray-9B9BAA mb-16">
+        می‌توانید همین حالا پرداخت را ثبت کنید، یا بدون آن ادامه دهید و بعداً از همین صفحه ثبتش کنید.
+      </p>
+      <div className="flex flex-col gap-y-8">
+        <Button
+          className="w-full"
+          onClick={() => {
+            setUnpaidRemaining(null);
+            document.getElementById("payments")?.scrollIntoView({
+              behavior: "smooth",
+              block: "start",
+            });
+          }}
+        >
+          ثبت پرداخت مهمان
+        </Button>
+        <Button variant="ghost" className="w-full" onClick={() => setUnpaidRemaining(null)}>
+          ادامه بدون نیاز به پرداخت مهمان
+        </Button>
+      </div>
+    </Modal>
+  );
+
   if (!decision) {
     return (
-      <Card className="p-20">
-        <h3 className="text-15 leading-24 font-m text-black mb-8">وضعیت رزرو</h3>
-        <Badge tone={STATE_TONE[data.state] ?? "gray"}>
-          {STATE_LABELS[data.state] ?? data.state}
-        </Badge>
-        <p className="mt-10 text-12 leading-20 text-gray-6C6A7D">
-          تصمیمی برای این رزرو در انتظار نیست. برای جابه‌جایی دستی از پنل «وضعیت رزرو» پایین صفحه
-          استفاده کنید.
-        </p>
-      </Card>
+      <>
+        <Card className="p-20">
+          <h3 className="text-15 leading-24 font-m text-black mb-8">وضعیت رزرو</h3>
+          <Badge tone={STATE_TONE[data.state] ?? "gray"}>
+            {STATE_LABELS[data.state] ?? data.state}
+          </Badge>
+          <p className="mt-10 text-12 leading-20 text-gray-6C6A7D">
+            تصمیمی برای این رزرو در انتظار نیست. برای جابه‌جایی دستی از پنل «وضعیت رزرو» پایین صفحه
+            استفاده کنید.
+          </p>
+        </Card>
+        {reminderModal}
+      </>
     );
   }
 
   return (
+    <>
     <Card className="p-20">
       <div className="flex flex-col gap-y-10">
         <Button
@@ -1043,6 +1117,8 @@ function DecisionPanel({
         </div>
       </Modal>
     </Card>
+    {reminderModal}
+    </>
   );
 }
 

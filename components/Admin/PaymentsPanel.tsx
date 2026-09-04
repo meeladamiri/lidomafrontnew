@@ -66,11 +66,14 @@ interface Ledger {
 export default function PaymentsPanel({
   reservationId,
   canRecord,
+  guestWalletBalance,
   onChanged,
 }: {
   reservationId: number;
   /** Off for cancelled bookings — the backend refuses them anyway. */
   canRecord: boolean;
+  /** For the «کیف پول» method's own hint — see AddPaymentModal. */
+  guestWalletBalance?: number;
   onChanged: () => void;
 }) {
   const { data, isLoading, mutate } = useSWR<Ledger>(
@@ -136,6 +139,7 @@ export default function PaymentsPanel({
         open={adding}
         reservationId={reservationId}
         suggested={s ? Math.max(s.remaining, 0) : 0}
+        guestWalletBalance={guestWalletBalance}
         onClose={() => setAdding(false)}
         onDone={() => {
           mutate();
@@ -224,12 +228,14 @@ function AddPaymentModal({
   open,
   reservationId,
   suggested,
+  guestWalletBalance,
   onClose,
   onDone,
 }: {
   open: boolean;
   reservationId: number;
   suggested: number;
+  guestWalletBalance?: number;
   onClose: () => void;
   onDone: () => void;
 }) {
@@ -312,6 +318,33 @@ function AddPaymentModal({
             every payment recorded the morning after. */}
         <JalaliDateField label="تاریخ واریز" value={paidDate} onChange={setPaidDate} />
       </div>
+
+      {/*
+        «کیف پول» stopped being a label with no effect: choosing it now really
+        debits the guest's own balance, in the same transaction as this row —
+        insufficient balance fails the whole request rather than leaving a
+        payment on record for money that was never taken. Said here, next to
+        the choice that causes it, not left for the guest to discover on their
+        own wallet statement.
+      */}
+      {method === "WALLET" && (
+        <p
+          className={`mb-12 text-12 leading-20 rounded-8 px-10 py-8 ${
+            guestWalletBalance != null && value > guestWalletBalance
+              ? "bg-[#FFF4E5] text-[#B26A00]"
+              : "bg-gray-F5F5F7 text-gray-6C6A7D"
+          }`}
+        >
+          این مبلغ از موجودی کیف پول مهمان کسر می‌شود.
+          {guestWalletBalance != null && (
+            <>
+              {" "}
+              موجودی فعلی: <b>{faMoney(guestWalletBalance)}</b>
+              {value > guestWalletBalance && " — کمتر از مبلغ واردشده است."}
+            </>
+          )}
+        </p>
+      )}
 
       <label className="block mb-12">
         <span className="block mb-6 text-12 leading-18 text-gray-6C6A7D font-m">ساعت واریز</span>

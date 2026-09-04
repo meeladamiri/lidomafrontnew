@@ -1,4 +1,4 @@
-import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getPopularDestinations, ICityOrProvince } from "@/api/Search/getPopularDestination";
 import {
@@ -67,6 +67,20 @@ function DestinationCombobox({
 }) {
   const listboxId = useId();
   const [activeIndex, setActiveIndex] = useState(-1);
+  /**
+   * Photos that failed to load, by option id.
+   *
+   * A raw `<img>` to external storage has no retry and no fallback of its
+   * own — a network hiccup on just this one request, or a photo the migration
+   * script never wrote, renders the browser's broken-image glyph in a list
+   * next to eleven photos that loaded fine. Once an id lands here it renders
+   * the pin icon instead, same as an option that never had a photo.
+   */
+  const [failedImages, setFailedImages] = useState<Set<string>>(new Set());
+  const markFailed = useCallback(
+    (id: string) => setFailedImages((previous) => new Set(previous).add(id)),
+    []
+  );
   const [debounced, setDebounced] = useState(value);
   const listRef = useRef<HTMLUListElement>(null);
 
@@ -292,13 +306,14 @@ function DestinationCombobox({
                     more than it saves. loading="lazy" keeps them off the
                     critical path.
                   */}
-                  {option.image ? (
+                  {option.image && !failedImages.has(option.id) ? (
                     <img
                       src={option.image}
                       alt=""
                       loading="lazy"
                       width={40}
                       height={40}
+                      onError={() => markFailed(option.id)}
                       className="w-40 h-40 rounded-8 object-cover shrink-0 bg-gray-F0F0F0"
                     />
                   ) : (

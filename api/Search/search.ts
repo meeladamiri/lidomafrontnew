@@ -58,16 +58,6 @@ export function mapCard(card: any): IProduct_SearchResidences {
     display_type: undefined as any,
     // The quote for the selected dates, when there are any. See the card.
     stay: card.stay ?? null,
-    prices: {
-      discounted_days: [],
-      extra_guests_price: 0,
-      monthly_discount: 0,
-      peak_price: 0,
-      special_dates: [],
-      week_price: card.minPrice ?? 0,
-      weekend_price: card.weekendPrice ?? 0,
-      weekly_discount: 0,
-    },
   };
 }
 

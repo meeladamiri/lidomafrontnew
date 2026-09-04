@@ -375,7 +375,13 @@ function MyTripDetails() {
   useEffect(() => {
     if (!!reserveInfo?.expiry_date) {
       timerRef.current = setInterval(() => {
-        const diff = getTimeDiff(Date.now(), new Date(`${reserveInfo?.expiry_date}Z`).getTime());
+        // `expiry_date` is already a full ISO string ending in "Z" — the new
+        // backend serialises `Date` fields the normal way. Appending a second
+        // "Z" (a holdover from the old backend sending naive timestamps
+        // without one) makes the string end "...423ZZ", which Date parses as
+        // Invalid Date, so every field below came out NaN or undefined and
+        // the timer looked simply absent.
+        const diff = getTimeDiff(Date.now(), new Date(reserveInfo?.expiry_date || "").getTime());
 
         if (diff === 0) {
           // So this reserve's expiryDate has been reached, so let's refetch the reserve details.
@@ -552,6 +558,20 @@ function MyTripDetails() {
     submitEditReserveMutation.mutate();
   }
 
+  /**
+   * `getTimeDiff` prints "H:MM:SS" once there is an hour left, but drops the
+   * hour segment entirely under an hour and prints "MM:SS" instead — which is
+   * the ordinary case for both a host-approval and a payment window. The three
+   * boxes below used to read `split(":")[2/1/0]` assuming three parts always
+   * exist, so under an hour the seconds box read `undefined` (blank) and the
+   * minutes/hours boxes each showed the wrong one of the remaining two figures.
+   * The timer was not missing — it was rendering one blank box and two
+   * mis-labelled ones, which reads as broken.
+   */
+  const timeParts = remainingTime?.split(":") ?? [];
+  const [remainingHours, remainingMinutes, remainingSeconds] =
+    timeParts.length === 3 ? timeParts : ["00", ...timeParts];
+
   return isLoading ? (
     <div className="pt-84 md:pt-[115px]">
       <TinyLoader />
@@ -614,15 +634,15 @@ function MyTripDetails() {
 
                       <div className="flex items-center gap-x-4">
                         <div className="w-40 h-40 bg-[rgba(118,118,128,0.12)] rounded-8 text-16 leading-24 font-r text-black flex items-center justify-center">
-                          {remainingTime?.split(":")[2]}
+                          {remainingSeconds}
                         </div>
                         <span className="text-16 leading-28 font-m text-black">:</span>
                         <div className="w-40 h-40 bg-[rgba(118,118,128,0.12)] rounded-8 text-16 leading-24 font-r text-black flex items-center justify-center">
-                          {remainingTime?.split(":")[1]}
+                          {remainingMinutes}
                         </div>
                         <span className="text-16 leading-28 font-m text-black">:</span>
                         <div className="w-40 h-40 bg-[rgba(118,118,128,0.12)] rounded-8 text-16 leading-24 font-r text-black flex items-center justify-center">
-                          {remainingTime?.split(":")[0]}
+                          {remainingHours}
                         </div>
                       </div>
                     </>

@@ -306,7 +306,9 @@ function ReservationDetails() {
   useEffect(() => {
     if (!!reserveInfo?.expiry_date) {
       timerRef.current = setInterval(() => {
-        const diff = getTimeDiff(Date.now(), new Date(`${reserveInfo?.expiry_date}Z`).getTime());
+        // Already a "...Z"-terminated ISO string — see MyTripDetails/index.tsx
+        // for why appending a second one breaks the parse.
+        const diff = getTimeDiff(Date.now(), new Date(reserveInfo?.expiry_date || "").getTime());
 
         if (diff === 0) {
           // So this reserve's expiryDate has been reached, so let's refetch the reserve details.

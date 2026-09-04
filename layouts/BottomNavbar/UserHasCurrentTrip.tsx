@@ -20,9 +20,11 @@ function UserHasCurrentTrip() {
       timerRef.current = setInterval(async () => {
         const { getTimeDiff } = await import("@/utilities/Time");
 
+        // Already a "...Z"-terminated ISO string — see MyTripDetails/index.tsx
+        // for why appending a second one breaks the parse.
         const diff = getTimeDiff(
           Date.now(),
-          new Date(`${profileData?.current_trip?.expiry_date}Z`).getTime()
+          new Date(profileData?.current_trip?.expiry_date || "").getTime()
         );
 
         if (diff === 0) {

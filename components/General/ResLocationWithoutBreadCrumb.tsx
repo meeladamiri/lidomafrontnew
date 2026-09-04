@@ -14,7 +14,7 @@ function ResLocationWithoutBreadCrumb({
   return (
     <>
       <p
-        className={`text-12 leading-14 text-gray-#57585C font-r OnlyOneLineAndEndWithElipsis ${className}`}
+        className={`text-12 leading-14 text-gray-57585C font-r OnlyOneLineAndEndWithElipsis ${className}`}
       >
         {province} ، {city}
         {!!neighborhood ? ` ، ${neighborhood}` : null}

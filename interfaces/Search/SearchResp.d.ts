@@ -1,6 +1,6 @@
-import { IPrices } from "@/components/Search/SearchResidenceCard";
 import { IGeneralFilter } from ".";
 import { I_Residence_display_type } from "../Residences";
+import type { StayQuote } from "@/components/General/EachNightPriceFrom";
 
 // SEARCH APIs RESPONSES INTERFACES
 // export interface ITag_SearchResidences {
@@ -14,34 +14,12 @@ export interface IFAQ_SearchResidences {
   question: string;
 }
 
-export interface IPrices {
-  discounted_days: {
-    date: string;
-    amount: number; // in percentage
-  }[];
-  extra_guests_price: number;
-  monthly_discount: number;
-  peak_price: number;
-  special_dates: [
-    string, // date
-    number // price
-  ][];
-  week_price: number;
-  weekend_price: number;
-  weekly_discount: number;
-}
-
 export interface IProduct_SearchResidences {
   /**
    * The price for the dates the reader selected, when they selected any.
    * Absent on an unfiltered search, where the card shows the "from" price.
    */
-  stay?: {
-    nights: number;
-    total: number;
-    perNight: number;
-    discountPercent: number;
-  } | null;
+  stay?: StayQuote | null;
   average_rating: number;
   city: string;
   city_id: number;
@@ -66,7 +44,6 @@ export interface IProduct_SearchResidences {
   reviews_count: number;
   rooms_count: number;
   name2: string;
-  prices: IPrices;
   capacity: number;
 }
 

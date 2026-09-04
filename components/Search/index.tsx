@@ -21,7 +21,6 @@ import { useSearchData } from "Hooks/SearchPages/useSearchData";
 import { renderSearchPagination } from "@/utilities/renderSearchPagination";
 import SearchBreadcrumb from "./SearchBreadcrumb";
 import ResidenceTypeLinks from "./ResidenceTypeLinks";
-import Footer from "@/layouts/Footer";
 import RelatedSearches from "../General/RelatedSearches";
 import AboutInSearch from "./AboutInSearch";
 import SearchPageFAQ from "./SearchPageFAQ";
@@ -221,7 +220,6 @@ function Search() {
               <ul className="grid grid-cols-12 gap-x-16 gap-y-24">
                 <RenderResidences
                   residencesList={(data?.params as ISearchResidences_ServerResp)?.products}
-                  peak_dates={data?.params?.peak_dates}
                 />
               </ul>
             )}
@@ -239,10 +237,17 @@ function Search() {
                   totalCount={(data?.params as ISearchResidences_ServerResp)?.count}
                   pageSize={search_pages_pageSize}
                   onPageChange={(page: number) => {
+                    // Page one carries no `page` param — `Pagination`'s own
+                    // `hrefForPage` already knows this, but that href is only
+                    // what a crawler or a no-JS visit sees; a click runs this
+                    // handler instead (`e.preventDefault()` in Pagination.tsx),
+                    // and until now it always re-added `page` here regardless
+                    // of the number, so going back to page 1 landed on
+                    // `?page=1` — a second URL for the same listing.
                     removeSomeQueryParameters_Then_AddSomeQueryParameters(
                       router,
                       ["page"],
-                      [["page", page]],
+                      page > 1 ? [["page", page]] : [],
                       undefined,
                       false
                     );
@@ -380,9 +385,6 @@ function Search() {
           />
         </div>
 
-        {/* The search page shipped without a <footer> entirely — no site-wide
-            links, no landmark, nothing for a crawler to follow out of the page. */}
-        <Footer />
       </div>
 
       {!!showChooseEnterAndExitDaysCalendarModal && (
