@@ -6,13 +6,12 @@ import { useUserProfile } from "@/providers/Profile";
 import { useMediaQuery } from "@/utilities/useMediaQuery";
 import { useChatStream, type ChatStreamEvent } from "@/utilities/useChatStream";
 import PageTitle from "components/General/PageTitle";
-import Tabs from "components/General/core/Tabs";
 import { TinyLoader } from "../General/Loader/TinyLoader";
 import ChatThread from "./ChatThread";
 import ConversationList from "./ConversationList";
 
 /**
- * The conversations page.
+ * The chat page.
  *
  * Two panes on a desktop, one at a time on a phone. The selected thread lives
  * in the query string (`?c=`) rather than component state, which is what makes
@@ -23,14 +22,16 @@ import ConversationList from "./ConversationList";
  * react-query cache. Both panes read from that cache, so an arriving message
  * updates the thread and reorders the list without either of them knowing the
  * stream exists.
+ *
+ * There is no "archived" tab any more — a booking chat's own end date decides
+ * whether it belongs in the list at all (see the backend's listConversations),
+ * so nothing here is ever manually filed away.
  */
 
 /** Only while the stream is unavailable — see useChatStream. */
 const FALLBACK_POLL_MS = 15_000;
 /** The indicator is a hint, not a state to get stuck in. */
 const TYPING_TIMEOUT_MS = 4000;
-
-type TabKey = "all" | "archived";
 
 function Chats() {
   const router = useRouter();
@@ -39,7 +40,6 @@ function Chats() {
   const meId = profile?.id ?? 0;
   const isDesktop = useMediaQuery("(min-width: 1024px)");
 
-  const [tab, setTab] = useState<TabKey>("all");
   const [polling, setPolling] = useState(false);
   const [typing, setTyping] = useState<{ conversationId: string; userId: number } | null>(null);
 
@@ -58,8 +58,8 @@ function Chats() {
   );
 
   const { data, isLoading } = useQuery({
-    queryKey: ["conversations", tab],
-    queryFn: () => getConversations({ archived: tab === "archived", take: 50 }),
+    queryKey: ["conversations", "all"],
+    queryFn: () => getConversations({ take: 50 }),
     refetchInterval: polling ? FALLBACK_POLL_MS : false,
   });
 
@@ -145,33 +145,26 @@ function Chats() {
 
   const showThread = !!selectedId;
   const showList = isDesktop || !showThread;
+  // On a phone, once a thread is open it takes the whole screen — the page's
+  // own "چت" title would just be a second header stacked above the thread's
+  // own (peer name + back button), both fixed in place, for no reason.
+  const showPageTitle = isDesktop || !showThread;
 
   return (
     <div className="pb-40 md:pb-0">
-      <div className="px-16 md:px-0">
-        <PageTitle
-          title="چت"
-          icon={<i aria-hidden="true" className="icon-message text-24" />}
-          containerClassname="mb-16"
-        />
-      </div>
-
-      {showList && (
-        <div className="mb-4 px-16 md:mb-16 md:w-[360px] md:px-0">
-          <Tabs
-            activeIndex={tab === "all" ? 0 : 1}
-            onChange={(index: number) => setTab(index === 0 ? "all" : "archived")}
-            data={[
-              { tabLabel: "جاری", tabIndex: 0 },
-              { tabLabel: "پایان یافته", tabIndex: 1 },
-            ]}
+      {showPageTitle && (
+        <div className="sticky top-0 z-4 bg-white px-16 pt-12 pb-8 md:static md:px-0 md:pt-0 md:pb-0">
+          <PageTitle
+            title="چت"
+            icon={<i aria-hidden="true" className="icon-message text-24" />}
+            containerClassname="!mb-0 md:!mb-16"
           />
         </div>
       )}
 
-      <div className="grid h-[calc(100dvh-200px)] min-h-[420px] grid-cols-1 overflow-hidden bg-white md:h-[calc(100vh-280px)] md:rounded-24 md:border-1 md:border-solid md:border-gray-F0F0F0 md:shadow-[0_1px_3px_rgba(24,39,58,0.05)] md:grid-cols-[360px_1fr]">
+      <div className="grid h-[calc(100dvh-152px)] grid-cols-1 overflow-hidden bg-white md:h-[calc(100vh-280px)] md:min-h-[420px] md:rounded-24 md:border-1 md:border-solid md:border-gray-F0F0F0 md:shadow-[0_1px_3px_rgba(24,39,58,0.05)] md:grid-cols-[360px_1fr]">
         {showList && (
-          <div className="min-h-0 overflow-y-auto border-t-1 border-solid border-gray-F0F0F0 md:border-t-0 md:border-l-1">
+          <div className="min-h-0 overflow-y-auto md:border-l-1 md:border-solid md:border-gray-F0F0F0">
             {isLoading ? (
               <div className="flex h-full items-center justify-center">
                 <TinyLoader />

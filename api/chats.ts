@@ -89,7 +89,6 @@ const unwrap = (res: any) => res?.data;
 
 export async function getConversations(params: {
   type?: ConversationType;
-  archived?: boolean;
   cursor?: number;
   take?: number;
 }): Promise<{ items: IConversationRow[]; next_cursor: number | null }> {
@@ -98,7 +97,6 @@ export async function getConversations(params: {
     .setCallMethod("GET")
     .setParams({
       ...(params.type ? { type: params.type } : {}),
-      ...(params.archived ? { archived: 1 } : {}),
       ...(params.cursor ? { cursor: params.cursor } : {}),
       ...(params.take ? { take: params.take } : {}),
     })

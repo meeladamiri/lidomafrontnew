@@ -163,6 +163,11 @@ function ChatThread({ conversationId, meId, isDesktop, typingFrom, onBack }: Pro
   const peer = conversation?.peer ?? null;
   const isSupport = conversation?.type === "SUPPORT";
   const title = isSupport ? "پشتیبانی لیدوماتریپ" : peer?.name || "کاربر لیدوماتریپ";
+  // A cancelled reservation's chat stays visible (it's still useful history)
+  // but goes read-only — see the backend's sendMessage guard, which enforces
+  // this independently of what the composer here shows.
+  const bookingCancelled = conversation?.booking?.state === "CANCEL";
+  const closed = conversation?.status === "CLOSED" || bookingCancelled;
 
   return (
     <section aria-label="چت" className="flex h-full min-h-0 flex-col bg-gray-F8F8F8">
@@ -298,10 +303,8 @@ function ChatThread({ conversationId, meId, isDesktop, typingFrom, onBack }: Pro
 
       <Composer
         isDesktop={isDesktop}
-        disabled={conversation?.status === "CLOSED"}
-        placeholder={
-          conversation?.status === "CLOSED" ? "این چت بسته شده است" : "پیام خود را بنویسید…"
-        }
+        disabled={closed}
+        placeholder={bookingCancelled ? "گفتگو پایان یافته" : closed ? "این چت بسته شده است" : "پیام خود را بنویسید…"}
         onSend={(body) => send.mutate({ body, nonce: newNonce() })}
         onTyping={() => {
           void sendTyping(conversationId);

@@ -1,26 +1,15 @@
 import { INavItem } from "@/interfaces/BottomNavbar";
 
+// Order matters: در RTL اولین آیتم آرایه سمت راست‌ترین آیتم نوار است. ترتیب
+// درخواستی: رزروها، چت، تقویم، اعلانات، پیشخوان — پیشخوان چپ‌ترین/آخرین
+// جایگاه را می‌گیرد چون همان صفحه‌ی ورود پیش‌فرض میزبان است.
 export const NavItems_ForHost: INavItem[] = [
-  {
-    name: "اعلانات",
-    icon: {
-      src: <i className="icon-Bell text-24" />,
-    },
-    href: "/notifications",
-  },
   {
     name: "رزرو ها",
     icon: {
       src: <i className="icon-Reserve text-24" />,
     },
     href: "/reservations",
-  },
-  {
-    name: "پیشخوان",
-    icon: {
-      src: <i className="icon-Counter text-24" />,
-    },
-    href: "/dashboard",
   },
   /**
    * چت جای «اقامتگاه‌ها» را در نوار پایین گرفت — لیست اقامتگاه‌ها همچنان از
@@ -48,5 +37,19 @@ export const NavItems_ForHost: INavItem[] = [
       src: <i className="icon-Calendar text-24" />,
     },
     href: "/residences/calendar",
+  },
+  {
+    name: "اعلانات",
+    icon: {
+      src: <i className="icon-Bell text-24" />,
+    },
+    href: "/notifications",
+  },
+  {
+    name: "پیشخوان",
+    icon: {
+      src: <i className="icon-Counter text-24" />,
+    },
+    href: "/dashboard",
   },
 ];

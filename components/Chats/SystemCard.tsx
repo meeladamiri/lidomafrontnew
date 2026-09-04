@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { IChatMessage } from "@/api/chats";
+import { dayLabelOf, timeOf } from "./chatFormat";
 
 /**
  * A reservation event, rendered as a card rather than a chat bubble.
@@ -84,8 +85,11 @@ function SystemCard({ message }: { message: IChatMessage }) {
   // An unknown kind still says something true, in the shape of a quiet note.
   if (!tone) {
     return (
-      <div className="mx-auto my-14 max-w-[420px] rounded-14 bg-gray-F8F8F8 px-16 py-10 text-center text-12 leading-20 font-r text-gray-6C6A7D">
-        {message.body}
+      <div className="mx-auto my-14 flex max-w-[420px] flex-col items-center gap-y-2 rounded-14 bg-gray-F8F8F8 px-16 py-10 text-center">
+        <p className="text-12 leading-20 font-r text-gray-6C6A7D">{message.body}</p>
+        <span className="text-10 leading-16 font-r text-gray-A9B1BC">
+          {dayLabelOf(message.created_at)} · {timeOf(message.created_at)}
+        </span>
       </div>
     );
   }
@@ -103,7 +107,10 @@ function SystemCard({ message }: { message: IChatMessage }) {
           <span className={`flex h-28 w-28 shrink-0 items-center justify-center rounded-full bg-white ${tone.iconColor}`}>
             <i aria-hidden="true" className={`${tone.icon} text-16`} />
           </span>
-          <p className="text-14 leading-22 font-m text-black">{tone.title}</p>
+          <p className="flex-1 text-14 leading-22 font-m text-black">{tone.title}</p>
+          <span className="shrink-0 text-10 leading-16 font-r text-gray-A9B1BC">
+            {dayLabelOf(message.created_at)} · {timeOf(message.created_at)}
+          </span>
         </div>
 
         {kind === "BOOKING_CREATED" && (

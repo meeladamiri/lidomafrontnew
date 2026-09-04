@@ -31,8 +31,8 @@ function ConversationList({ items, selectedId, onSelect }: Props) {
   }
 
   return (
-    <ul className="flex flex-col gap-y-2 p-8">
-      {items.map((row) => {
+    <ul className="flex flex-col">
+      {items.map((row, index) => {
         const isActive = row.id === selectedId;
         const isSupport = row.type === "SUPPORT";
         const title = isSupport
@@ -40,13 +40,16 @@ function ConversationList({ items, selectedId, onSelect }: Props) {
           : row.peer?.name || "کاربر لیدوماتریپ";
 
         return (
-          <li key={row.id}>
+          <li
+            key={row.id}
+            className={index > 0 ? "border-t-1 border-solid border-gray-F0F0F0" : ""}
+          >
             <button
               type="button"
               onClick={() => onSelect(row.id)}
               aria-current={isActive ? "true" : undefined}
-              className={`flex w-full items-start gap-x-12 rounded-16 px-10 py-11 text-right transition-colors ${
-                isActive ? "bg-primary-light bg-opacity-50" : "bg-transparent hover:bg-gray-F8F8F8"
+              className={`flex w-full items-start gap-x-12 px-16 py-13 text-right transition-colors ${
+                isActive ? "bg-primary-light bg-opacity-40" : "bg-transparent hover:bg-gray-F8F8F8"
               }`}
             >
               <span className="relative shrink-0">
