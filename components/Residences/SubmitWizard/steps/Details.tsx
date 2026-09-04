@@ -56,11 +56,24 @@ export default function DetailsStep() {
 
   // Options do not depend on the listing, so they are shared across every host
   // and cached for the session.
-  const { data: options, isLoading: optionsLoading } = useQuery({
+  //
+  // A failed request throws here instead of resolving to `[]` — an empty
+  // catalogue and a 403/500 used to look identical to this screen, so a
+  // login hiccup or a dropped connection was reported to the host as "no
+  // categories exist yet, contact support", which sent confused tickets
+  // about the wrong thing entirely.
+  const {
+    data: options,
+    isLoading: optionsLoading,
+    isError: optionsFailed,
+    error: optionsError,
+    refetch: retryOptions,
+  } = useQuery({
     queryKey: ["classificationOptions"],
     queryFn: async () => {
       const res = await getClassificationOptions();
-      return res.ok ? res.data.fields : [];
+      if (!res.ok) throw new Error(res.message);
+      return res.data.fields;
     },
     staleTime: 30 * 60 * 1000,
   });
@@ -189,25 +202,36 @@ export default function DetailsStep() {
 
   if (optionsLoading || (residenceId && !seeded)) return <StepSkeleton />;
 
-  const nothingConfigured = !typeField?.options.length && !areaField?.options.length;
+  const nothingConfigured = !optionsFailed && !typeField?.options.length && !areaField?.options.length;
 
   return (
     <StepLayout
       onNext={onNext}
       nextLabel={residenceId ? "ذخیره و ادامه" : "شروع کنیم"}
-      nextDisabled={nothingConfigured}
+      nextDisabled={nothingConfigured || optionsFailed}
       busy={creating || saveState === "saving"}
       footerNote={
         createError ? (
           <Callout tone="error">{createError}</Callout>
-        ) : !canContinue ? (
+        ) : !canContinue && !optionsFailed ? (
           <p className="text-12 font-l text-gray-77828F text-center">
             برای ادامه، یک نوع و یک منطقه انتخاب کنید.
           </p>
         ) : null
       }
     >
-      {nothingConfigured ? (
+      {optionsFailed ? (
+        <Callout
+          tone="error"
+          action={
+            <button onClick={() => retryOptions()} className="text-13 font-m text-primary-dark">
+              تلاش دوباره
+            </button>
+          }
+        >
+          {optionsError instanceof Error ? optionsError.message : "دریافت اطلاعات ناموفق بود."}
+        </Callout>
+      ) : nothingConfigured ? (
         <Callout tone="warning">
           هنوز دسته‌بندی‌ای در سامانه تعریف نشده است. لطفاً با پشتیبانی تماس بگیرید.
         </Callout>
