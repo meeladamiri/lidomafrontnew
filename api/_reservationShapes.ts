@@ -100,26 +100,68 @@ function guestPayable(r: any): number {
   return (r.totalAmount ?? 0) + (r.guestCommission ?? 0);
 }
 
-/** Builds the 9-slot `TReserveCheckout` tuple. New backend only stores a final total
- * (no per-category day-by-day breakdown), so everything is folded into the first
- * "normal weekdays" slot and the rest are present-but-zero — this keeps every
- * `.find()` call downstream safe (array always has all 9 shapes) while the total
- * shown to the user still matches `total_amount` exactly (see `guestPayable`). */
+/** Builds the 9-slot `TReserveCheckout` tuple from the reservation's stored
+ * `priceBreakdown` snapshot (see `pricing.ts:summarizeBreakdown` on the
+ * backend) — the same weekday/weekend/peak/special/extra-guest categories the
+ * admin panel shows, priced as they were at booking/reprice time.
+ *
+ * Older reservations have no snapshot (the column postdates them); those fall
+ * back to one folded "normal weekdays" line covering the whole rent, same as
+ * before this existed, rather than guessing at history from today's rates. */
 function buildCheckoutPrices(r: any) {
-  const days = r.daysCount || 1;
-  const due = guestPayable(r);
-  const unit = due / days;
+  const b = r.priceBreakdown;
+
+  if (!b) {
+    const days = r.daysCount || 1;
+    const rent = r.totalAmount ?? 0;
+    const unit = rent / days;
+
+    return [
+      { weekdays: days, unit_price: unit, total_price: rent },
+      { weekends: 0, unit_price: 0, total_price: 0 },
+      { peaks: 0, unit_price: 0, total_price: 0 },
+      { specials: 0, unit_price: 0, total_price: 0 },
+      { count: 0, extras: 0, unit_price: 0, total_price: 0 },
+      { host_discount: 0 },
+      { website_discount: 0 },
+      { coupon_discount: 0 },
+      { period_discount: 0 },
+    ];
+  }
 
   return [
-    { weekdays: days, unit_price: unit, total_price: due },
-    { weekends: 0, unit_price: 0, total_price: 0 },
-    { peaks: 0, unit_price: 0, total_price: 0 },
-    { specials: 0, unit_price: 0, total_price: 0 },
-    { count: 0, extras: 0, unit_price: 0, total_price: 0 },
+    {
+      weekdays: b.weekdayNights || 0,
+      unit_price: b.weekdayNights ? b.weekdayTotal / b.weekdayNights : 0,
+      total_price: b.weekdayTotal || 0,
+    },
+    {
+      weekends: b.weekendNights || 0,
+      unit_price: b.weekendNights ? b.weekendTotal / b.weekendNights : 0,
+      total_price: b.weekendTotal || 0,
+    },
+    {
+      peaks: b.peakNights || 0,
+      unit_price: b.peakNights ? b.peakTotal / b.peakNights : 0,
+      total_price: b.peakTotal || 0,
+    },
+    {
+      specials: b.specialNights || 0,
+      unit_price: b.specialNights ? b.specialTotal / b.specialNights : 0,
+      total_price: b.specialTotal || 0,
+    },
+    {
+      count: b.extraGuests || 0,
+      extras: b.extraGuests ? r.daysCount || 0 : 0,
+      unit_price: b.extraGuests && r.daysCount ? b.extraGuestsTotal / b.extraGuests / r.daysCount : 0,
+      total_price: b.extraGuestsTotal || 0,
+    },
     { host_discount: 0 },
     { website_discount: 0 },
     { coupon_discount: 0 },
-    { period_discount: 0 },
+    // The only discount this backend computes today is the weekly/monthly
+    // length discount — it belongs under "reserve period", not a coupon.
+    { period_discount: b.discountAmount || 0 },
   ];
 }
 

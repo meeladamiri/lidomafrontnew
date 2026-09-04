@@ -452,6 +452,7 @@ function ReservationDetails() {
                     totalDiscountAmount={reserveTotalDiscountAmount}
                     hostShare={data?.params?.order_details?.host_share}
                     websiteShare={data?.params?.order_details?.website_share}
+                    guestCommission={data?.params?.order_details?.guest_commission}
                     // vatAmount={data?.params?.order_details?.vat_amount}
                   />
                 </div>
@@ -679,6 +680,7 @@ function ReservationDetails() {
                   totalDiscountAmount={reserveTotalDiscountAmount}
                   hostShare={data?.params?.order_details?.host_share}
                   websiteShare={data?.params?.order_details?.website_share}
+                  guestCommission={data?.params?.order_details?.guest_commission}
                   // vatAmount={data?.params?.order_details?.vat_amount}
                 />
               </div>

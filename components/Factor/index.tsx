@@ -320,6 +320,7 @@ function FactorIndex() {
               checkoutData: checkoutData,
               checkoutTotal: checkoutTotal,
               reserveTotalDiscountAmount: reserveTotalDiscountAmount,
+              guestCommission: reserveInfo?.guest_commission,
               remainingAmount: reserveInfo?.remaining_amount || 0,
               paidAmount: reserveInfo?.paid_amount || 0,
               hostName: reserveInfo?.host.name,

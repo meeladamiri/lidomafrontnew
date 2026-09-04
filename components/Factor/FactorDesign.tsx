@@ -31,6 +31,7 @@ interface IFactorData {
   checkoutData: (WithFullname | WithKeyValue)[];
   checkoutTotal: number;
   reserveTotalDiscountAmount: number;
+  guestCommission?: number;
   remainingAmount: number;
   paidAmount: number;
   hostName: string;
@@ -213,6 +214,22 @@ const FactorDesign = React.forwardRef<HTMLDivElement, { data: IFactorData }>((pr
                         {data.checkoutTotal?.toLocaleString("en-US")} تومان
                       </p>
                     </div>
+                    {!!data.guestCommission && (
+                      <div className="flex items-center justify-between mb-8">
+                        <p className="text-10 leading-18 font-r text-black">کارمزد رزرو :</p>
+                        <p className="text-12 leading-21 font-m text-black">
+                          {data.guestCommission.toLocaleString("en-US")} تومان
+                        </p>
+                      </div>
+                    )}
+                    {!!data.guestCommission && (
+                      <div className="flex items-center justify-between mb-8">
+                        <p className="text-10 leading-18 font-r text-black">مبلغ نهایی قابل پرداخت :</p>
+                        <p className="text-12 leading-21 font-m text-black">
+                          {(data.checkoutTotal + data.guestCommission).toLocaleString("en-US")} تومان
+                        </p>
+                      </div>
+                    )}
                     <div className="flex items-center justify-between mb-8">
                       <p className="text-10 leading-18 font-r text-black">جمع مبلغ پرداخت شده :</p>
                       <p className="text-12 leading-21 font-m text-black">

@@ -209,6 +209,9 @@ export interface IReserveDetails {
     paid_amount?: number;
     remaining_amount?: number;
     total_amount: number;
+    // The site's fee added on top for the guest, broken out so the checkout
+    // can show it as its own line instead of folding it into the nightly rows.
+    guest_commission?: number;
     alters?: IAlterResidences[];
     cancel_desc: // property will 'exist' only in failed reserves;
     | RejectReasons_enum // if Typical options in reject bottom sheet was selected

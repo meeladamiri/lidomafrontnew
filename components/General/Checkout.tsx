@@ -33,6 +33,7 @@ function Checkout({
   totalDiscountAmount,
   hostShare,
   websiteShare,
+  guestCommission,
   // vatAmount,
 }: {
   showTotal?: boolean;
@@ -52,6 +53,7 @@ function Checkout({
   totalDiscountAmount: number; // sum of any possible discounts
   hostShare?: number;
   websiteShare?: number;
+  guestCommission?: number; // fee added on top of `total`, not folded into it
   // vatAmount?: number;
 }) {
   const n_of_all_discounted_days =
@@ -127,6 +129,28 @@ function Checkout({
 
               <span className="text-13 leading-16 font-r text-black flex items-center gap-x-4">
                 <p className="text-16 leading-22 font-m text-black">{total.toLocaleString("en-US")}</p>
+                تومان
+              </span>
+            </div>
+          </div>
+        )}
+        {!!guestCommission && (
+          <div className="flex flex-col gap-y-8 mb-16">
+            <div className="flex justify-between items-center">
+              <span className="text-12 text-black leading-14 font-r">کارمزد رزرو</span>
+              <span className="text-11 leading-14 font-r text-black flex items-center gap-x-4">
+                <span className="13 leading-16 text-black font-r">
+                  {guestCommission.toLocaleString("en-US")}
+                </span>
+                تومان
+              </span>
+            </div>
+            <div className="flex justify-between items-center pt-12 border-t-1">
+              <p className="text-15 leading-20 text-black">مبلغ نهایی قابل پرداخت</p>
+              <span className="text-13 leading-16 font-r text-black flex items-center gap-x-4">
+                <p className="text-16 leading-22 font-m text-black">
+                  {(total + guestCommission).toLocaleString("en-US")}
+                </p>
                 تومان
               </span>
             </div>

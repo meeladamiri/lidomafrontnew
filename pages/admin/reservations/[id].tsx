@@ -893,40 +893,60 @@ function DecisionPanel({
     : null;
   const overdue = left != null && left <= 0;
 
+  /** The actual state-change call — shared by the normal path and by
+   * choosing «ادامه بدون نیاز به پرداخت مهمان» from the reminder below. */
+  async function submitStateChange() {
+    if (!decision) return;
+    await apiFetch(`/api/admin/reservations/${data.id}/state`, {
+      method: "POST",
+      body: JSON.stringify({ toState: decision.to, note: note.trim() }),
+    });
+    setConfirming(false);
+    setUnpaidRemaining(null);
+    setNote("");
+    onChanged();
+  }
+
   async function approve() {
     if (!decision) return;
-    const goingToDone = decision.to === "DONE";
     setBusy(true);
     setError(null);
     try {
-      await apiFetch(`/api/admin/reservations/${data.id}/state`, {
-        method: "POST",
-        body: JSON.stringify({ toState: decision.to, note: note.trim() }),
-      });
-      setConfirming(false);
-      setNote("");
-      onChanged();
-
       /**
        * «ثبت پرداخت مهمان» confirms the booking — it does not mean the guest
-       * has paid. The state change above no longer stamps `remainingAmount`
-       * as settled (see stateChange.service.ts), so what the ledger says right
-       * after landing on «قطعی» is whatever it actually said before: a real
-       * balance if one was there. The ledger endpoint, not `data.remainingAmount`
-       * from the page's own (not-yet-refetched) SWR cache, because this needs
-       * the number the transition just produced, not the one from before it.
+       * has paid, and confirming it is not something to undo. So the ledger
+       * is checked *before* the booking becomes «قطعی», not after: if a
+       * balance is still owed, this stops here and asks which of the two
+       * things the person actually meant, instead of finalising first and
+       * mentioning the debt on the way out. Only choosing «ادامه بدون نیاز
+       * به پرداخت مهمان» in that prompt calls submitStateChange — this
+       * function does not, once a balance is found.
        */
-      if (goingToDone) {
-        try {
-          const ledger = await apiFetch<{ summary: { remaining: number } }>(
-            `/api/admin/reservations/${data.id}/payments`
-          );
-          if (ledger.summary.remaining > 0) setUnpaidRemaining(ledger.summary.remaining);
-        } catch {
-          // The confirmation already succeeded; a failed follow-up check is
-          // not worth blocking on or surfacing as an error of its own.
+      if (decision.to === "DONE") {
+        const ledger = await apiFetch<{ summary: { remaining: number } }>(
+          `/api/admin/reservations/${data.id}/payments`
+        );
+        if (ledger.summary.remaining > 0) {
+          setConfirming(false);
+          setUnpaidRemaining(ledger.summary.remaining);
+          return;
         }
       }
+      await submitStateChange();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "ثبت نشد");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  /** «ادامه بدون نیاز به پرداخت مهمان» in the reminder — this is the one
+   * click in that dialog that actually finalises the booking. */
+  async function continueWithoutGuestPayment() {
+    setBusy(true);
+    setError(null);
+    try {
+      await submitStateChange();
     } catch (e) {
       setError(e instanceof Error ? e.message : "ثبت نشد");
     } finally {
@@ -969,16 +989,19 @@ function DecisionPanel({
       width="max-w-[460px]"
     >
       <p className="text-13 leading-22 text-gray-6C6A7D mb-4">
-        رزرو <b className="text-black">{data.reference}</b> قطعی شد، اما طبق دفتر پرداخت‌ها هنوز{" "}
+        طبق دفتر پرداخت‌ها، هنوز{" "}
         <b className="text-[#C62828]">{unpaidRemaining != null && faMoney(unpaidRemaining)}</b> از
-        مهمان دریافت نشده است.
+        مهمان دریافت نشده است. رزرو <b className="text-black">{data.reference}</b> هنوز «قطعی»
+        نشده — این تصمیم شماست.
       </p>
       <p className="text-12 leading-20 text-gray-9B9BAA mb-16">
-        می‌توانید همین حالا پرداخت را ثبت کنید، یا بدون آن ادامه دهید و بعداً از همین صفحه ثبتش کنید.
+        می‌توانید همین حالا بروید و پرداخت را ثبت کنید — رزرو تا آن زمان به همین حالت می‌ماند — یا
+        بدون دریافت این مبلغ رزرو را همین الان قطعی کنید.
       </p>
       <div className="flex flex-col gap-y-8">
         <Button
           className="w-full"
+          disabled={busy}
           onClick={() => {
             setUnpaidRemaining(null);
             document.getElementById("payments")?.scrollIntoView({
@@ -989,10 +1012,16 @@ function DecisionPanel({
         >
           ثبت پرداخت مهمان
         </Button>
-        <Button variant="ghost" className="w-full" onClick={() => setUnpaidRemaining(null)}>
-          ادامه بدون نیاز به پرداخت مهمان
+        <Button
+          variant="ghost"
+          className="w-full"
+          disabled={busy}
+          onClick={continueWithoutGuestPayment}
+        >
+          {busy ? "در حال ثبت..." : "ادامه و قطعی‌کردن رزرو بدون پرداخت مهمان"}
         </Button>
       </div>
+      {error && <p className="mt-10 text-13 text-[#C62828]">{error}</p>}
     </Modal>
   );
 

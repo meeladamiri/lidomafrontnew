@@ -792,12 +792,13 @@ function MyTripDetails() {
                 <div className="py-16">
                   <Checkout
                     data={checkoutData || []}
-                    total={reserveInfo?.total_amount || 0}
+                    total={checkoutTotal}
                     n_of_discounted_special_days={0}
                     n_of_discounted_peak_days={0}
                     n_of_discounted_weekends={0}
                     n_of_discounted_normaldays={0}
                     totalDiscountAmount={reserveTotalDiscountAmount}
+                    guestCommission={reserveInfo?.guest_commission}
                   />
                 </div>
               </div>
@@ -1122,12 +1123,13 @@ function MyTripDetails() {
               <div className="mb-24">
                 <Checkout
                   data={checkoutData || []}
-                  total={reserveInfo?.total_amount || 0}
+                  total={checkoutTotal}
                   n_of_discounted_special_days={0}
                   n_of_discounted_peak_days={0}
                   n_of_discounted_weekends={0}
                   n_of_discounted_normaldays={0}
                   totalDiscountAmount={reserveTotalDiscountAmount}
+                  guestCommission={reserveInfo?.guest_commission}
                 />
               </div>
 
