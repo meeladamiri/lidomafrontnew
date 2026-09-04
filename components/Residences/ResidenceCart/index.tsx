@@ -36,6 +36,14 @@ interface IResidenceCart {
   displayType: I_Residence_display_type;
   residenceType: ResidenceTypes_enum;
   imageUrl: string;
+  /**
+   * Overrides just the badge's text/color, for a status this card's base
+   * four-value `state` can't express (معلق، در انتظار بررسی، دارای نقص) —
+   * everything else (which action menu renders, the preview link) still
+   * follows `state` untouched, since those listings are still concretely
+   * either live or not underneath.
+   */
+  badgeOverride?: { text: string; bgColorClass: string };
 }
 
 export interface IDeleteResidenceBottomSheet {
@@ -82,6 +90,7 @@ function ResidenceCart({
   displayType,
   residenceType,
   imageUrl,
+  badgeOverride,
 }: IResidenceCart) {
   const router = useRouter();
 
@@ -274,11 +283,11 @@ function ResidenceCart({
                 <div
                   className={`
                     text-12 leading-21 text-white font-r px-10 py-2
-                    ${residenceStatesMap[state]?.bgColor}
+                    ${badgeOverride?.bgColorClass ?? residenceStatesMap[state]?.bgColor}
                     rounded-50
                   `}
                 >
-                  {residenceStatesMap[state]?.text}
+                  {badgeOverride?.text ?? residenceStatesMap[state]?.text}
                 </div>
               </div>
 

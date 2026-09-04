@@ -44,7 +44,17 @@ export interface IServerResidence {
   public_id: number;
   res_type: I_Residence_display_type;
   sales_count: number;
+  /** Coarse four-value state, kept for ResidenceCart's existing action-menu logic. */
   state: ResidenceStates_enum;
+  /** The backend's actual state — what the six host-panel tabs filter by. */
+  raw_state: "DRAFT" | "PENDING" | "PUBLISHED" | "REJECTED" | "DEACTIVATED" | "DELETED";
+  suspended: boolean;
+  suspension_reason: string | null;
+  has_pending_changes: boolean;
+  /** An open defect the host has not yet asked to be re-checked. */
+  has_open_defect: boolean;
+  /** An open defect the host has already asked to be re-checked. */
+  defect_review_requested: boolean;
   completion_percent?: number;
   step?: number;
 }
@@ -70,6 +80,11 @@ function mapState(state: string): ResidenceStates_enum {
 }
 
 function mapResidence(r: any): IServerResidence {
+  const openDefects: { severity: "MANDATORY" | "SUGGESTED"; reviewRequestedAt: string | null }[] =
+    r.defects || [];
+  const defectReviewRequested = openDefects.some((d) => !!d.reviewRequestedAt);
+  const hasOpenDefect = openDefects.length > 0 && !defectReviewRequested;
+
   return {
     id: r.id,
     image_url: r.images?.[0]?.url || "",
@@ -87,6 +102,12 @@ function mapResidence(r: any): IServerResidence {
     res_type: mapDisplayType(r.type),
     sales_count: r.salesCount ?? 0,
     state: mapState(r.state),
+    raw_state: r.state,
+    suspended: !!r.suspendedAt,
+    suspension_reason: r.suspensionReason ?? null,
+    has_pending_changes: !!r.pendingChangesSubmittedAt,
+    has_open_defect: hasOpenDefect,
+    defect_review_requested: defectReviewRequested,
     completion_percent:
       r.state === "DRAFT" ? Math.round(((r.step || 0) / WIZARD_STEP_COUNT) * 100) : 100,
     step: r.step || 0,

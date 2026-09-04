@@ -4,6 +4,34 @@ import { useRouter } from "next/router";
 import { STEPS, TOTAL_STEPS } from "./steps";
 import { useWizard } from "./useWizard";
 import { Blockers, Callout, ConfirmDialog, faDigits, SaveStatus, Spinner } from "./ui";
+import { requestDefectReview, type DefectSection, type Draft } from "@/api/Residences/hostWizard";
+
+const SECTION_LABEL: Record<DefectSection, string> = {
+  DETAILS: "نوع و منطقه اقامتگاه",
+  SPECS: "نام و توضیحات",
+  LOCATION: "آدرس و محل دقیق",
+  CAPACITY: "ظرفیت و اتاق‌ها",
+  AMENITIES: "امکانات",
+  PRICING: "نرخ‌گذاری",
+  GALLERY: "گالری تصاویر",
+  DOCUMENTS: "مدارک",
+  RULES: "قوانین و شرایط",
+  OTHER: "سایر",
+};
+
+/** A defect's section, as the step index it maps to in `STEPS` — one-to-one
+ * except OTHER, which names nothing specific to jump to. */
+const SECTION_STEP_INDEX: Partial<Record<DefectSection, number>> = {
+  DETAILS: 0,
+  SPECS: 1,
+  LOCATION: 2,
+  CAPACITY: 3,
+  AMENITIES: 4,
+  PRICING: 5,
+  GALLERY: 6,
+  DOCUMENTS: 7,
+  RULES: 8,
+};
 
 /**
  * The frame every step sits in.
@@ -350,8 +378,112 @@ function MobileProgress() {
 
 // ----------------------------------------------------------------- shell ---
 
+/**
+ * Suspension, an edit in review, and open defects — three independent
+ * things about a *published* listing that a host needs to see the moment
+ * they open its wizard to edit it, none of which block editing itself.
+ */
+function ResidenceStatusBanner({ draft, onReloaded }: { draft: Draft; onReloaded: () => void }) {
+  const { goTo } = useWizard();
+  const [requesting, setRequesting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const openDefects = draft.defects.filter((d) => !d.resolvedAt);
+  const awaitingReReview = openDefects.filter((d) => !!d.reviewRequestedAt);
+  const unresolvedDefects = openDefects.filter((d) => !d.reviewRequestedAt);
+
+  async function askForReReview() {
+    setRequesting(true);
+    setError(null);
+    try {
+      const res = await requestDefectReview(draft.id);
+      if (!res.ok) throw new Error(res.message);
+      onReloaded();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "ثبت نشد");
+    } finally {
+      setRequesting(false);
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-y-10 mb-16">
+      {!!draft.suspendedAt && (
+        <Callout tone="error">
+          این اقامتگاه توسط ادمین معلق شده و در سایت نمایش داده نمی‌شود.
+          {draft.suspensionReason ? ` دلیل: ${draft.suspensionReason}` : ""}
+        </Callout>
+      )}
+
+      {!!draft.pendingChangesSubmittedAt && (
+        <Callout tone="info">
+          تغییراتی که ثبت کرده‌اید در انتظار بررسی کارشناس است. تا تأیید، نسخه‌ی قبلی همچنان روی
+          سایت نمایش داده می‌شود.
+        </Callout>
+      )}
+
+      {unresolvedDefects.length > 0 && (
+        <Callout
+          tone="warning"
+          action={
+            <button
+              type="button"
+              onClick={() => void askForReReview()}
+              disabled={requesting}
+              className="text-13 font-m text-primary-dark disabled:opacity-50"
+            >
+              {requesting ? "در حال ارسال…" : "درخواست بررسی مجدد"}
+            </button>
+          }
+        >
+          <div className="flex flex-col gap-y-6">
+            <span>
+              کارشناس {unresolvedDefects.length} نقص روی این اقامتگاه ثبت کرده — پس از رفع، دکمه‌ی
+              «درخواست بررسی مجدد» را بزنید.
+            </span>
+            <ul className="flex flex-col gap-y-6">
+              {unresolvedDefects.map((d) => {
+                const stepIndex = SECTION_STEP_INDEX[d.section];
+                return (
+                  <li key={d.id} className="flex items-start justify-between gap-x-10 text-12 leading-20">
+                    <span>
+                      <b className="font-m">{SECTION_LABEL[d.section]}</b>
+                      {d.severity === "MANDATORY" && (
+                        <span className="text-error-light"> (اجباری) </span>
+                      )}
+                      {" — "}
+                      {d.description}
+                    </span>
+                    {stepIndex !== undefined && (
+                      <button
+                        type="button"
+                        onClick={() => goTo(stepIndex)}
+                        className="shrink-0 font-m text-primary-dark underline"
+                      >
+                        رفع نقص
+                      </button>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        </Callout>
+      )}
+
+      {awaitingReReview.length > 0 && (
+        <Callout tone="info">
+          {awaitingReReview.length} نقص اصلاح‌شده در انتظار تأیید کارشناس است.
+        </Callout>
+      )}
+
+      {!!error && <Callout tone="error">{error}</Callout>}
+    </div>
+  );
+}
+
 export function WizardShell({ children }: { children: React.ReactNode }) {
-  const { index, draft, residenceId, hasFailedSave, retryFailed, saveState } = useWizard();
+  const { index, draft, residenceId, hasFailedSave, retryFailed, saveState, reload } = useWizard();
 
   return (
     <div className="md:pb-40">
@@ -390,6 +522,15 @@ export function WizardShell({ children }: { children: React.ReactNode }) {
           </Callout>
         </div>
       )}
+
+      {!!draft &&
+        (draft.suspendedAt ||
+          draft.pendingChangesSubmittedAt ||
+          draft.defects.some((d) => !d.resolvedAt)) && (
+          <div className="px-16 md:px-0">
+            <ResidenceStatusBanner draft={draft} onReloaded={() => void reload()} />
+          </div>
+        )}
 
       <div className="flex items-start md:gap-x-32">
         <div className="hidden md:block sticky top-24">

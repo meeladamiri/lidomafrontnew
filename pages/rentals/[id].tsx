@@ -178,6 +178,30 @@ export const getServerSideProps: GetServerSideProps = async ({ query, res }) => 
   // for requests the browser makes), so this hits the backend by its real URL.
   const backendUrl = process.env.BACKEND_API_URL || "http://localhost:4000";
 
+  // Deleted or host-deactivated listings never render this page — a redirect
+  // to their city instead. Checked before the (heavier) detail fetch below,
+  // so a listing in either state never pays for that query only to throw the
+  // result away. A residence merely unpublished for an administrative reason
+  // (suspended, an open MANDATORY defect) is NOT one of these — that one
+  // still renders normally, just with the booking box replaced; see the
+  // backend's residences.service.ts:getResidenceDetail for why.
+  const redirectResp = await fetch(`${backendUrl}/api/residences/${resId}/redirect`).then(
+    (r) => r.json(),
+    () => null
+  );
+  const redirect = redirectResp?.data?.redirect as
+    | { code: 301 | 302; citySlug: string }
+    | null
+    | undefined;
+  if (redirect) {
+    return {
+      redirect: {
+        destination: `/search/${redirect.citySlug}`,
+        permanent: redirect.code === 301,
+      },
+    };
+  }
+
   let observeData: ReturnType<typeof mapObserveResidenceData> | undefined;
 
   await queryClient.prefetchQuery(["getObserveResidence", resId], async () => {

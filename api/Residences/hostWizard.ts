@@ -154,6 +154,34 @@ export interface Draft {
   hostShareTotalAmount: number | null;
   hostSharePastNights: number | null;
   hostShareFutureNights: number | null;
+
+  published: boolean;
+  suspendedAt: string | null;
+  suspensionReason: string | null;
+  pendingChangesSubmittedAt: string | null;
+  defects: DraftDefect[];
+}
+
+export type DefectSection =
+  | "DETAILS"
+  | "SPECS"
+  | "LOCATION"
+  | "CAPACITY"
+  | "AMENITIES"
+  | "PRICING"
+  | "GALLERY"
+  | "DOCUMENTS"
+  | "RULES"
+  | "OTHER";
+
+export interface DraftDefect {
+  id: number;
+  section: DefectSection;
+  severity: "MANDATORY" | "SUGGESTED";
+  description: string;
+  createdAt: string;
+  reviewRequestedAt: string | null;
+  resolvedAt: string | null;
 }
 
 const base = "/api/host/residences";
@@ -163,6 +191,10 @@ const base = "/api/host/residences";
 export const listDrafts = () => request<Draft[]>(() => client.get(base));
 
 export const getDraft = (id: number) => request<Draft>(() => client.get(`${base}/${id}`));
+
+/** «درخواست بررسی مجدد» — bulk-marks every open defect ready for another look. */
+export const requestDefectReview = (id: number) =>
+  request<{ requested: number }>(() => client.post(`${base}/${id}/defects/request-review`));
 
 export const createDraft = (body: { type: ResidenceTypeCode; cityName?: string }) =>
   request<Draft>(() => client.post(base, body));

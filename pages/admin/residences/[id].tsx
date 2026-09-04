@@ -37,6 +37,9 @@ import RulesTab from "@/components/Admin/Residence/RulesTab";
 import ReservationsTab from "@/components/Admin/Residence/ReservationsTab";
 import RankCard from "@/components/Admin/Residence/RankCard";
 import ClassificationCard from "@/components/Admin/Residence/ClassificationCard";
+import SuspensionCard from "@/components/Admin/Residence/SuspensionCard";
+import DefectsCard from "@/components/Admin/Residence/DefectsCard";
+import PendingChangesCard from "@/components/Admin/Residence/PendingChangesCard";
 import ChangeHostModal from "@/components/Admin/Residence/ChangeHostModal";
 
 // leaflet touches window on import
@@ -55,6 +58,30 @@ interface ResidenceDetail {
   published: boolean;
   deactivatedAt: string | null;
   deactivationNote: string | null;
+  suspendedAt: string | null;
+  suspensionInternalNote: string | null;
+  suspensionReason: string | null;
+  pendingChanges: Record<string, any> | null;
+  pendingChangesSubmittedAt: string | null;
+  defects: {
+    id: number;
+    section:
+      | "DETAILS"
+      | "SPECS"
+      | "LOCATION"
+      | "CAPACITY"
+      | "AMENITIES"
+      | "PRICING"
+      | "GALLERY"
+      | "DOCUMENTS"
+      | "RULES"
+      | "OTHER";
+    severity: "MANDATORY" | "SUGGESTED";
+    description: string;
+    createdAt: string;
+    reviewRequestedAt: string | null;
+    resolvedAt: string | null;
+  }[];
   importance: number;
   averageRating: number;
   reviewsCount: number;
@@ -461,6 +488,25 @@ export default function AdminResidenceDetailPage() {
                 </Button>
               </Card>
             )}
+
+            {!!data.pendingChanges && Object.keys(data.pendingChanges).length > 0 && (
+              <PendingChangesCard
+                residenceId={data.id}
+                residence={data}
+                pendingChanges={data.pendingChanges}
+                submittedAt={data.pendingChangesSubmittedAt}
+                onSaved={() => mutate()}
+              />
+            )}
+
+            <SuspensionCard
+              residenceId={data.id}
+              suspendedAt={data.suspendedAt}
+              suspensionReason={data.suspensionReason}
+              onSaved={() => mutate()}
+            />
+
+            <DefectsCard residenceId={data.id} defects={data.defects} onSaved={() => mutate()} />
 
             <ClassificationCard residenceId={data.id} onSaved={mutate} />
 
