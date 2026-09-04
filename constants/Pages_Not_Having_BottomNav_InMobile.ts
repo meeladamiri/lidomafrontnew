@@ -20,7 +20,10 @@ export const Pages_Not_Having_BottomNav_InMobile = [
   "/general-pricing",
   "/residences/[id]/edit",
   "/profile",
-  "/support",
+  // "/support" used to be here from the old single-purpose chat-only page.
+  // The redesigned page (سوالات متداول / تماس با ما / چت با پشتیبانی tabs)
+  // is a real destination people navigate away from mid-task, same as
+  // /chats — which already shows the nav — so it stays visible here too.
   // Start of Second pages routes
   "/public-faqs",
   "/complaint",

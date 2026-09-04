@@ -38,6 +38,28 @@ const SCOPE_LABEL: Record<string, string> = Object.fromEntries(
   SCOPES.map((s) => [s.value, s.label])
 );
 
+// A PAGE-scope FAQ can point at any path, but these nine are the ones the
+// product actually reads today — the /support tabs (split by role) and the
+// reservation-detail page's own FAQ block, split by state and role except
+// payment, which both sides read the same block for. Named here so an admin
+// picks one from a list instead of having to know/retype the exact string
+// reservations.service.ts:reservationFaqPath and Support/index.tsx compute.
+const RESERVATION_FAQ_PATHS = [
+  { value: "/support/guest", label: "پشتیبانی — مهمان" },
+  { value: "/support/host", label: "پشتیبانی — میزبان" },
+  { value: "/reservations/host-approval/host", label: "تایید رزرو — صفحه میزبان" },
+  { value: "/reservations/host-approval/guest", label: "تایید رزرو — صفحه مهمان" },
+  { value: "/reservations/payment", label: "پرداخت رزرو — مهمان و میزبان" },
+  { value: "/reservations/expired/guest", label: "منقضی‌شده — مهمان" },
+  { value: "/reservations/expired/host", label: "منقضی‌شده — میزبان" },
+  { value: "/reservations/done/guest", label: "قطعی‌شده — مهمان" },
+  { value: "/reservations/done/host", label: "قطعی‌شده — میزبان" },
+] as const;
+
+const RESERVATION_FAQ_PATH_LABEL: Record<string, string> = Object.fromEntries(
+  RESERVATION_FAQ_PATHS.map((p) => [p.value, p.label])
+);
+
 const SCOPE_TONE: Record<string, "green" | "blue" | "purple" | "yellow" | "gray"> = {
   GLOBAL: "purple",
   SEARCH: "blue",
@@ -206,8 +228,12 @@ export default function AdminFaqsPage() {
                     )}
                     {f.tag && <span className="text-11 text-gray-6C6A7D">{f.tag.name}</span>}
                     {f.path && (
-                      <span dir="ltr" className="text-11 text-gray-6C6A7D font-mono">
-                        {f.path}
+                      <span className="text-11 text-gray-6C6A7D">
+                        {RESERVATION_FAQ_PATH_LABEL[f.path] ?? (
+                          <span dir="ltr" className="font-mono">
+                            {f.path}
+                          </span>
+                        )}
                       </span>
                     )}
                     {!f.isActive && <Badge tone="red">غیرفعال</Badge>}
@@ -360,6 +386,12 @@ function FaqModal({
     isActive: faq?.isActive ?? true,
     sortOrder: faq?.sortOrder ?? 0,
   });
+  // An existing FAQ already on one of the nine named paths opens straight
+  // into "preset" mode showing it selected; anything else — a fresh FAQ, or
+  // an existing one on some other PAGE path like /rules — opens in "custom"
+  // so a real path already typed there is never silently discarded.
+  const isPreset = !!faq?.path && faq.path in RESERVATION_FAQ_PATH_LABEL;
+  const [pathMode, setPathMode] = useState<"preset" | "custom">(isPreset ? "preset" : "custom");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -443,13 +475,38 @@ function FaqModal({
         )}
 
         {needsPath && (
-          <Field label="مسیر صفحه" hint="با اسلش شروع بشه، مثل /rules">
-            <Input
-              dir="ltr"
-              value={form.path}
-              onChange={(e) => setForm({ ...form, path: e.target.value })}
-              placeholder="/rules"
-            />
+          <Field label="مسیر صفحه">
+            <Select
+              value={pathMode === "preset" ? form.path : "__custom__"}
+              onChange={(e) => {
+                if (e.target.value === "__custom__") {
+                  setPathMode("custom");
+                  return;
+                }
+                setPathMode("preset");
+                setForm({ ...form, path: e.target.value });
+              }}
+              className="mb-10"
+            >
+              <option value="" disabled>
+                — یک صفحه انتخاب کن —
+              </option>
+              {RESERVATION_FAQ_PATHS.map((p) => (
+                <option key={p.value} value={p.value}>
+                  {p.label}
+                </option>
+              ))}
+              <option value="__custom__">مسیر دیگر (دستی)…</option>
+            </Select>
+
+            {pathMode === "custom" && (
+              <Input
+                dir="ltr"
+                value={form.path}
+                onChange={(e) => setForm({ ...form, path: e.target.value })}
+                placeholder="/rules"
+              />
+            )}
           </Field>
         )}
 

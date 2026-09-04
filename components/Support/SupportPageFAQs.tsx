@@ -8,13 +8,14 @@ import { TinyLoader } from "../General/Loader/TinyLoader";
  * «سوالات متداول» tab.
  *
  * Reads the same Faq model the homepage's FAQ block reads (GLOBAL scope,
- * plus anything scoped to /support specifically) — see the backend's
- * seo/faqPublic.routes.ts. There is no separate "support FAQ" content type;
- * a question written once can appear both on the homepage and here.
+ * plus anything scoped to this viewer's own /support/<role> path) — see the
+ * backend's seo/faqPublic.routes.ts. There is no separate "support FAQ"
+ * content type; a GLOBAL question written once can appear both on the
+ * homepage and here.
  */
-export function SupportPageFAQs() {
+export function SupportPageFAQs({ role }: { role: "guest" | "host" }) {
   const [openId, setOpenId] = useState<number | null>(null);
-  const { data, isLoading } = useQuery(["getSupportFAQs"], () => getSupportFAQs());
+  const { data, isLoading } = useQuery(["getSupportFAQs", role], () => getSupportFAQs(role));
   const faqs = data?.faqs ?? [];
 
   if (isLoading) {

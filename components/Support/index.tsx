@@ -158,7 +158,7 @@ function Support() {
 
       {tab === "faq" && (
         <div className="rounded-24 bg-white px-16 py-20 md:border-1 md:border-solid md:border-gray-F0F0F0 md:p-24 md:shadow-[0_1px_3px_rgba(24,39,58,0.05)]">
-          <SupportPageFAQs />
+          <SupportPageFAQs role={profile?.is_host ? "host" : "guest"} />
         </div>
       )}
 
