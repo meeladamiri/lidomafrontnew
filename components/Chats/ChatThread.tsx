@@ -189,7 +189,7 @@ function ChatThread({ conversationId, meId, isDesktop, typingFrom, onBack }: Pro
           ) : (
             <i
               aria-hidden="true"
-              className={`${isSupport ? "icon-Information" : "icon-Profile"} text-20 text-gray-A9B1BC`}
+              className={`${isSupport ? "icon-OnlineContact" : "icon-Profile"} text-20 text-gray-A9B1BC`}
             />
           )}
         </div>

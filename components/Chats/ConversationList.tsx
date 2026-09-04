@@ -55,7 +55,7 @@ function ConversationList({ items, selectedId, onSelect }: Props) {
               <span className="relative shrink-0">
                 <span className="flex h-46 w-46 items-center justify-center overflow-hidden rounded-full bg-gray-F8F8F8 ring-1 ring-white">
                   {isSupport ? (
-                    <i aria-hidden="true" className="icon-Information text-20 text-primary-dark" />
+                    <i aria-hidden="true" className="icon-OnlineContact text-20 text-primary-dark" />
                   ) : row.residence?.image ? (
                     <img src={row.residence.image} alt="" className="h-full w-full object-cover" />
                   ) : (

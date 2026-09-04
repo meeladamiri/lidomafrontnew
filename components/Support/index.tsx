@@ -39,9 +39,9 @@ const SUBJECTS = [
 
 type Tab = "faq" | "call" | "chat";
 const TABS: { key: Tab; label: string }[] = [
+  { key: "chat", label: "چت با پشتیبانی" },
   { key: "faq", label: "سوالات متداول" },
   { key: "call", label: "تماس با ما" },
-  { key: "chat", label: "چت با پشتیبانی" },
 ];
 
 function Support() {
@@ -143,7 +143,7 @@ function Support() {
       <div className="px-16 md:px-0">
         <PageTitle
           title="پشتیبانی"
-          icon={<i aria-hidden="true" className="icon-Information text-24" />}
+          icon={<i aria-hidden="true" className="icon-OnlineContact text-24" />}
           containerClassname="mb-16"
         />
       </div>
