@@ -22,12 +22,17 @@ export const NavItems_ForHost: INavItem[] = [
     },
     href: "/dashboard",
   },
+  /**
+   * چت جای «اقامتگاه‌ها» را در نوار پایین گرفت — لیست اقامتگاه‌ها همچنان از
+   * «پیشخوان» و منوی کناری در دسترس است، ولی روی موبایل هیچ راهی برای چت
+   * وجود نداشت (آیکون هدر فقط در دسکتاپ نمایش داده می‌شود).
+   */
   {
-    name: "اقامتگاه ها",
+    name: "چت",
     icon: {
-      src: <i className="icon-Homes text-24" />,
+      src: <i className="icon-message text-24" />,
     },
-    href: "/residences/list",
+    href: "/chats",
   },
   /**
    * The calendar takes the profile's place.

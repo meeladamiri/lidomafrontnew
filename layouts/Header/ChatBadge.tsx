@@ -47,7 +47,7 @@ function ChatBadge({ isLight }: { isLight?: boolean }) {
     <Link
       prefetch={false}
       href="/chats"
-      aria-label={count > 0 ? `گفتگوها، ${count} پیام خوانده‌نشده` : "گفتگوها"}
+      aria-label={count > 0 ? `چت، ${count} پیام خوانده‌نشده` : "چت"}
       className="relative hidden items-center md:flex"
     >
       <i

@@ -6,7 +6,7 @@ export const getBadge = (
 ): number => {
   if (name === "نظرات") {
     return pending_reviews;
-  } else if (name === "گفتگوها") {
+  } else if (name === "چت") {
     return pending_messages;
   } else if (name === "اعلانات") {
     return pending_notifs;

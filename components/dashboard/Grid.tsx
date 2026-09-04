@@ -51,7 +51,7 @@ function Grid({ isHost = true, badges }: { isHost?: boolean; badges?: Badges }) 
       linkTo: "/favourites",
     },
     {
-      name: "گفتگوها",
+      name: "چت",
       icon: <i className="icon-message text-24" />,
       linkTo: "/chats",
       badgeKey: "chats",

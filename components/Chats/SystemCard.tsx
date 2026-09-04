@@ -28,10 +28,10 @@ interface Tone {
 
 const TONES: Record<string, Tone> = {
   BOOKING_CREATED: {
-    ring: "border-gray-EFEFEF",
+    ring: "border-gray-F0F0F0",
     bg: "bg-white",
     icon: "icon-Calendar",
-    iconColor: "text-primary-main",
+    iconColor: "text-primary-dark",
     title: "درخواست رزرو ثبت شد",
   },
   BOOKING_APPROVED: {
@@ -63,11 +63,11 @@ const TONES: Record<string, Tone> = {
     title: "مهلت رزرو تمام شد",
   },
   ADMIN_JOINED: {
-    ring: "border-gray-EFEFEF",
-    bg: "bg-gray-F5F5F7",
+    ring: "border-gray-F0F0F0",
+    bg: "bg-gray-F8F8F8",
     icon: "icon-Information",
     iconColor: "text-gray-6C6A7D",
-    title: "پشتیبانی وارد گفتگو شد",
+    title: "پشتیبانی وارد چت شد",
   },
 };
 
@@ -84,7 +84,7 @@ function SystemCard({ message }: { message: IChatMessage }) {
   // An unknown kind still says something true, in the shape of a quiet note.
   if (!tone) {
     return (
-      <div className="mx-auto my-12 max-w-[420px] rounded-12 bg-gray-F5F5F7 px-16 py-10 text-center text-12 leading-20 font-r text-gray-6C6A7D">
+      <div className="mx-auto my-14 max-w-[420px] rounded-14 bg-gray-F8F8F8 px-16 py-10 text-center text-12 leading-20 font-r text-gray-6C6A7D">
         {message.body}
       </div>
     );
@@ -95,12 +95,14 @@ function SystemCard({ message }: { message: IChatMessage }) {
   const residenceId = typeof meta.residenceId === "number" ? meta.residenceId : null;
 
   return (
-    <div className="my-12 flex justify-center">
+    <div className="my-14 flex justify-center">
       <div
-        className={`w-full max-w-[440px] rounded-16 border-1 border-solid px-16 py-12 ${tone.ring} ${tone.bg}`}
+        className={`w-full max-w-[440px] rounded-20 border-1 border-solid px-16 py-14 shadow-[0_1px_3px_rgba(24,39,58,0.05)] ${tone.ring} ${tone.bg}`}
       >
         <div className="flex items-center gap-x-8">
-          <i aria-hidden="true" className={`${tone.icon} text-20 ${tone.iconColor}`} />
+          <span className={`flex h-28 w-28 shrink-0 items-center justify-center rounded-full bg-white ${tone.iconColor}`}>
+            <i aria-hidden="true" className={`${tone.icon} text-16`} />
+          </span>
           <p className="text-14 leading-22 font-m text-black">{tone.title}</p>
         </div>
 

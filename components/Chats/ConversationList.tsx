@@ -19,17 +19,19 @@ function ConversationList({ items, selectedId, onSelect }: Props) {
   if (items.length === 0) {
     return (
       <div className="flex h-full flex-col items-center justify-center px-24 py-40 text-center">
-        <i aria-hidden="true" className="icon-message text-40 text-gray-CACFD3" />
-        <p className="mt-12 text-14 leading-24 font-m text-black">هنوز گفتگویی ندارید</p>
-        <p className="mt-4 text-12 leading-20 font-r text-gray-6C6A7D">
-          با ثبت اولین رزرو، گفتگو با میزبان همین‌جا باز می‌شود.
+        <span className="flex h-64 w-64 items-center justify-center rounded-full bg-gray-F8F8F8">
+          <i aria-hidden="true" className="icon-message text-28 text-gray-CACFD3" />
+        </span>
+        <p className="mt-16 text-14 leading-24 font-m text-black">هنوز چتی ندارید</p>
+        <p className="mt-4 text-12 leading-20 font-r text-gray-77828F">
+          با ثبت اولین رزرو، چت با میزبان همین‌جا باز می‌شود.
         </p>
       </div>
     );
   }
 
   return (
-    <ul className="divide-y-1 divide-solid divide-gray-EFEFEF">
+    <ul className="flex flex-col gap-y-2 p-8">
       {items.map((row) => {
         const isActive = row.id === selectedId;
         const isSupport = row.type === "SUPPORT";
@@ -43,30 +45,44 @@ function ConversationList({ items, selectedId, onSelect }: Props) {
               type="button"
               onClick={() => onSelect(row.id)}
               aria-current={isActive ? "true" : undefined}
-              className={`flex w-full items-start gap-x-12 px-16 py-12 text-right transition-colors ${
-                isActive ? "bg-primary-main bg-opacity-[6%]" : "bg-white hover:bg-gray-F5F5F7"
+              className={`flex w-full items-start gap-x-12 rounded-16 px-10 py-11 text-right transition-colors ${
+                isActive ? "bg-primary-light bg-opacity-50" : "bg-transparent hover:bg-gray-F8F8F8"
               }`}
             >
-              <span className="relative flex h-44 w-44 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gray-F5F5F7">
-                {isSupport ? (
-                  <i aria-hidden="true" className="icon-Information text-20 text-primary-main" />
-                ) : row.residence?.image ? (
-                  <img src={row.residence.image} alt="" className="h-full w-full object-cover" />
-                ) : (
-                  <i aria-hidden="true" className="icon-Profile text-20 text-gray-B0AFBC" />
+              <span className="relative shrink-0">
+                <span className="flex h-46 w-46 items-center justify-center overflow-hidden rounded-full bg-gray-F8F8F8 ring-1 ring-white">
+                  {isSupport ? (
+                    <i aria-hidden="true" className="icon-Information text-20 text-primary-dark" />
+                  ) : row.residence?.image ? (
+                    <img src={row.residence.image} alt="" className="h-full w-full object-cover" />
+                  ) : (
+                    <i aria-hidden="true" className="icon-Profile text-20 text-gray-A9B1BC" />
+                  )}
+                </span>
+                {isActive && (
+                  <span
+                    aria-hidden="true"
+                    className="absolute -right-2 top-1/2 h-20 w-3 -translate-y-1/2 rounded-full bg-primary-main"
+                  />
                 )}
               </span>
 
               <span className="min-w-0 flex-1">
                 <span className="flex items-center justify-between gap-x-8">
-                  <span className="truncate text-14 leading-22 font-m text-black">{title}</span>
-                  <span className="shrink-0 text-11 leading-16 font-r text-gray-B0AFBC">
+                  <span
+                    className={`truncate text-14 leading-22 ${
+                      row.unread_count > 0 ? "font-b text-black" : "font-m text-black"
+                    }`}
+                  >
+                    {title}
+                  </span>
+                  <span className="shrink-0 text-11 leading-16 font-r text-gray-A9B1BC">
                     {listStampOf(row.last_message_at)}
                   </span>
                 </span>
 
                 {row.residence && !isSupport && (
-                  <span className="mt-2 block truncate text-11 leading-18 font-r text-gray-B0AFBC">
+                  <span className="mt-2 block truncate text-11 leading-18 font-r text-gray-A9B1BC">
                     {row.residence.name}
                   </span>
                 )}
@@ -74,26 +90,27 @@ function ConversationList({ items, selectedId, onSelect }: Props) {
                 <span className="mt-4 flex items-center justify-between gap-x-8">
                   <span
                     className={`truncate text-12 leading-20 ${
-                      row.unread_count > 0 ? "font-m text-black" : "font-r text-gray-6C6A7D"
+                      row.unread_count > 0 ? "font-m text-black" : "font-r text-gray-77828F"
                     }`}
                   >
                     {row.last_message || "…"}
                   </span>
 
-                  {row.unread_count > 0 && (
-                    <span className="flex h-20 min-w-[20px] shrink-0 items-center justify-center rounded-full bg-primary-main px-6 text-11 leading-16 font-m text-white">
-                      {row.unread_count.toLocaleString("fa-IR")}
-                      <span className="sr-only"> پیام خوانده‌نشده</span>
-                    </span>
-                  )}
-
-                  {row.is_muted && (
-                    <i
-                      aria-hidden="true"
-                      title="بی‌صدا"
-                      className="icon-BellFill shrink-0 text-14 text-gray-CACFD3"
-                    />
-                  )}
+                  <span className="flex shrink-0 items-center gap-x-6">
+                    {row.is_muted && (
+                      <i
+                        aria-hidden="true"
+                        title="بی‌صدا"
+                        className="icon-BellFill text-14 text-gray-CACFD3"
+                      />
+                    )}
+                    {row.unread_count > 0 && (
+                      <span className="flex h-20 min-w-[20px] items-center justify-center rounded-full bg-primary-main px-6 text-11 leading-16 font-b text-black">
+                        {row.unread_count.toLocaleString("fa-IR")}
+                        <span className="sr-only"> پیام خوانده‌نشده</span>
+                      </span>
+                    )}
+                  </span>
                 </span>
               </span>
             </button>

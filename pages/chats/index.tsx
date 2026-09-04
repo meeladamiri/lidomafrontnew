@@ -2,7 +2,7 @@ import Chats from "@/components/Chats";
 import { PROJECTNAMEFA } from "configs/info";
 import type { GetServerSideProps, NextPage } from "next";
 
-const page = "گفتگو ها";
+const page = "چت";
 
 const ChatsPage: NextPage = () => {
   return (

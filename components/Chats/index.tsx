@@ -148,14 +148,16 @@ function Chats() {
 
   return (
     <div className="pb-40 md:pb-0">
-      <PageTitle
-        title="گفتگو ها"
-        icon={<i aria-hidden="true" className="icon-message text-24" />}
-        containerClassname="mb-16"
-      />
+      <div className="px-16 md:px-0">
+        <PageTitle
+          title="چت"
+          icon={<i aria-hidden="true" className="icon-message text-24" />}
+          containerClassname="mb-16"
+        />
+      </div>
 
       {showList && (
-        <div className="mb-16 w-full md:w-[360px]">
+        <div className="mb-4 px-16 md:mb-16 md:w-[360px] md:px-0">
           <Tabs
             activeIndex={tab === "all" ? 0 : 1}
             onChange={(index: number) => setTab(index === 0 ? "all" : "archived")}
@@ -167,9 +169,9 @@ function Chats() {
         </div>
       )}
 
-      <div className="grid h-[calc(100vh-260px)] min-h-[460px] grid-cols-1 overflow-hidden rounded-16 border-1 border-solid border-gray-EFEFEF bg-white md:h-[calc(100vh-280px)] md:grid-cols-[360px_1fr]">
+      <div className="grid h-[calc(100dvh-200px)] min-h-[420px] grid-cols-1 overflow-hidden bg-white md:h-[calc(100vh-280px)] md:rounded-24 md:border-1 md:border-solid md:border-gray-F0F0F0 md:shadow-[0_1px_3px_rgba(24,39,58,0.05)] md:grid-cols-[360px_1fr]">
         {showList && (
-          <div className="min-h-0 overflow-y-auto border-l-0 border-solid border-gray-EFEFEF md:border-l-1">
+          <div className="min-h-0 overflow-y-auto border-t-1 border-solid border-gray-F0F0F0 md:border-t-0 md:border-l-1">
             {isLoading ? (
               <div className="flex h-full items-center justify-center">
                 <TinyLoader />
@@ -191,12 +193,14 @@ function Chats() {
           />
         ) : (
           isDesktop && (
-            <div className="flex flex-col items-center justify-center bg-gray-F5F5F7 px-24 text-center">
-              <i aria-hidden="true" className="icon-message text-40 text-gray-CACFD3" />
-              <p className="mt-12 text-14 leading-24 font-m text-black">
-                یک گفتگو را از فهرست انتخاب کنید
+            <div className="flex flex-col items-center justify-center bg-gray-F8F8F8 px-24 text-center">
+              <span className="flex h-72 w-72 items-center justify-center rounded-full bg-white shadow-[0_1px_3px_rgba(24,39,58,0.06)]">
+                <i aria-hidden="true" className="icon-message text-32 text-primary-main" />
+              </span>
+              <p className="mt-16 text-15 leading-24 font-b text-black">
+                یک چت را از فهرست انتخاب کنید
               </p>
-              <p className="mt-4 text-12 leading-20 font-r text-gray-6C6A7D">
+              <p className="mt-4 text-12 leading-20 font-r text-gray-77828F">
                 پیام‌های شما با میزبان‌ها و پشتیبانی همین‌جا جمع می‌شود.
               </p>
             </div>
@@ -205,7 +209,7 @@ function Chats() {
       </div>
 
       {polling && (
-        <p className="mt-8 text-center text-11 leading-18 font-r text-gray-B0AFBC">
+        <p className="mt-8 text-center text-11 leading-18 font-r text-gray-A9B1BC">
           اتصال زنده برقرار نشد؛ پیام‌ها هر چند ثانیه به‌روز می‌شوند.
         </p>
       )}

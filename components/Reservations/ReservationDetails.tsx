@@ -540,7 +540,7 @@ function ReservationDetails() {
                       isFullWidth
                       rightIcon={<i className="icon-message text-24" />}
                     >
-                      گفتگوی آنلاین با مهمان
+                      چت آنلاین با مهمان
                     </LinkButton>
                   )}
                 </div>

@@ -39,8 +39,8 @@ const sidePanelItems_ForGuest = {
       icon: <i className="icon-Bell text-24" />,
     },
     {
-      title: "گفتگوها",
-      desc: "لیست گفتگو های شما با میزبانان",
+      title: "چت",
+      desc: "چت شما با میزبانان و پشتیبانی",
       url: "/chats",
       icon: <Image width={24} height={24} src={"/assets/non-icomoon-icons/comment2.svg"} alt="" />,
     },
@@ -169,8 +169,8 @@ const sidePanelItems_ForHost = {
       icon: <i className="icon-Comments text-24" />,
     },
     {
-      title: "گفتگوها",
-      desc: "لیست گفتگو های شما با میزبانان",
+      title: "چت",
+      desc: "چت شما با میزبانان و پشتیبانی",
       url: "/chats",
       icon: <Image width={24} height={24} src={"/assets/non-icomoon-icons/comment2.svg"} alt="" />,
     },

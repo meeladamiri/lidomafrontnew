@@ -165,43 +165,43 @@ function ChatThread({ conversationId, meId, isDesktop, typingFrom, onBack }: Pro
   const title = isSupport ? "پشتیبانی لیدوماتریپ" : peer?.name || "کاربر لیدوماتریپ";
 
   return (
-    <section aria-label="گفتگو" className="flex h-full min-h-0 flex-col bg-gray-F5F5F7">
-      <header className="flex items-center gap-x-12 border-b-1 border-solid border-gray-EFEFEF bg-white px-16 py-12">
+    <section aria-label="چت" className="flex h-full min-h-0 flex-col bg-gray-F8F8F8">
+      <header className="flex items-center gap-x-12 bg-white px-16 py-12 shadow-[0_1px_0_rgba(24,39,58,0.06)]">
         {!isDesktop && (
           <button
             type="button"
             onClick={onBack}
-            aria-label="بازگشت به فهرست گفتگوها"
-            className="flex h-32 w-32 shrink-0 items-center justify-center rounded-8 text-gray-6C6A7D hover:bg-gray-F5F5F7"
+            aria-label="بازگشت به فهرست چت‌ها"
+            className="flex h-32 w-32 shrink-0 items-center justify-center rounded-full text-gray-6C6A7D transition-colors hover:bg-gray-F8F8F8"
           >
             <i aria-hidden="true" className="icon-FlashRight text-20" />
           </button>
         )}
 
-        <div className="flex h-40 w-40 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gray-F5F5F7">
+        <div className="flex h-42 w-42 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gray-F8F8F8 ring-1 ring-white">
           {peer?.avatar ? (
             <img src={peer.avatar} alt="" className="h-full w-full object-cover" />
           ) : (
             <i
               aria-hidden="true"
-              className={`${isSupport ? "icon-Information" : "icon-Profile"} text-20 text-gray-B0AFBC`}
+              className={`${isSupport ? "icon-Information" : "icon-Profile"} text-20 text-gray-A9B1BC`}
             />
           )}
         </div>
 
         <div className="min-w-0 flex-1">
-          <p className="truncate text-14 leading-22 font-m text-black">{title}</p>
+          <p className="truncate text-14 leading-22 font-b text-black">{title}</p>
           {conversation?.residence ? (
             <Link
               href={`/rentals/${conversation.residence.id}`}
               prefetch={false}
-              className="block truncate text-12 leading-18 font-r text-gray-6C6A7D hover:text-primary-main"
+              className="block truncate text-12 leading-18 font-r text-gray-77828F hover:text-primary-dark"
             >
               {conversation.residence.name}
             </Link>
           ) : (
             conversation?.subject && (
-              <p className="truncate text-12 leading-18 font-r text-gray-6C6A7D">
+              <p className="truncate text-12 leading-18 font-r text-gray-77828F">
                 {conversation.subject}
               </p>
             )
@@ -209,7 +209,7 @@ function ChatThread({ conversationId, meId, isDesktop, typingFrom, onBack }: Pro
         </div>
 
         {conversation?.booking && (
-          <span className="hidden shrink-0 rounded-8 bg-gray-F5F5F7 px-10 py-4 text-11 leading-18 font-r text-gray-6C6A7D sm:inline md:inline">
+          <span className="hidden shrink-0 rounded-full bg-gray-F8F8F8 px-10 py-4 text-11 leading-18 font-r text-gray-6C6A7D sm:inline md:inline">
             {conversation.booking.reference}
           </span>
         )}
@@ -218,14 +218,14 @@ function ChatThread({ conversationId, meId, isDesktop, typingFrom, onBack }: Pro
       <div
         ref={scroller}
         onScroll={handleScroll}
-        className="relative flex-1 overflow-y-auto px-16 py-12"
+        className="relative flex-1 overflow-y-auto px-14 py-14 md:px-20"
       >
         {isLoading ? (
           <div className="flex h-full items-center justify-center">
             <TinyLoader />
           </div>
         ) : messages.length === 0 ? (
-          <p className="mt-40 text-center text-13 leading-22 font-r text-gray-B0AFBC">
+          <p className="mt-40 text-center text-13 leading-22 font-r text-gray-A9B1BC">
             هنوز پیامی رد و بدل نشده. اولین پیام را شما بنویسید.
           </p>
         ) : (
@@ -234,8 +234,8 @@ function ChatThread({ conversationId, meId, isDesktop, typingFrom, onBack }: Pro
           <div aria-live="polite" aria-relevant="additions">
             {groupByDay(messages).map((group) => (
               <div key={group.label}>
-                <div className="my-12 flex justify-center">
-                  <span className="rounded-full bg-white px-12 py-4 text-11 leading-18 font-r text-gray-6C6A7D">
+                <div className="my-14 flex justify-center">
+                  <span className="rounded-full bg-white px-14 py-5 text-11 leading-18 font-m text-gray-77828F shadow-[0_1px_2px_rgba(24,39,58,0.05)]">
                     {group.label}
                   </span>
                 </div>
@@ -269,14 +269,14 @@ function ChatThread({ conversationId, meId, isDesktop, typingFrom, onBack }: Pro
         )}
 
         {typingFrom !== null && typingFrom !== meId && (
-          <div className="mt-8 flex justify-end">
-            <span className="flex items-center gap-x-4 rounded-16 rounded-br-4 border-1 border-solid border-gray-EFEFEF bg-white px-12 py-8">
+          <div className="mt-10 flex justify-end">
+            <span className="flex items-center gap-x-4 rounded-20 rounded-br-6 border-1 border-solid border-gray-F0F0F0 bg-white px-14 py-9 shadow-[0_1px_2px_rgba(24,39,58,0.04)]">
               <span className="sr-only">در حال نوشتن</span>
               {[0, 1, 2].map((dot) => (
                 <span
                   key={dot}
                   aria-hidden="true"
-                  className="h-6 w-6 animate-bounce rounded-full bg-gray-B0AFBC"
+                  className="h-6 w-6 animate-bounce rounded-full bg-gray-A9B1BC"
                   style={{ animationDelay: `${dot * 120}ms` }}
                 />
               ))}
@@ -289,7 +289,7 @@ function ChatThread({ conversationId, meId, isDesktop, typingFrom, onBack }: Pro
         <button
           type="button"
           onClick={jumpToBottom}
-          className="mx-auto -mt-40 mb-8 flex items-center gap-x-6 rounded-full bg-primary-main px-14 py-6 text-12 leading-20 font-m text-white shadow-lg"
+          className="mx-auto -mt-44 mb-10 flex items-center gap-x-6 rounded-full bg-black px-16 py-8 text-12 leading-20 font-m text-white shadow-lg transition-transform active:scale-95"
         >
           پیام جدید
           <i aria-hidden="true" className="icon-FlashDown text-14" />
@@ -300,7 +300,7 @@ function ChatThread({ conversationId, meId, isDesktop, typingFrom, onBack }: Pro
         isDesktop={isDesktop}
         disabled={conversation?.status === "CLOSED"}
         placeholder={
-          conversation?.status === "CLOSED" ? "این گفتگو بسته شده است" : "پیام خود را بنویسید…"
+          conversation?.status === "CLOSED" ? "این چت بسته شده است" : "پیام خود را بنویسید…"
         }
         onSend={(body) => send.mutate({ body, nonce: newNonce() })}
         onTyping={() => {

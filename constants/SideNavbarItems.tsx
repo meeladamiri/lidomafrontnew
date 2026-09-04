@@ -56,7 +56,7 @@ export const sideNavbarItems_ForHostAccount: {
         src: <i className="icon-message text-24" />,
         size: 16,
       },
-      name: "گفتگوها",
+      name: "چت",
       linkTo: "/chats",
     },
     {
@@ -137,7 +137,7 @@ export const sideNavbarItems_ForGuestAccount: {
         src: <i className="icon-message text-24" />,
         size: 16,
       },
-      name: "گفتگوها",
+      name: "چت",
       linkTo: "/chats",
     },
     {

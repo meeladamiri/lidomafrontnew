@@ -6,11 +6,14 @@ function BottomNavbarItemForAuthenticatedUsers({
   iconSrc,
   name,
   customClassname,
+  badgeCount,
 }: {
   href: string;
   iconSrc: JSX.Element;
   name: string;
   customClassname?: string;
+  /** A small unread-style count over the icon — e.g. چت's unread messages. */
+  badgeCount?: number;
 }) {
   const router = useRouter();
 
@@ -28,7 +31,14 @@ function BottomNavbarItemForAuthenticatedUsers({
           ${customClassname || ""}
           `}
     >
-      <div className="px-8 flex items-center justify-center">{iconSrc}</div>
+      <div className="relative px-8 flex items-center justify-center">
+        {iconSrc}
+        {!!badgeCount && (
+          <span className="absolute -top-2 -left-2 flex h-16 min-w-[16px] items-center justify-center rounded-full bg-primary-main px-4 text-10 leading-14 font-b text-black">
+            {badgeCount > 99 ? "۹۹+" : badgeCount.toLocaleString("fa-IR")}
+          </span>
+        )}
+      </div>
       <p className="text-10 sm:text-12 leading-21 mb-4 px-4">{name}</p>
     </Link>
   );

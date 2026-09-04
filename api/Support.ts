@@ -1,5 +1,3 @@
-//import { firebaseCloudMessaging } from "utils/google/firebase/webPush";
-
 import apiBuilder from "./apiBuilder";
 
 export interface ISupportPage_FAQItem {
@@ -8,10 +6,16 @@ export interface ISupportPage_FAQItem {
   question: string;
 }
 
-const getSupportFAQs = async () => {
-  const url = `/api/support_chats/faqs`;
+const unwrap = (res: any) => res?.data;
 
-  return apiBuilder.setUrl(url).setCallMethod("POST").setJsonRpcMethod("call").setParams({}).call();
-};
-
-export { getSupportFAQs };
+/** GLOBAL-scope FAQs plus anything scoped to /support specifically — see the
+ * backend's seo/faqPublic.routes.ts. Old callers of the removed Odoo
+ * support_chats/faqs endpoint read this same shape. */
+export async function getSupportFAQs(): Promise<{ faqs: ISupportPage_FAQItem[] }> {
+  const res = await apiBuilder
+    .setUrl("/api/faqs")
+    .setCallMethod("GET")
+    .setParams({ path: "/support" })
+    .call();
+  return unwrap(res) ?? { faqs: [] };
+}

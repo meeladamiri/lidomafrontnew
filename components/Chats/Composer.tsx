@@ -58,7 +58,7 @@ function Composer({ disabled, isDesktop, placeholder, onSend, onTyping }: Props)
         event.preventDefault();
         submit();
       }}
-      className="flex items-end gap-x-8 border-t-1 border-solid border-gray-EFEFEF bg-white p-12"
+      className="flex items-end gap-x-10 border-t-1 border-solid border-gray-F0F0F0 bg-white px-14 py-12 pb-[max(12px,env(safe-area-inset-bottom))]"
     >
       <label htmlFor="chat-composer" className="sr-only">
         نوشتن پیام
@@ -77,15 +77,15 @@ function Composer({ disabled, isDesktop, placeholder, onSend, onTyping }: Props)
           event.preventDefault();
           submit();
         }}
-        className="max-h-[140px] flex-1 resize-none rounded-12 border-1 border-solid border-gray-EFEFEF bg-gray-F5F5F7 px-12 py-10 text-14 leading-24 font-r text-black outline-none transition-colors placeholder:text-gray-B0AFBC focus:border-primary-main focus:bg-white disabled:opacity-60"
+        className="max-h-[140px] flex-1 resize-none rounded-20 border-1 border-solid border-transparent bg-gray-F8F8F8 px-16 py-11 text-14 leading-24 font-r text-black outline-none transition-colors placeholder:text-gray-A9B1BC focus:border-primary-main focus:bg-white disabled:opacity-60"
       />
       <button
         type="submit"
         disabled={disabled || !value.trim()}
         aria-label="ارسال پیام"
-        className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-12 bg-primary-main text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+        className="flex h-[44px] w-[44px] shrink-0 items-center justify-center rounded-full bg-primary-main text-white shadow-lg transition-all hover:opacity-90 active:scale-95 disabled:cursor-not-allowed disabled:opacity-30 disabled:shadow-none"
       >
-        <i aria-hidden="true" className="icon-SendMessage text-20" />
+        <i aria-hidden="true" className="icon-SendMessage text-19" />
       </button>
     </form>
   );

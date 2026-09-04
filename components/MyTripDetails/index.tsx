@@ -938,7 +938,7 @@ function MyTripDetails() {
                           isFullWidth
                           rightIcon={<i className="icon-message text-24" />}
                         >
-                          گفتگوی آنلاین با میزبان
+                          چت آنلاین با میزبان
                         </LinkButton>
                       )}
 
