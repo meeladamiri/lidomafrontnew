@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/router";
 import { STEPS, TOTAL_STEPS } from "./steps";
 import { useWizard } from "./useWizard";
@@ -147,32 +148,202 @@ function ExitControl({ variant }: { variant: "mobile" | "desktop" }) {
 
 // ---------------------------------------------------------------- header ---
 
+/**
+ * The rail's mobile equivalent.
+ *
+ * `StepRail` is a permanent sidebar on desktop because there is room for one.
+ * On a phone the same content — every step, which are done, which is current,
+ * which a tap can jump straight to — has nowhere to live permanently without
+ * pushing the actual step off the screen, so it lives in a sheet instead: the
+ * same rows, opened on demand, closed the moment a choice is made.
+ */
+function StepPickerSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const { index, goTo, maxReachable, draft } = useWizard();
+
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", onKey);
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = previous;
+    };
+  }, [open, onClose]);
+
+  if (!open || typeof document === "undefined") return null;
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[80] flex items-end justify-center bg-black/40 md:hidden"
+      onClick={onClose}
+      role="presentation"
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="مراحل ثبت اقامتگاه"
+        onClick={(event) => event.stopPropagation()}
+        className="w-full max-h-[80vh] flex flex-col bg-white rounded-t-20 pt-10 pb-[max(12px,env(safe-area-inset-bottom))]"
+      >
+        <span
+          aria-hidden="true"
+          className="mx-auto w-36 h-4 rounded-full bg-gray-E9ECF0 mb-12 shrink-0"
+        />
+        <div className="flex items-center justify-between px-16 mb-4 shrink-0">
+          <h2 className="text-15 leading-24 font-b text-black">مراحل ثبت اقامتگاه</h2>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="بستن"
+            className="w-32 h-32 -ml-6 grid place-items-center rounded-full text-gray-77828F transition-colors hover:bg-gray-F3F5F7"
+          >
+            <i className="icon-Close text-18" />
+          </button>
+        </div>
+        <ol className="overflow-y-auto px-8 pb-4">
+          {STEPS.map((step, i) => {
+            const done = !!draft && step.isComplete(draft);
+            const current = i === index;
+            const reachable = i <= Math.max(maxReachable, index);
+
+            return (
+              <li key={step.key}>
+                <button
+                  type="button"
+                  disabled={!reachable}
+                  aria-current={current ? "step" : undefined}
+                  onClick={() => {
+                    goTo(i);
+                    onClose();
+                  }}
+                  className={`w-full flex items-center gap-x-12 px-8 py-11 rounded-12 text-right transition-colors disabled:cursor-not-allowed ${
+                    current ? "bg-primary-main/10" : reachable ? "active:bg-gray-F3F5F7" : ""
+                  }`}
+                >
+                  <span
+                    className={`w-32 h-32 shrink-0 rounded-full grid place-items-center border-2 ${
+                      current
+                        ? "border-primary-main bg-primary-main text-white"
+                        : done
+                        ? "border-primary-main bg-white text-primary-dark"
+                        : "border-gray-E9ECF0 bg-white text-gray-A9B1BC"
+                    }`}
+                  >
+                    {done && !current ? (
+                      <i className="icon-Tick text-12" />
+                    ) : (
+                      <span className="text-12 font-b">{faDigits(i + 1)}</span>
+                    )}
+                  </span>
+                  <span
+                    className={`grow min-w-0 truncate text-14 leading-22 ${
+                      current
+                        ? "font-b text-black"
+                        : done
+                        ? "font-m text-black"
+                        : reachable
+                        ? "font-l text-gray-77828F"
+                        : "font-l text-gray-A9B1BC"
+                    }`}
+                  >
+                    {step.short}
+                  </span>
+                  {current && (
+                    <span className="shrink-0 text-11 font-m text-primary-dark">همین‌جا</span>
+                  )}
+                </button>
+              </li>
+            );
+          })}
+        </ol>
+      </div>
+    </div>,
+    document.body
+  );
+}
+
 function MobileProgress() {
-  const { index, step, saveState } = useWizard();
-  const percent = Math.round(((index + 1) / TOTAL_STEPS) * 100);
+  const { index, step, saveState, draft, maxReachable } = useWizard();
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   return (
     <div className="md:hidden sticky top-0 z-3 bg-white border-b border-gray-F3F5F7">
       <div className="flex items-center gap-x-10 px-16 pt-12 pb-8">
-        <span className="grow min-w-0 truncate text-12 font-m text-gray-77828F">
-          مرحله {faDigits(index + 1)} از {faDigits(TOTAL_STEPS)} · {step.short}
-        </span>
+        <button
+          type="button"
+          onClick={() => setPickerOpen(true)}
+          aria-haspopup="dialog"
+          className="flex items-center gap-x-6 grow min-w-0 -my-4 py-4 text-right transition-opacity active:opacity-60"
+        >
+          <span className="grow min-w-0 truncate text-12 font-m text-gray-77828F">
+            مرحله {faDigits(index + 1)} از {faDigits(TOTAL_STEPS)} · {step.short}
+          </span>
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            aria-hidden="true"
+            className="shrink-0 text-gray-A9B1BC"
+          >
+            <path
+              d="M6 9l6 6 6-6"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </button>
         <SaveStatus state={saveState} />
         <ExitControl variant="mobile" />
       </div>
+
+      {/*
+        Discrete segments, one per step, rather than one bar filled to a
+        percentage — the same "which of these ten am I on" the desktop rail's
+        row of numbered circles answers, just compressed to a strip that fits
+        a sticky header. Tapping it opens the same sheet as the label above.
+      */}
       <div
-        className="h-4 bg-gray-F3F5F7"
-        role="progressbar"
-        aria-valuenow={percent}
-        aria-valuemin={0}
-        aria-valuemax={100}
-        aria-label="پیشرفت ثبت اقامتگاه"
+        onClick={() => setPickerOpen(true)}
+        aria-hidden="true"
+        className="w-full flex items-center gap-x-4 px-16 pb-10 cursor-pointer"
       >
-        <div
-          className="h-full bg-primary-main transition-all duration-300"
-          style={{ width: `${percent}%` }}
-        />
+        {STEPS.map((s, i) => {
+          const done = !!draft && s.isComplete(draft);
+          const current = i === index;
+          const reachable = i <= Math.max(maxReachable, index);
+          return (
+            <span
+              key={s.key}
+              className={`h-4 flex-1 rounded-full transition-colors duration-300 ${
+                current
+                  ? "bg-primary-main"
+                  : done
+                  ? "bg-primary-main/60"
+                  : reachable
+                  ? "bg-primary-main/25"
+                  : "bg-gray-F3F5F7"
+              }`}
+            />
+          );
+        })}
       </div>
+      <div
+        role="progressbar"
+        aria-valuenow={index + 1}
+        aria-valuemin={1}
+        aria-valuemax={TOTAL_STEPS}
+        aria-label="پیشرفت ثبت اقامتگاه"
+        className="sr-only"
+      />
+
+      <StepPickerSheet open={pickerOpen} onClose={() => setPickerOpen(false)} />
     </div>
   );
 }
