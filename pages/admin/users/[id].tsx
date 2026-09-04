@@ -3,6 +3,7 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import useSWR from "swr";
 import AdminLayout from "@/components/Admin/Layout";
+import WalletCard from "@/components/Admin/WalletCard";
 import { apiFetch } from "@/api/Admin/adminApi";
 import {
   Badge,
@@ -201,6 +202,8 @@ export default function AdminUserDetailPage() {
               </div>
             </div>
           </Card>
+
+          <WalletCard userId={data.id} />
 
           {data.isHost && <HostCommissionCard user={data} onSaved={() => mutate()} />}
 
