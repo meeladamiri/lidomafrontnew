@@ -158,6 +158,16 @@ export interface Draft {
   hostSharePastNights: number | null;
   hostShareFutureNights: number | null;
 
+  /**
+   * «رزرو آنی» — a booking confirms without the host approving it.
+   *
+   * One boolean on the listing; the calendar can still override a single date.
+   * The server has always sent it (the host query uses `include`) and has
+   * always accepted it on the specs PATCH — it was just never declared here,
+   * so nothing in the panel could read or set it.
+   */
+  isFast: boolean;
+
   published: boolean;
   suspendedAt: string | null;
   suspensionReason: string | null;
@@ -298,6 +308,18 @@ export const createDraft = (body: { type: ResidenceTypeCode; cityName?: string }
  */
 export const saveSpecs = (id: number, patch: Record<string, unknown>) =>
   request<Draft>(() => client.patch(`${base}/${id}`, patch));
+
+/**
+ * «رزرو آنی», which is not a specs edit.
+ *
+ * `isFast` is a column on the residence row, so the obvious call is
+ * `saveSpecs`. That endpoint is review-gated: on a published listing it parks
+ * the body in `pendingChanges` and answers `{ queuedForReview: true }`, so the
+ * switch would flip back and the host would never learn their booking policy
+ * was queued. Its own route applies immediately, like pricing and capacity.
+ */
+export const saveInstantBooking = (id: number, isFast: boolean) =>
+  request<Draft>(() => client.patch(`${base}/${id}/instant-booking`, { isFast }));
 
 export const saveCapacity = (
   id: number,

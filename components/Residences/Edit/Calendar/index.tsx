@@ -667,7 +667,11 @@ function EditResidenceCalendar() {
                           key={index}
                           value={residence?.id}
                           title={residence?.name}
-                          subText={`کد اقامتگاه : ${residence?.reference}`}
+                          // The کد اقامتگاه a host reads is the Odoo id, not the
+                          // raw reference. The list card was fixed for this and
+                          // this picker was missed, so the same listing showed
+                          // as «۳۸۵۳۱» there and «ODOO-38531» here.
+                          subText={`کد اقامتگاه : ${residence?.public_id ?? residence?.id}`}
                           imgSrc={residence?.image_url}
                           type={ResidenceTypes_enum.PRODUCT}
                         />

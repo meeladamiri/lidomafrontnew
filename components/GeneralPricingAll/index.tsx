@@ -273,15 +273,21 @@ function GeneralPricingAll() {
                           )}
                         </div>
 
-                        {!!elligibleResidencesToEditGeneralPricing[currentResBeingEdited]
-                          .reference && (
+                        {/*
+                          The کد اقامتگاه a host reads is the Odoo id, not the
+                          raw reference — «ODOO-38531» is a migration artifact
+                          and matches nothing they can search for.
+                        */}
+                        {!!(
+                          elligibleResidencesToEditGeneralPricing[currentResBeingEdited].public_id ??
+                          elligibleResidencesToEditGeneralPricing[currentResBeingEdited].id
+                        ) && (
                           <div className="shrink-0 flex justify-end">
                             <p className="rounded-50 bg-white text-12 leading-21 text-black whitespace-nowrap px-12 py-2 flex items-center justify-center w-fit-content">
                               کد اقامتگاه :{" "}
-                              {
-                                elligibleResidencesToEditGeneralPricing[currentResBeingEdited]
-                                  .reference
-                              }
+                              {elligibleResidencesToEditGeneralPricing[currentResBeingEdited]
+                                .public_id ??
+                                elligibleResidencesToEditGeneralPricing[currentResBeingEdited].id}
                             </p>
                           </div>
                         )}

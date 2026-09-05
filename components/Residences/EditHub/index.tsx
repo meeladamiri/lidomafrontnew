@@ -7,8 +7,16 @@ import { WizardProvider, useWizard } from "../SubmitWizard/useWizard";
 import { StepBlocked } from "../SubmitWizard/Shell";
 import { PendingEditsCard } from "../SubmitWizard/PendingEdits";
 import { Callout, faDigits, grouped, StepSkeleton } from "../SubmitWizard/ui";
-import { SECTION_LABEL, SECTION_STEP_INDEX, type Draft } from "@/api/Residences/hostWizard";
+import {
+  SECTION_LABEL,
+  SECTION_STEP_INDEX,
+  saveInstantBooking,
+  type Draft,
+} from "@/api/Residences/hostWizard";
 import { getPropertyPageUrl } from "@/utilities/getPropertyPageUrl";
+import { Switch } from "@/components/General/core/Switch";
+import exception from "@/utilities/exception";
+import { EXCEPTIONTYPES } from "@/constants/enums/exception_types";
 
 /**
  * ویرایش اقامتگاه — one page, every part of a listing.
@@ -280,6 +288,60 @@ function SectionRow({
   );
 }
 
+/**
+ * «رزرو آنی» — one switch, on the listing it belongs to.
+ *
+ * It used to be a per-card workflow in the list, was removed with the other
+ * three card actions, and then existed nowhere: the server sent `isFast` and
+ * accepted it on the specs PATCH, but no screen in the panel read or wrote it,
+ * so a host could only change instant booking one calendar day at a time.
+ *
+ * Not optimistic. This decides whether strangers can book without the host
+ * seeing the request first — showing "on" before the server agrees is the one
+ * kind of wrong answer that matters here, so the switch waits.
+ */
+function InstantBooking({ draft }: { draft: Draft }) {
+  const { save, saveState } = useWizard();
+  const saving = saveState === "saving";
+
+  return (
+    <div className="rounded-20 border border-gray-DBDFE5 bg-white p-14 md:p-16">
+      <div className="flex items-start justify-between gap-x-14">
+        <div className="min-w-0">
+          <p className="text-14 leading-24 font-m text-black">رزرو آنی</p>
+          <p className="text-12 leading-20 font-l text-gray-77828F mt-2">
+            {draft.isFast
+              ? "مهمان بدون تأیید شما رزرو را قطعی می‌کند."
+              : "هر درخواست رزرو منتظر تأیید شما می‌ماند."}{" "}
+            برای یک تاریخ خاص می‌توانید از تقویم استثنا بگذارید.
+          </p>
+        </div>
+
+        <div className="shrink-0 pt-2">
+          <Switch
+            name="isFast"
+            checked={!!draft.isFast}
+            disabled={saving}
+            onChange={(e) => {
+              const next = e.target.checked;
+              void save((id) => saveInstantBooking(id, next)).then((ok) => {
+                if (ok) {
+                  exception.message([
+                    {
+                      type: EXCEPTIONTYPES.SUCCESS,
+                      title: next ? "رزرو آنی فعال شد" : "رزرو آنی غیرفعال شد",
+                    },
+                  ]);
+                }
+              });
+            }}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function Hub() {
   const { draft, goTo } = useWizard();
   if (!draft) return <StepSkeleton />;
@@ -289,6 +351,9 @@ function Hub() {
       <ListingHeader draft={draft} />
 
       <StatusNotes draft={draft} onGoToStep={goTo} />
+
+      {/* Only meaningful once the listing is live and takes bookings. */}
+      {draft.published && <InstantBooking draft={draft} />}
 
       {GROUPS.map((group) => (
         <section key={group.title}>
