@@ -22,5 +22,4 @@ export const Routes_Without_Header_InMobile = [
   "/general-pricing",
   "/chats/[id]",
   "/b-room/[id]/edit",
-  "/nowruz-pricing",
 ];

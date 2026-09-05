@@ -38,7 +38,7 @@ function IncompleteResidences({
 
         {/*
           "/residences/submit" with no productId starts a NEW draft. From a
-          list of unfinished ones, "مشاهده نتایج بیشتر" has to mean "show me
+          list of unfinished ones, "مشاهده همه" has to mean "show me
           the rest", not "make another".
         */}
         <LinkButton
@@ -48,7 +48,7 @@ function IncompleteResidences({
           variant="outlined"
           color="black"
         >
-          مشاهده نتایج بیشتر
+          مشاهده همه
         </LinkButton>
       </div>
 

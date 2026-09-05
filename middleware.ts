@@ -43,7 +43,6 @@ const PROTECTED_PREFIXES = [
   "/reservations",
   "/residences",
   "/general-pricing",
-  "/nowruz-pricing",
   "/statistics",
   "/change-residences-status",
   "/b-room",

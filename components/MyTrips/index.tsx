@@ -215,7 +215,7 @@ function MyTrips() {
                   onClick={() => setPage((prev) => (prev as number) + 1)}
                   rightIcon={<i className="icon-Plus hidden md:block text-20 text-black" />}
                 >
-                  مشاهده نتایج بیشتر
+                  نمایش بیشتر
                 </Button>
               </div>
             )}

@@ -22,5 +22,4 @@ export const Routes_With_SidePanel_InDesktop = [
   "/profile",
   "/support",
   "/b-room/[id]/edit",
-  "/nowruz-pricing",
 ];

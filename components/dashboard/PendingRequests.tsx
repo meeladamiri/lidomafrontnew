@@ -31,7 +31,7 @@ function PendingRequests({ data }: { data: IPendingRequest[] }) {
 
         {data.length > howManyToShow && (
           <Button className="mt-16" isFullWidth variant="outlined" color="black">
-            مشاهده نتایج بیشتر
+            مشاهده همه
           </Button>
         )}
       </div>

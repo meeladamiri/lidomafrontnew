@@ -16,7 +16,7 @@ function CircleSkeleton({ widthClass, heightClass }: ICircleSkeleton) {
       <div
         className={`
             w-full h-full
-            bg-gray-300
+            bg-gray-E9EdF1
             rounded-full
       `}
       ></div>

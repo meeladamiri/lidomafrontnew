@@ -46,7 +46,7 @@ function ResidencesWaitingForExpertsConfirm({
             sessionStorage.setItem(ResidencesList_ActiveTab_KEYWORD, "all");
           }}
         >
-          مشاهده نتایج بیشتر
+          مشاهده همه
         </LinkButton>
       </div>
 

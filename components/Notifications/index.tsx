@@ -11,7 +11,7 @@ import {
 import PageTitle from "components/General/PageTitle";
 import { Button } from "components/General/core/Button";
 import UnHappyMessage from "../General/UnHappyMessage";
-import { TinyLoader } from "../General/Loader/TinyLoader";
+import NotificationsSkeleton from "./NotificationsSkeleton";
 import NotificationItem from "./NotificationItem";
 
 /**
@@ -137,7 +137,7 @@ function Notifications() {
       </div>
 
       {isLoading ? (
-        <TinyLoader />
+        <NotificationsSkeleton />
       ) : items.length === 0 ? (
         <UnHappyMessage
           title={archived ? "اعلان بایگانی‌شده‌ای ندارید" : "هنوز اعلانی برایتان نیامده"}

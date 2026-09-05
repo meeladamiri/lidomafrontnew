@@ -8,7 +8,7 @@ import DropDown from "components/General/core/DropDown";
 import Cart from "components/General/core/DropDown/DropdownCart";
 import ModalHeader from "components/General/core/ModalHeader";
 import { Switch } from "components/General/core/Switch";
-import { TinyLoader } from "components/General/Loader/TinyLoader";
+import CalendarSkeleton from "./CalendarSkeleton";
 import Link from "next/link";
 const EditResidenceGeneralPricing = dynamic(
   () => import("@/components/Residences/Edit/GeneralPricing"),
@@ -592,7 +592,7 @@ function EditResidenceCalendar() {
           loading, broken, or simply had nothing to say.
         */}
         {residencesIsLoading ? (
-          <TinyLoader />
+          <CalendarSkeleton />
         ) : !residencesList?.filter((r) => r.state === ResidenceStates_enum.ACTIVE).length &&
           !eligibleRoomsToBeListed?.length ? (
           <div className="py-48 text-center">
@@ -626,7 +626,7 @@ function EditResidenceCalendar() {
             </button>
           </div>
         ) : calendarDataIsFetching || (!calendarData && selectedResidenceValue !== "all") ? (
-          <TinyLoader />
+          <CalendarSkeleton />
         ) : (
           <>
             <div className="pb-[88px] md:pb-0">

@@ -90,14 +90,6 @@ function Dashboard() {
         </div>
       </div>
 
-      {/* <div className="flex items-center justify-between rounded-16 bg-primary-light py-10 pr-20 pl-10 mb-24">
-        <div className="flex items-center gap-x-8">
-          <Image alt="نوروز" src="/assets/non-icomoon-icons/nowruz.svg" width={40} height={40} />
-          <p className="text-16 text-black leading-22 font-r">بروزرسانی قیمت نوروز</p>
-        </div>
-        <LinkButton href="/nowruz-pricing">بروزرسانی</LinkButton>
-      </div> */}
-
       {isLoading ? (
         <PendingRequestsSkeleton />
       ) : (

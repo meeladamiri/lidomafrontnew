@@ -34,7 +34,6 @@ export const Pages_Not_Having_BottomNav_InMobile = [
   // End of Second pages routes
   "/b-room/[id]/edit",
   "/submit-review",
-  "/nowruz-pricing",
   "/admin/login",
   "/admin",
   "/admin/reservations",

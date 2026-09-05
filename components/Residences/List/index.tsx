@@ -229,7 +229,7 @@ function ResidencesList() {
                 onClick={() => setShown((prev) => prev + pageSize)}
                 rightIcon={<i className="icon-Plus hidden md:block text-20 text-black" />}
               >
-                مشاهده نتایج بیشتر
+                نمایش بیشتر
               </Button>
             </div>
           )}
