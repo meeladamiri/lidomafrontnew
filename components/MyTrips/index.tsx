@@ -39,7 +39,10 @@ function MyTrips() {
   }>();
 
   const { isLoading, isSuccess, data } = useQuery(["getMyTrips"], () => getMyTrips(), {
-    staleTime: 0,
+    // Same reasoning as the host's reservation list: the actions that change a
+    // booking now invalidate this key, so the list no longer has to refetch on
+    // every visit to stay honest.
+    staleTime: 30_000,
   });
 
   useEffect(() => {

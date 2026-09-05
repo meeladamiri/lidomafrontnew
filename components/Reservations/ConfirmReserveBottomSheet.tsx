@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { invalidateReservationViews } from "@/utilities/reservationCache";
 import { acceptTheReserve } from "api/Reserves";
 import { THandleSmoothClose } from "components/General/core/BottomSheet";
 import { Button } from "components/General/core/Button";
@@ -22,7 +23,7 @@ function ConfirmReserveBottomSheet({
       onSuccess: (data) => {
         // console.log("At onSuccess of acceptTheReserve", data);
         if (data?.status === "success") {
-          queryClient.invalidateQueries(["getReserve"]);
+          invalidateReservationViews(queryClient);
           handleSmoothClose();
           exception.message([
             { type: EXCEPTIONTYPES.INFO, title: "درخواست رزرو توسط شما تأیید شد" },

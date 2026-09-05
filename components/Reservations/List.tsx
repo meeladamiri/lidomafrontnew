@@ -37,7 +37,16 @@ function ReservationsList() {
   }, [isDesktop]);
 
   const { isLoading, isSuccess, data } = useQuery(["getReserves"], () => getReserves(), {
-    staleTime: 0,
+    /**
+     * `0` meant every visit refetched all three buckets — opening a booking
+     * and pressing back paid for the whole list again, every time. It was
+     * there because the actions only invalidated the *detail* key, so without
+     * it the list kept showing a request as pending after it had been
+     * approved. They invalidate this key now (see `invalidateReservationViews`),
+     * so freshness comes from the action that changed something rather than
+     * from refetching on the chance that something did.
+     */
+    staleTime: 30_000,
   });
 
   useEffect(() => {

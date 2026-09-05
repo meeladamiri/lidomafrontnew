@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { invalidateReservationViews } from "@/utilities/reservationCache";
 import { submitDiscountCode } from "api/Reserves";
 import { THandleSmoothClose } from "components/General/core/BottomSheet";
 import { Button } from "components/General/core/Button";
@@ -24,7 +25,7 @@ function ApplyDiscountBottomSheet({
     {
       onSuccess: (data) => {
         if (data?.status === "success") {
-          queryClient.invalidateQueries(["getReserve"]);
+          invalidateReservationViews(queryClient);
 
           exception.message([
             { type: EXCEPTIONTYPES.SUCCESS, title: "کد تخفیف با موفقیت اعمال شد." },

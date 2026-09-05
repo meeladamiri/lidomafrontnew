@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { invalidateReservationViews } from "@/utilities/reservationCache";
 import { useEffect, useState } from "react";
 import { TinyLoader } from "components/General/Loader/TinyLoader";
 import SuggestedResidenceCart from "../Residences/Suggest/SuggestedResidenceCart";
@@ -65,7 +66,7 @@ function SendAltersListModal({
     {
       onSuccess: (data) => {
         if (data?.status === "success") {
-          queryClient.invalidateQueries(["getReserve"]);
+          invalidateReservationViews(queryClient);
 
           exception.message([
             { type: EXCEPTIONTYPES.SUCCESS, title: "پیشنهادات شما با موفقیت ارسال شد" },

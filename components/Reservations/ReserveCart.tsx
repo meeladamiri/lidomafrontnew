@@ -1,4 +1,5 @@
 import { Button, LinkButton } from "components/General/core/Button";
+import { invalidateReservationViews } from "@/utilities/reservationCache";
 
 import { Dispatch, SetStateAction, useEffect, useMemo, useRef, useState } from "react";
 import Income_Date_Guests from "./Income_Date_Guests";
@@ -142,11 +143,12 @@ IReserveCart) {
         const diff = getTimeDiff(Date.now(), new Date(expiryDate || "").getTime());
 
         if (diff === 0) {
-          // So this reserve's expiryDate has been reached, so let's refetch the reserves list.
-          queryClient.invalidateQueries([
-            "getReserves",
-            "getDashboardData", // bcz we have pending requests in dashboard page.
-          ]);
+          // This reserve's expiryDate has been reached, so everything showing
+          // it is now wrong. This used to pass both names inside one array,
+          // which react-query reads as the single key ["getReserves",
+          // "getDashboardData"] — a key nothing is stored under, so the timer
+          // ran out and nothing refreshed.
+          invalidateReservationViews(queryClient);
 
           // And also clear this reserve's interval
           if (!!timerRef.current) {

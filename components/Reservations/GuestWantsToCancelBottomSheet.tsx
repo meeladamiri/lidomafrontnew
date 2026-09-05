@@ -1,4 +1,5 @@
 import { getCancelQuote, guestCancelsReserve } from "@/api/MyTrips";
+import { invalidateReservationViews } from "@/utilities/reservationCache";
 import { defaultError, EXCEPTIONTYPES } from "@/constants/enums/exception_types";
 import exception from "@/utilities/exception";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -88,8 +89,7 @@ function GuestWantsToCancelBottomSheet({
     {
       onSuccess: (data) => {
         if (data?.status === "success") {
-          queryClient.invalidateQueries(["getReserve"]);
-          queryClient.invalidateQueries(["getMyTrips"]);
+          invalidateReservationViews(queryClient);
 
           exception.message([
             { type: EXCEPTIONTYPES.SUCCESS, title: "رزرو شما با موفقیت لغو شد." },

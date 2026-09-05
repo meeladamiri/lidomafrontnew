@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { invalidateReservationViews } from "@/utilities/reservationCache";
 import { rejectReasons, rejectTheReserve, submitRejectReserveReason } from "api/Reserves";
 import { THandleSmoothClose } from "components/General/core/BottomSheet";
 import { Button } from "components/General/core/Button";
@@ -39,7 +40,7 @@ function RejectReserveWithReasonBottomSheet({
     {
       onSuccess: (d) => {
         if (d?.status === "success") {
-          queryClient.invalidateQueries(["getReserve"]);
+          invalidateReservationViews(queryClient);
           handleSmoothClose();
           exception.message([
             { type: EXCEPTIONTYPES.ERROR, title: "درخواست رزرو توسط شما لغو شد" },
