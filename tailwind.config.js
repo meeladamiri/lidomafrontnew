@@ -176,6 +176,13 @@ module.exports = {
           "4E5D71": "#4E5D71",
           "77828F": "#77828F",
           A9B1BC: "#A9B1BC",
+          // Written into ~30 class names across the admin settings pages, the
+          // two breadcrumbs and the chat's system cards, but never registered
+          // here — so `text-gray-B0AFBC` compiled to nothing and every one of
+          // those elements silently inherited its parent's colour instead of
+          // receding. The class name carries its own hex, which is what the
+          // value below is.
+          B0AFBC: "#B0AFBC",
           C4CAD3: "#e8e8e8",
           DBDFE5: "#DBDFE5",
           F3F5F7: "#F3F5F7",
