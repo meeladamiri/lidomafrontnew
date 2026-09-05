@@ -59,6 +59,20 @@ module.exports = {
       72: "4.5rem",
     },
     extend: {
+      // The navigation progress bar (components/General/Loader). It cannot
+      // report real progress — Next does not expose any — so it sweeps: enough
+      // to say "something is happening" without pretending to know how far
+      // along it is. RTL, so it grows from the right.
+      keyframes: {
+        routeProgress: {
+          "0%": { transform: "scaleX(0)", opacity: "1" },
+          "60%": { transform: "scaleX(0.75)", opacity: "1" },
+          "100%": { transform: "scaleX(0.96)", opacity: "0.85" },
+        },
+      },
+      animation: {
+        routeProgress: "routeProgress 1.2s ease-out infinite",
+      },
       backgroundColor: (theme) => ({
         // "main-page-grids-bg":
         //   "linear-gradient(0deg, rgba(25, 59, 103, 0.05), rgba(25, 59, 103, 0.05)), #FFFFFF",

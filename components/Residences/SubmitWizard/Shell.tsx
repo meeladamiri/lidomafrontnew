@@ -88,7 +88,7 @@ function StepRail() {
 }
 
 /** `useLayoutEffect` warns when it runs during SSR; the steps render client-side. */
-const useIsomorphicLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
+import useIsomorphicLayoutEffect from "@/utilities/useIsomorphicLayoutEffect";
 
 // ------------------------------------------------------------------ exit ---
 

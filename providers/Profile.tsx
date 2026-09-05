@@ -3,7 +3,10 @@ import { useQuery } from "@tanstack/react-query";
 import { getAccountInfo } from "api/Dashboard";
 import { Iprofile_data } from "interfaces/Profile";
 import { Dispatch, SetStateAction, createContext, useContext, useEffect, useState } from "react";
+
 import { getUserToken } from "utilities/cookies";
+import { readTokenClaims } from "@/utilities/auth/claims";
+import useIsomorphicLayoutEffect from "@/utilities/useIsomorphicLayoutEffect";
 
 type IState = Iprofile_data & {
   profileQueryUtils: {
@@ -125,6 +128,32 @@ function UserProfileProvider({ children }: { children: JSX.Element }) {
     profileStateInitValues
   );
 
+  /**
+   * Who this is, taken from the session cookie before the browser paints.
+   *
+   * The shell used to learn it from two sequential requests, so a host was
+   * shown the guest header, side panel and bottom bar until they came back —
+   * the rearrangement that made logging in look like being moved between
+   * panels.
+   *
+   * It cannot be the initial state: the server has no cookie in hand when it
+   * renders, so seeding there makes the client's first render disagree with
+   * the server's and React throws out the markup (a hydration mismatch — the
+   * first attempt at this did exactly that). A layout effect runs after
+   * hydration has matched but before paint, so the guest version is never
+   * actually shown.
+   */
+  useIsomorphicLayoutEffect(() => {
+    const claims = readTokenClaims();
+    if (!claims) return;
+    setState((prev) => ({
+      ...prev,
+      user_type: UserType_enum.AUTH,
+      id: prev.id || (claims.id ?? 0),
+      is_host: claims.isHost,
+    }));
+  }, []);
+
   const { refetch: refetchCheckUserStatus, data: checkUserStatusData } = useQuery(
     ["checkUserStatus"],
     () => checkUserStatus(),
@@ -157,7 +186,12 @@ function UserProfileProvider({ children }: { children: JSX.Element }) {
     refetch: refetchProfile,
     data,
   } = useQuery(["getAccountInfo"], () => getAccountInfo(), {
-    enabled: state.user_type === UserType_enum.AUTH,
+    // Gated on the token, not on `checkUserStatus` having answered. Waiting
+    // for that made the two requests a waterfall — the profile could not even
+    // start until the status check finished — when nothing in it depends on
+    // the other. They now run together, and a 401 tells us the same thing the
+    // status check would have.
+    enabled: !!getUserToken(),
   });
 
   useEffect(() => {

@@ -9,8 +9,20 @@ function doLogoutActions(router: NextRouter, queryClient: QueryClient) {
   removeUserToken();
   setAxiosToken("");
 
-  queryClient.invalidateQueries(["checkUserStatus"]);
-  // queryClient.invalidateQueries(["getAccountInfo"]);
+  /**
+   * Everything the signed-in person's session put in the cache goes with them.
+   *
+   * Invalidating one key was not enough: `invalidate` only marks a query
+   * stale, so every other answer — the profile, reservations, wallet
+   * balance, chat threads — stayed in memory and was rendered instantly to
+   * whoever signed in next on the same device, until each key refetched. On a
+   * shared phone that is one person's bookings shown to another.
+   *
+   * `clear` is right here rather than `removeQueries` per key: after a logout
+   * there is no cached answer worth keeping, and listing the keys to drop is a
+   * list that goes stale the moment a screen is added.
+   */
+  queryClient.clear();
 
   if (!Non_authorization_routes.includes(router.pathname)) {
     router.push("/");
