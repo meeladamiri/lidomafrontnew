@@ -26,7 +26,7 @@ function HostSideNavbarContent({
               icon={sideNavbarItem.icon.src}
               name={sideNavbarItem.name}
               badge={getBadge(
-                sideNavbarItem.name,
+                sideNavbarItem.linkTo,
                 data?.params?.pending_messages,
                 data?.params?.pending_notifs,
                 data?.params?.pending_reviews
@@ -46,7 +46,7 @@ function HostSideNavbarContent({
               icon={sideNavbarItem.icon.src}
               name={sideNavbarItem.name}
               badge={getBadge(
-                sideNavbarItem.name,
+                sideNavbarItem.linkTo,
                 data?.params?.pending_messages,
                 data?.params?.pending_notifs,
                 data?.params?.pending_reviews
