@@ -11,6 +11,7 @@ import {
 import PageTitle from "components/General/PageTitle";
 import { Button } from "components/General/core/Button";
 import UnHappyMessage from "../General/UnHappyMessage";
+import SectionError from "../General/SectionError";
 import NotificationsSkeleton from "./NotificationsSkeleton";
 import NotificationItem from "./NotificationItem";
 
@@ -34,7 +35,16 @@ function Notifications() {
   const queryClient = useQueryClient();
   const [archived, setArchived] = useState(false);
 
-  const { data, isLoading, isFetchingNextPage, hasNextPage, fetchNextPage } = useInfiniteQuery({
+  const {
+    data,
+    isLoading,
+    isFetchingNextPage,
+    hasNextPage,
+    fetchNextPage,
+    isError,
+    isFetching,
+    refetch,
+  } = useInfiniteQuery({
     queryKey: ["notifications", archived],
     queryFn: ({ pageParam }) =>
       getNotifications({ archived, cursor: pageParam as number | undefined, take: PAGE_SIZE }),
@@ -42,10 +52,7 @@ function Notifications() {
     keepPreviousData: true,
   });
 
-  const items: INotification[] = useMemo(
-    () => data?.pages.flatMap((p) => p.items) ?? [],
-    [data]
-  );
+  const items: INotification[] = useMemo(() => data?.pages.flatMap((p) => p.items) ?? [], [data]);
   const unreadCount = items.filter((n) => !n.is_read).length;
 
   // Both lists and the header badge move together after any of these.
@@ -172,6 +179,14 @@ function Notifications() {
 
       {isLoading ? (
         <NotificationsSkeleton />
+      ) : isError ? (
+        // «هنوز اعلانی برایتان نیامده» is a statement about the account, so it
+        // must not be what a failed request says.
+        <SectionError
+          title="اعلان‌ها بارگذاری نشد"
+          onRetry={() => void refetch()}
+          isRetrying={isFetching}
+        />
       ) : items.length === 0 ? (
         <UnHappyMessage
           title={archived ? "اعلان بایگانی‌شده‌ای ندارید" : "هنوز اعلانی برایتان نیامده"}

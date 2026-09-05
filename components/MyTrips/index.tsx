@@ -7,6 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 import { reserve_cancel_values } from "api/Reserves";
 import { renderPagination } from "utilities/Pagination";
 import UnHappyMessage from "components/General/UnHappyMessage";
+import SectionError from "components/General/SectionError";
 import { miladiToJalali } from "utilities/dateTools";
 
 import { TabsSkeleton } from "../General/Skeletons/FrequentlyUsed/TabsSkeleton";
@@ -38,12 +39,16 @@ function MyTrips() {
     past_reserves: IMyTrip[];
   }>();
 
-  const { isLoading, isSuccess, data } = useQuery(["getMyTrips"], () => getMyTrips(), {
-    // Same reasoning as the host's reservation list: the actions that change a
-    // booking now invalidate this key, so the list no longer has to refetch on
-    // every visit to stay honest.
-    staleTime: 30_000,
-  });
+  const { isLoading, isSuccess, data, isError, isFetching, refetch } = useQuery(
+    ["getMyTrips"],
+    () => getMyTrips(),
+    {
+      // Same reasoning as the host's reservation list: the actions that change a
+      // booking now invalidate this key, so the list no longer has to refetch on
+      // every visit to stay honest.
+      staleTime: 30_000,
+    }
+  );
 
   useEffect(() => {
     if (!!data) {
@@ -133,6 +138,13 @@ function MyTrips() {
             </div>
           ))}
         </>
+      ) : isError || !myTrips ? (
+        // A failed request used to look the same as having never travelled.
+        <SectionError
+          title="سفرها بارگذاری نشد"
+          onRetry={() => void refetch()}
+          isRetrying={isFetching}
+        />
       ) : (
         <>
           <div className="mb-16 md:mb-24">
@@ -150,7 +162,7 @@ function MyTrips() {
                 },
                 {
                   tabLabel: !!myTrips
-                    ? `پایان یافته (${myTrips.past_reserves.length})`
+                    ? `پایان یافته (${faDigits(myTrips.past_reserves.length)})`
                     : `پایان یافته`,
                   tabIndex: 1,
                 },

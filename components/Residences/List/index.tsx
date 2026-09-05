@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import ResidenceCart from "components/Residences/ResidenceCart";
 import Tabs from "components/General/core/Tabs";
 import UnHappyMessage from "components/General/UnHappyMessage";
+import SectionError from "components/General/SectionError";
 import { miladiToJalali } from "utilities/dateTools";
 import { ResidenceTypes_enum } from "constants/enums/residence_types";
 import { ResidencesList_ActiveTab_KEYWORD } from "@/constants/session_stores/residences_list";
@@ -78,7 +79,9 @@ function ResidencesList() {
   const [residencesList, setResidencesList] = useState<IServerResidence[]>();
   const [shown, setShown] = useState(pageSize);
 
-  const { isLoading, data } = useQuery(["getResidencesList"], () => getResidencesList());
+  const { isLoading, data, isError, isFetching, refetch } = useQuery(["getResidencesList"], () =>
+    getResidencesList()
+  );
 
   useEffect(() => {
     if (!!data) {
@@ -162,6 +165,14 @@ function ResidencesList() {
             </div>
           ))}
         </>
+      ) : isError || !residencesList ? (
+        // «هنوز اقامتگاهی رو ثبت نکردی» offers to start a listing — the wrong
+        // thing to say to a host with nineteen of them and a failed request.
+        <SectionError
+          title="اقامتگاه‌ها بارگذاری نشد"
+          onRetry={() => void refetch()}
+          isRetrying={isFetching}
+        />
       ) : residencesList?.length === 0 ? (
         <div className="pt-40">
           <UnHappyMessage

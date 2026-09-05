@@ -8,6 +8,7 @@ import { useQuery } from "@tanstack/react-query";
 import { getReserves, IReserve, reserve_cancel_values } from "api/Reserves";
 import { renderPagination } from "utilities/Pagination";
 import UnHappyMessage from "components/General/UnHappyMessage";
+import SectionError from "components/General/SectionError";
 import { miladiToJalali } from "utilities/dateTools";
 import {
   ReservesList_ActiveTab_KEYWORD,
@@ -36,18 +37,22 @@ function ReservationsList() {
     }
   }, [isDesktop]);
 
-  const { isLoading, isSuccess, data } = useQuery(["getReserves"], () => getReserves(), {
-    /**
-     * `0` meant every visit refetched all three buckets — opening a booking
-     * and pressing back paid for the whole list again, every time. It was
-     * there because the actions only invalidated the *detail* key, so without
-     * it the list kept showing a request as pending after it had been
-     * approved. They invalidate this key now (see `invalidateReservationViews`),
-     * so freshness comes from the action that changed something rather than
-     * from refetching on the chance that something did.
-     */
-    staleTime: 30_000,
-  });
+  const { isLoading, isSuccess, data, isError, isFetching, refetch } = useQuery(
+    ["getReserves"],
+    () => getReserves(),
+    {
+      /**
+       * `0` meant every visit refetched all three buckets — opening a booking
+       * and pressing back paid for the whole list again, every time. It was
+       * there because the actions only invalidated the *detail* key, so without
+       * it the list kept showing a request as pending after it had been
+       * approved. They invalidate this key now (see `invalidateReservationViews`),
+       * so freshness comes from the action that changed something rather than
+       * from refetching on the chance that something did.
+       */
+      staleTime: 30_000,
+    }
+  );
 
   useEffect(() => {
     if (!!data) {
@@ -136,6 +141,15 @@ function ReservationsList() {
             </div>
           ))}
         </>
+      ) : isError || !reserves ? (
+        // Without this the page rendered its tabs and then nothing — a failed
+        // request was indistinguishable from an account with no bookings, and
+        // there was no way to try again short of reloading.
+        <SectionError
+          title="رزروها بارگذاری نشد"
+          onRetry={() => void refetch()}
+          isRetrying={isFetching}
+        />
       ) : (
         <>
           <div className="mb-16 md:mb-24">
