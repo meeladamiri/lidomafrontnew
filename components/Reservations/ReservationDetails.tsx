@@ -39,6 +39,7 @@ import { defaultError, EXCEPTIONTYPES } from "@/constants/enums/exception_types"
 import Footer from "@/layouts/Footer";
 import { getPropertyPageUrl } from "@/utilities/getPropertyPageUrl";
 import Link from "next/link";
+import { canShowContact, CONTACT_WINDOW_NOTE } from "@/utilities/tripWindow";
 
 function CreateInfo({ icon, title, desc }: { icon: JSX.Element; title: string; desc: string }) {
   return (
@@ -64,6 +65,19 @@ function ReservationDetails() {
   // map
   const [userLat, setUserLat] = useState<number>();
   const [userLang, setUserLang] = useState<number>();
+
+  /**
+   * May this host see the guest's number?
+   *
+   * The same rule the guest's side uses about the host's number, from the same
+   * function — one arrangement, one answer. This page used to decide by asking
+   * whether the field had arrived (`guest.phone || "*********09"`), which is
+   * not a rule at all: it leans on the server happening to withhold it, so the
+   * day a query starts selecting the column the mask lifts everywhere at once,
+   * silently. The backend does withhold it correctly today; that is what makes
+   * this the kind of bug nobody notices until it is already live.
+   */
+  const guestPhoneVisible = canShowContact(reserveInfo?.state, reserveInfo?.end_date);
 
   const timerRef = useRef<any>(null);
   const [remainingTime, setRemainingTime] = useState<string | null>(null);
@@ -487,7 +501,9 @@ function ReservationDetails() {
                 <CreateInfo
                   icon={<i className="icon-BirthCertificate text-24 text-black" />}
                   title="مشخصات مهمان"
-                  desc={`${reserveInfo?.guest.name} ${reserveInfo?.guest.phone || "*********09"}`}
+                  desc={`${reserveInfo?.guest.name} ${
+                    guestPhoneVisible ? reserveInfo?.guest.phone : "*********09"
+                  }`}
                 />
               </div>
             </div>
@@ -509,7 +525,7 @@ function ReservationDetails() {
                 <div className="flex items-center gap-x-12">
                   <i className="icon-Phone text-18" />
                   <p className="text-14 text-black leading-18">
-                    {reserveInfo?.guest.phone || "*********09"}
+                    {guestPhoneVisible ? reserveInfo?.guest.phone : "*********09"}
                   </p>
                 </div>
               </div>
@@ -524,15 +540,28 @@ function ReservationDetails() {
               {reserveInfo?.state === ReserveStates_enum.CANCEL ||
               reserveInfo?.state === ReserveStates_enum.EXPIRED ? null : (
                 <div className="mt-18 md:mt-24 md:max-w-[224px]">
-                  {reserveInfo?.state === ReserveStates_enum.DONE ? (
-                    <LinkButton
-                      href={`tel:${reserveInfo?.guest.phone}`}
-                      color="secondary"
-                      isFullWidth
-                      rightIcon={<i className="icon-Phone text-24" />}
-                    >
-                      تماس با مهمان
-                    </LinkButton>
+                  {/*
+                    `canShowContact`, not `state === DONE`. The state alone
+                    left the guest's number reachable from a قطعی booking for
+                    ever, while the guest's own page dropped the host's number
+                    a day after checkout — the same arrangement, two different
+                    expiries, and the one that never expired was the guest's.
+                  */}
+                  {guestPhoneVisible ? (
+                    <>
+                      <LinkButton
+                        href={`tel:${reserveInfo?.guest.phone}`}
+                        color="secondary"
+                        isFullWidth
+                        rightIcon={<i className="icon-Phone text-24" />}
+                      >
+                        تماس با مهمان
+                      </LinkButton>
+
+                      <p className="text-11 leading-18 text-gray-959FA7 mt-8 text-center">
+                        تماس با مهمان {CONTACT_WINDOW_NOTE}
+                      </p>
+                    </>
                   ) : (
                     <LinkButton
                       href={
@@ -710,8 +739,10 @@ function ReservationDetails() {
                     </Button>
                   </div>
                 ) : reserveInfo?.state ===
-                  ReserveStates_enum.SECOND_PAYMENT ? null : reserveInfo?.state ===
-                  ReserveStates_enum.DONE ? (
+                  ReserveStates_enum.SECOND_PAYMENT ? null : guestPhoneVisible ? (
+                  // The sticky bar and the block above have to close together;
+                  // this one used to read `state === DONE` on its own and so
+                  // outlived the number it dials by an unbounded amount.
                   <LinkButton
                     href={`tel:${reserveInfo?.guest.phone}`}
                     // color="secondary"

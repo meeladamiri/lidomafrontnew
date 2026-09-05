@@ -1,4 +1,5 @@
 import moment from "moment";
+import { ReserveStates_enum } from "@/constants/enums/reserve_states";
 
 /**
  * How long after a stay the two sides can still reach each other.
@@ -61,10 +62,18 @@ export const INVOICE_WINDOW_NOTE =
  * The address is included deliberately: a listing's exact address is as much
  * a contact detail as the phone number, and showing it on an unconfirmed
  * request gives away the thing the booking is for.
+ *
+ * > The state is compared against the enum, not against a string spelled out
+ * > here. This was written as `state === "DONE"`, and every reservation state
+ * > reaching the panel goes through `mapReservationState`, which lowercases —
+ * > so the answer was **always false**. The guest's trip page lost its call
+ * > button and its chat button entirely, on every booking, and the failure was
+ * > silent because "no button" is also what this function says on a booking
+ * > that genuinely has no contact yet.
  */
 export function canShowContact(
   state: string | undefined,
   endDate: string | Date | null | undefined
 ): boolean {
-  return state === "DONE" && isContactOpen(endDate);
+  return state === ReserveStates_enum.DONE && isContactOpen(endDate);
 }

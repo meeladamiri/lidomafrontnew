@@ -900,10 +900,16 @@ function MyTripDetails() {
                 <div className="flex items-center gap-x-12">
                   <i className="icon-Phone text-18" />
                   <p className="text-14 text-black leading-18">
-                    {reserveInfo?.host.phone &&
-                    reserveInfo?.state === ReserveStates_enum.DONE &&
-                    !moment(reserveInfo?.end_date)?.isBefore(moment())
-                      ? reserveInfo?.host.phone
+                    {/*
+                      The same rule the call button uses. This was its own
+                      inline copy that dropped the number the instant checkout
+                      passed, while the button below allowed one more day — so
+                      for that day the page showed «*********09» next to a
+                      working «تماس با میزبان».
+                    */}
+                    {canShowContact(reserveInfo?.state, reserveInfo?.end_date) &&
+                    reserveInfo?.host.phone
+                      ? reserveInfo.host.phone
                       : "*********09"}
                   </p>
                 </div>
@@ -919,12 +925,20 @@ function MyTripDetails() {
               {reserveInfo?.state === ReserveStates_enum.CANCEL ||
               reserveInfo?.state === ReserveStates_enum.EXPIRED ? null : (
                 <>
-                  {/* One day past checkout, not the moment of it — a guest who
-                      left something behind still needs the host. After that
-                      the number goes away for good; see utilities/tripWindow. */}
-                  {canShowContact(reserveInfo?.state, reserveInfo?.end_date) && (
-                    <div className="mt-18 md:mt-24 md:max-w-[224px]">
-                      {reserveInfo?.state === ReserveStates_enum.DONE ? (
+                  {/*
+                    Phone and chat are two different questions, and gating both
+                    on the phone's rule was what removed the chat button from
+                    every unconfirmed booking: the ternary's chat branch sat
+                    inside a `canShowContact` block, which is only ever true on
+                    a قطعی booking — so the branch could not be reached.
+
+                    A guest waiting on a host's answer is exactly who needs the
+                    chat. The number is the restricted one: قطعی only, and only
+                    until one day past checkout (see utilities/tripWindow).
+                  */}
+                  <div className="mt-18 md:mt-24 md:max-w-[224px]">
+                    {canShowContact(reserveInfo?.state, reserveInfo?.end_date) ? (
+                      <>
                         <LinkButton
                           href={`tel:${reserveInfo?.host.phone}`}
                           color="secondary"
@@ -933,28 +947,28 @@ function MyTripDetails() {
                         >
                           تماس با میزبان
                         </LinkButton>
-                      ) : (
-                        <LinkButton
-                          href={
-                            reserveInfo?.conversation_public_id
-                              ? `/chats?c=${reserveInfo.conversation_public_id}`
-                              : "/chats"
-                          }
-                          color="secondary"
-                          isFullWidth
-                          rightIcon={<i className="icon-message text-24" />}
-                        >
-                          چت آنلاین با میزبان
-                        </LinkButton>
-                      )}
 
-                      {/* Said while the option is still there, not discovered
-                          when it disappears. */}
-                      <p className="text-11 leading-18 text-gray-959FA7 mt-8 text-center">
-                        تماس با میزبان {CONTACT_WINDOW_NOTE}
-                      </p>
-                    </div>
-                  )}
+                        {/* Said while the option is still there, not discovered
+                            when it disappears. */}
+                        <p className="text-11 leading-18 text-gray-959FA7 mt-8 text-center">
+                          تماس با میزبان {CONTACT_WINDOW_NOTE}
+                        </p>
+                      </>
+                    ) : (
+                      <LinkButton
+                        href={
+                          reserveInfo?.conversation_public_id
+                            ? `/chats?c=${reserveInfo.conversation_public_id}`
+                            : "/chats"
+                        }
+                        color="secondary"
+                        isFullWidth
+                        rightIcon={<i className="icon-message text-24" />}
+                      >
+                        چت آنلاین با میزبان
+                      </LinkButton>
+                    )}
+                  </div>
                 </>
               )}
             </div>
@@ -1169,7 +1183,7 @@ function MyTripDetails() {
                   >
                     {reserveInfo?.has_review ? "مشاهده نظر ثبت‌شده" : "ثبت نظر"}
                   </LinkButton>
-                ) : reserveInfo?.state === ReserveStates_enum.DONE ? (
+                ) : canShowContact(reserveInfo?.state, reserveInfo?.end_date) ? (
                   <LinkButton
                     href={`tel:${reserveInfo?.host.phone}`}
                     color="secondary"
@@ -1265,7 +1279,7 @@ function MyTripDetails() {
               >
                 {reserveInfo?.has_review ? "مشاهده نظر ثبت‌شده" : "ثبت نظر"}
               </LinkButton>
-            ) : reserveInfo?.state === ReserveStates_enum.DONE ? (
+            ) : canShowContact(reserveInfo?.state, reserveInfo?.end_date) ? (
               <LinkButton
                 href={`tel:${reserveInfo?.host.phone}`}
                 color="secondary"
