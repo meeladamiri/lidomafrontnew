@@ -9,7 +9,6 @@ import { Button } from "../General/core/Button";
 import FactorDesign from "./FactorDesign";
 import { miladiToJalali } from "@/utilities/dateTools";
 import moment from "moment-jalaali";
-import html2canvas from "html2canvas";
 import exception from "@/utilities/exception";
 import { EXCEPTIONTYPES } from "@/constants/enums/exception_types";
 
@@ -20,54 +19,54 @@ function FactorIndex() {
   const [checkoutData, setCheckoutData] = useState<(WithFullname | WithKeyValue)[]>();
   const [checkoutTotal, setCheckoutTotal] = useState<number>(0);
   const [reserveTotalDiscountAmount, setReserveTotalDiscountAmount] = useState<number>(0);
-  // const [getReserveInfoFromApi, setGetReserveInfoFromApi] = useState<boolean>(false);
-  // const downloadImage = async () => {
-  //   const dataUrl = await htmlToImage.toJpeg(componentRef.current, {
-  //     quality: 1,
-  //     cacheBust: true,
-  //     canvasWidth: 1920,
-  //     canvasHeight: 1320,
-  //   });
-
-  //   // download image
-  //   const link = document.createElement("a");
-  //   link.download = `فاکتور-رزرو-${reserveInfo?.product.name}.jpeg`;
-  //   link.href = dataUrl;
-  //   link.target = "_blank";
-  //   link.click();
-
-  //   // After the download completes, open the image in a new tab/window
-  //   // setGetReserveInfoFromApi(false);
-  //   var newTab = window.open();
-  //   if (!!newTab) {
-  //     newTab.document.body.innerHTML = '<img src="' + dataUrl + '" alt="Downloaded Image">';
-  //   }
-  // };
+  const [isPreparingFactor, setIsPreparingFactor] = useState<boolean>(false);
 
   const handleDownloadImage = async () => {
-    const element = document.getElementById("factorElement")!,
-      canvas = await html2canvas(element, {
-        allowTaint: true,
-        removeContainer: true,
-        backgroundColor: null,
-        imageTimeout: 15000,
-        logging: true,
-        scale: 2,
-        useCORS: true,
-      }),
-      data = canvas.toDataURL("image/png"),
-      link = document.createElement("a");
+    setIsPreparingFactor(true);
 
-    link.href = data;
-    link.download = "downloaded-image.png";
+    try {
+      // html2canvas is ~200KB and this page is the only place in the app that
+      // uses it — for one button, on click. Imported at the top it rode along
+      // in the page chunk, so every visitor who opened an invoice paid for it
+      // whether or not they downloaded anything.
+      const { default: html2canvas } = await import("html2canvas");
 
-    document.body.appendChild(link);
-    link.click();
-    var newTab = window.open();
-    if (!!newTab) {
-      newTab.document.body.innerHTML = '<img src="' + data + '" alt="Downloaded Image">';
+      const element = document.getElementById("factorElement")!,
+        canvas = await html2canvas(element, {
+          allowTaint: true,
+          removeContainer: true,
+          backgroundColor: null,
+          imageTimeout: 15000,
+          logging: false,
+          scale: 2,
+          useCORS: true,
+        }),
+        data = canvas.toDataURL("image/png"),
+        link = document.createElement("a");
+
+      link.href = data;
+      link.download = "downloaded-image.png";
+
+      document.body.appendChild(link);
+      link.click();
+      var newTab = window.open();
+      if (!!newTab) {
+        newTab.document.body.innerHTML = '<img src="' + data + '" alt="Downloaded Image">';
+      }
+      document.body.removeChild(link);
+    } catch {
+      // Rendering the invoice can fail (a tainted canvas, an image that never
+      // loads). It used to fail as an unhandled rejection: the toast said the
+      // invoice was being prepared and then nothing ever happened.
+      exception.message([
+        {
+          type: EXCEPTIONTYPES.ERROR,
+          title: "دریافت فاکتور انجام نشد. دوباره تلاش کنید.",
+        },
+      ]);
+    } finally {
+      setIsPreparingFactor(false);
     }
-    document.body.removeChild(link);
   };
 
   const { isLoading, data } = useQuery(
@@ -255,10 +254,6 @@ function FactorIndex() {
     }
   }, [data, reserveInfo?.extra_guests_count]);
 
-  // function handleDownloadImage() {
-  //   htmlToImageConvert();
-  // }
-
   return (
     <div className="flex flex-col items-center justify-center h-screen overflow-hidden bg-white pt-[80px] md:pt-[90px]">
       <div
@@ -275,22 +270,16 @@ function FactorIndex() {
 
         <Button
           onClick={() => {
-            // setGetReserveInfoFromApi(true);
             if (!!reserveInfo && !!checkoutData && !!checkoutTotal) {
-              exception.message([
-                {
-                  type: EXCEPTIONTYPES.INFO,
-                  title: "فاکتور شما در حال آماده شدن میباشد. لطفا کمی صبر کنید.",
-                },
-              ]);
-
-              handleDownloadImage();
+              void handleDownloadImage();
             }
           }}
-          disabled={!!isLoading}
-          // disabled={getReserveInfoFromApi}
-          // isLoading={getReserveInfoFromApi}
-          // loadingText="در حال دریافت اطلاعات فاکتور"
+          // Rendering the invoice takes seconds. The only sign it had started
+          // was an info toast, and the button stayed live underneath it — so a
+          // second click fired a second render and opened a second tab.
+          disabled={!!isLoading || isPreparingFactor}
+          isLoading={isPreparingFactor}
+          loadingText="در حال آماده‌سازی فاکتور"
         >
           {!!isLoading ? "درحال دریافت اطلاعات فاکتور" : "دریافت فاکتور"}
         </Button>

@@ -2,7 +2,15 @@ import { checkUserStatus } from "@/api/Auth/checkUserStatus";
 import { useQuery } from "@tanstack/react-query";
 import { getAccountInfo } from "api/Dashboard";
 import { Iprofile_data } from "interfaces/Profile";
-import { Dispatch, SetStateAction, createContext, useContext, useEffect, useState } from "react";
+import {
+  Dispatch,
+  SetStateAction,
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 
 import { getUserToken } from "utilities/cookies";
 import { readTokenClaims } from "@/utilities/auth/claims";
@@ -239,39 +247,62 @@ function UserProfileProvider({ children }: { children: JSX.Element }) {
     }
   }, [data]);
 
-  return (
-    <UserProfileContext.Provider
-      value={{
-        ...state,
-        profileQueryUtils: {
-          profileDataIsLoading,
-          profileDataIsSuccess,
-          refetchProfile,
-          refetchCheckUserStatus,
-        },
-        authModalsUtils: {
-          showEnterPhoneNumberModal,
-          setShowEnterPhoneNumberModal,
-          showEnterPasswordModal,
-          setShowEnterPasswordModal,
-          showForgetPasswordModal,
-          setShowForgetPasswordModal,
-          showOTPModal,
-          setShowOTPModal,
-          showSignUpModal,
-          setShowSignUpModal,
-        },
-      }}
-    >
-      {children}
-    </UserProfileContext.Provider>
+  /**
+   * Built once per actual change, not once per render.
+   *
+   * This provider sits above the whole app, and the object literal that used
+   * to be written inline here was a new object on every render of `_app` —
+   * which is every route change. Context compares by identity, so each of
+   * those handed every `useUserProfile()` consumer (the header, the side
+   * panel, the bottom bar, and most pages) a value React had to treat as new,
+   * and nothing downstream could usefully memoize against it.
+   *
+   * The `setShow*` setters are stable by definition, so they are not deps.
+   */
+  const value = useMemo<IState>(
+    () => ({
+      ...state,
+      profileQueryUtils: {
+        profileDataIsLoading,
+        profileDataIsSuccess,
+        refetchProfile,
+        refetchCheckUserStatus,
+      },
+      authModalsUtils: {
+        showEnterPhoneNumberModal,
+        setShowEnterPhoneNumberModal,
+        showEnterPasswordModal,
+        setShowEnterPasswordModal,
+        showForgetPasswordModal,
+        setShowForgetPasswordModal,
+        showOTPModal,
+        setShowOTPModal,
+        showSignUpModal,
+        setShowSignUpModal,
+      },
+    }),
+    [
+      state,
+      profileDataIsLoading,
+      profileDataIsSuccess,
+      refetchProfile,
+      refetchCheckUserStatus,
+      showEnterPhoneNumberModal,
+      showEnterPasswordModal,
+      showForgetPasswordModal,
+      showOTPModal,
+      showSignUpModal,
+    ]
   );
+
+  return <UserProfileContext.Provider value={value}>{children}</UserProfileContext.Provider>;
 }
 
 export function useUserProfile() {
-  const context = useContext(UserProfileContext);
-
-  return { ...context };
+  // Returned as-is. Spreading it copied the same fields into a fresh object on
+  // every call, so the identity changed even when nothing did — which undoes
+  // the memoization above for any caller that puts the profile in a dep array.
+  return useContext(UserProfileContext);
 }
 
 export default UserProfileProvider;
