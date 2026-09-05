@@ -1,3 +1,4 @@
+import { postLoginDestination } from "@/utilities/auth/redirect";
 import { submitNewReserve } from "@/api/Reserves";
 import { useUserProfile } from "@/providers/Profile";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -125,7 +126,7 @@ function ForgetPassword({ showAsModal = false }: { showAsModal?: boolean }) {
           if (showAsModal) {
             profileData.authModalsUtils.setShowForgetPasswordModal(false);
           } else {
-            router.push((redirectToParam as string) || "/");
+            router.push(postLoginDestination(redirectToParam));
           }
         }
       } else {

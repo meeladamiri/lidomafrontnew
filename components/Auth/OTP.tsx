@@ -1,3 +1,4 @@
+import { postLoginDestination } from "@/utilities/auth/redirect";
 import classes from "styles/otp-code-input.module.css";
 import { submitNewReserve } from "@/api/Reserves";
 import { useUserProfile } from "@/providers/Profile";
@@ -194,19 +195,11 @@ function OTP({ showAsModal = false }: { showAsModal?: boolean }) {
               guests_count: parsedDataOfPendingRequest?.guests_count,
               guest: parsedDataOfPendingRequest?.guest,
             });
+          } else if (showAsModal) {
+            // Signed in without leaving the page they were on.
+            profileData.authModalsUtils.setShowOTPModal(false);
           } else {
-            if (!!parsedResp?.data?.user?.isHost) {
-              profileData.authModalsUtils.setShowOTPModal(false);
-              router.push((redirectToParam as string) || "/dashboard");
-            } else {
-              // user is guest
-              if (showAsModal) {
-                profileData.authModalsUtils.setShowOTPModal(false);
-                // profileData.authModalsUtils.setShowSignUpModal(true);
-              } else {
-                router.push((redirectToParam as string) || "/");
-              }
-            }
+            router.push(postLoginDestination(redirectToParam));
           }
         }
       }

@@ -1,3 +1,4 @@
+import { postLoginDestination } from "@/utilities/auth/redirect";
 import { submitNewReserve } from "@/api/Reserves";
 import { useUserProfile } from "@/providers/Profile";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -121,18 +122,12 @@ function EnterPassword({ showAsModal = false }: { showAsModal?: boolean }) {
           guests_count: parsedDataOfPendingRequest?.guests_count,
           guest: parsedDataOfPendingRequest?.guest,
         });
+      } else if (showAsModal) {
+        // Signed in without leaving the page they were on — the point of the
+        // modal. Closing it is the whole navigation.
+        profileData.authModalsUtils.setShowEnterPasswordModal(false);
       } else {
-        if (!!parsedResp?.data?.user?.isHost) {
-          profileData.authModalsUtils.setShowEnterPasswordModal(false);
-          router.push((redirectToParam as string) || "/dashboard");
-        } else {
-          // user is guest
-          if (!!showAsModal) {
-            profileData.authModalsUtils.setShowEnterPasswordModal(false);
-          } else {
-            router.push((redirectToParam as string) || "/");
-          }
-        }
+        router.push(postLoginDestination(redirectToParam));
       }
     } else {
       // wrong password / any other login error

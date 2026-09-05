@@ -1,3 +1,4 @@
+import { postLoginDestination } from "@/utilities/auth/redirect";
 import { submitNewReserve } from "@/api/Reserves";
 import { useUserProfile } from "@/providers/Profile";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -142,7 +143,7 @@ function SignupForm({ showAsModal = false }: { showAsModal?: boolean }) {
         if (showAsModal) {
           profileData.authModalsUtils.setShowSignUpModal(false);
         } else {
-          router.push((redirectToParam as string) || "/");
+          router.push(postLoginDestination(redirectToParam));
         }
       }
     }
