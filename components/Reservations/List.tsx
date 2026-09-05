@@ -1,4 +1,5 @@
 import { Button } from "components/General/core/Button";
+import { faDigits } from "@/components/Residences/SubmitWizard/ui";
 import Tabs from "components/General/core/Tabs";
 import PageTitle from "components/General/PageTitle";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -136,15 +137,21 @@ function ReservationsList() {
               }}
               data={[
                 {
-                  tabLabel: !!reserves ? `جاری (${reserves.current_reserves.length})` : `جاری`,
+                  tabLabel: !!reserves
+                    ? `جاری (${faDigits(reserves.current_reserves.length)})`
+                    : `جاری`,
                   tabIndex: 0,
                 },
                 {
-                  tabLabel: !!reserves ? `موفق (${reserves.succeed_reserves.length})` : `موفق`,
+                  tabLabel: !!reserves
+                    ? `موفق (${faDigits(reserves.succeed_reserves.length)})`
+                    : `موفق`,
                   tabIndex: 1,
                 },
                 {
-                  tabLabel: !!reserves ? `ناموفق (${reserves.failed_reserves.length})` : `ناموفق`,
+                  tabLabel: !!reserves
+                    ? `ناموفق (${faDigits(reserves.failed_reserves.length)})`
+                    : `ناموفق`,
                   tabIndex: 2,
                 },
               ]}

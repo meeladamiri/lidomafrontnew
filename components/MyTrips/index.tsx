@@ -1,4 +1,5 @@
 import { Button } from "components/General/core/Button";
+import { faDigits } from "@/components/Residences/SubmitWizard/ui";
 import Tabs from "components/General/core/Tabs";
 import PageTitle from "components/General/PageTitle";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -139,7 +140,9 @@ function MyTrips() {
               }}
               data={[
                 {
-                  tabLabel: !!myTrips ? `جاری (${myTrips.current_reserves.length})` : `جاری`,
+                  tabLabel: !!myTrips
+                    ? `جاری (${faDigits(myTrips.current_reserves.length)})`
+                    : `جاری`,
                   tabIndex: 0,
                 },
                 {
@@ -149,7 +152,7 @@ function MyTrips() {
                   tabIndex: 1,
                 },
                 {
-                  tabLabel: !!myTrips ? `همه (${myTrips.all_reserves.length})` : `همه`,
+                  tabLabel: !!myTrips ? `همه (${faDigits(myTrips.all_reserves.length)})` : `همه`,
                   tabIndex: 2,
                 },
               ]}

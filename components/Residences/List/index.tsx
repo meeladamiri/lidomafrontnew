@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Button, LinkButton } from "components/General/core/Button";
 import PageTitle from "components/General/PageTitle";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import ResidenceCart from "components/Residences/ResidenceCart";
 import Tabs from "components/General/core/Tabs";
 import UnHappyMessage from "components/General/UnHappyMessage";
@@ -14,6 +14,7 @@ import { TabsSkeleton } from "@/components/General/Skeletons/FrequentlyUsed/Tabs
 import { ResidenceCartSkeleton } from "@/components/General/Skeletons/FrequentlyUsed/ResidenceCartSkeleton";
 import { IServerResidence, getResidencesList } from "@/api/Residences/getResidencesList";
 import { SECTION_STEP_KEY } from "@/api/Residences/hostWizard";
+import { faDigits } from "@/components/Residences/SubmitWizard/ui";
 
 /**
  * Six tabs, each a pure predicate over what the API already computed —
@@ -182,7 +183,7 @@ function ResidencesList() {
               onChange={(idx: number) => setActiveTabKey(visibleTabs[idx].key)}
               data={visibleTabs.map((t, tabIndex) => ({
                 tabLabel: !!residencesList
-                  ? `${t.label} (${residencesList.filter(t.match).length})`
+                  ? `${t.label} (${faDigits(residencesList.filter(t.match).length)})`
                   : t.label,
                 tabIndex,
               }))}
