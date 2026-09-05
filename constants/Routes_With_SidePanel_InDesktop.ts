@@ -10,7 +10,6 @@ export const Routes_With_SidePanel_InDesktop = [
   // page reached from an old link.
   "/residences/calendar",
   "/residences/calendar/edit",
-  "/residences/fast-reserve/edit",
   "/residences/[id]/general-pricing/edit",
   "/general-pricing",
   "/residences/[id]/edit",
