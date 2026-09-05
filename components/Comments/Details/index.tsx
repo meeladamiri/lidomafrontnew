@@ -265,6 +265,7 @@ function CommentDetails({ commentId }: { commentId: number }) {
                   <Button
                     disabled={!hostAnswer}
                     isFullWidth
+                    isLoading={replyToCommentMutation.isLoading}
                     onClick={() => replyToCommentMutation.mutate()}
                   >
                     ثبت پاسخ

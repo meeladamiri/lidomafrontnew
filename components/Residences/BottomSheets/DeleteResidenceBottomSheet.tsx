@@ -63,6 +63,7 @@ function DeleteResidenceBottomSheet({
             isFullWidth
             type="submit"
             color="error"
+            isLoading={deleteResidenceMutation.isLoading}
             onClick={() =>
               deleteResidenceMutation.mutate({
                 productId: residenceId,

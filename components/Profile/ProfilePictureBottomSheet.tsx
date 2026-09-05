@@ -181,6 +181,8 @@ function ProfilePictureBottomSheet({
           </div>
           <div className="col-span-2">
             <Button
+              isLoading={uploadMizbanAvatarMutation.isLoading}
+              loadingText="در حال بارگذاری…"
               isFullWidth
               type="submit"
               disabled={!profileImage || prevProfileImage === profileImage}

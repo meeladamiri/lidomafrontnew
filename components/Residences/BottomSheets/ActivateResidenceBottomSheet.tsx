@@ -63,6 +63,7 @@ function ActivateResidenceBottomSheet({
           <Button
             isFullWidth
             type="submit"
+            isLoading={activateResidenceMutation.isLoading}
             onClick={() =>
               activateResidenceMutation.mutate({ productId: residenceId, productType })
             }

@@ -105,6 +105,7 @@ function CancelReserveBeforeBeingFinalizedBottomSheet({
             variant="outlined"
             isFullWidth
             disabled={!cancelReason}
+            isLoading={cancelReserveMutation.isLoading}
             onClick={() => cancelReserveMutation.mutate()}
           >
             رد درخواست

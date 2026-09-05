@@ -333,6 +333,8 @@ function SubmitReviewForMyTrip() {
 
               <div className="bg-white py-16 md:py-0 px-20 md:px-0 border-t-1 border-solid border-t-gray-CACFD3 md:border-t-none fixed bottom-0 right-0 left-0 z-2 md:static md:mt-40 md:w-[320px] md:mx-auto md:sticky">
                 <Button
+                  isLoading={submitReviewMutation.isLoading}
+                  loadingText="در حال ثبت…"
                   isFullWidth
                   onClick={() => formik.handleSubmit()}
                   disabled={

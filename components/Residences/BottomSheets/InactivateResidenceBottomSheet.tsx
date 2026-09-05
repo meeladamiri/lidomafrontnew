@@ -64,6 +64,7 @@ function InactivateResidenceBottomSheet({
             isFullWidth
             type="submit"
             color="error"
+            isLoading={inactivateResidenceMutation.isLoading}
             onClick={() => inactivateResidenceMutation.mutate({ productId: residenceId })}
           >
             غیرفعال سازی

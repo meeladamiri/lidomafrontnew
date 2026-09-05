@@ -121,6 +121,7 @@ function SendAltersListModal({
               <Button
                 isFullWidth
                 disabled={!selectedResidences.length}
+                isLoading={sendAlternativeResidencesListMutation.isLoading}
                 onClick={() => sendAlternativeResidencesListMutation.mutate()}
               >
                 {!selectedResidences.length

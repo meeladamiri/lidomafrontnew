@@ -193,6 +193,7 @@ function GuestWantsToCancelBottomSheet({
                 (!!selectedReasons.find((el) => el.id === 0) && !customReason)
               }
               color="error"
+              isLoading={guestCancelsReserveMutation.isLoading}
               onClick={() => {
                 guestCancelsReserveMutation.mutate();
               }}

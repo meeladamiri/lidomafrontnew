@@ -872,6 +872,8 @@ function MyTripDetails() {
                 <Button
                   color="grey"
                   rightIcon={<i className="icon-Delete text-20 text-black" />}
+                  isLoading={unDiscountTheCodeDiscountMutation.isLoading}
+                  loadingText="در حال حذف…"
                   onClick={() => {
                     unDiscountTheCodeDiscountMutation.mutate();
                   }}
@@ -1145,6 +1147,12 @@ function MyTripDetails() {
                 ) : reserveInfo?.state === ReserveStates_enum.SECOND_PAYMENT ? (
                   <Button
                     isFullWidth
+                    // Going to the payment gateway takes a round trip to mint a
+                    // token. Until this said so, the button looked untouched
+                    // for that whole second — so it got pressed again, which is
+                    // the last thing a payment should invite.
+                    isLoading={getPaymentTokenMutation.isLoading}
+                    loadingText="در حال انتقال به درگاه…"
                     onClick={() => {
                       getPaymentTokenMutation.mutate({ order_id: reserveInfo?.id });
                     }}

@@ -126,6 +126,8 @@ function ChangePasswordBottomSheet({
         </div>
         <div className="col-span-2">
           <Button
+            isLoading={changePasswordMutation.isLoading}
+            loadingText="در حال ذخیره…"
             isFullWidth
             type="submit"
             disabled={

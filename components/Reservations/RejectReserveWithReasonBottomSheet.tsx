@@ -119,6 +119,7 @@ function RejectReserveWithReasonBottomSheet({
             variant="outlined"
             isFullWidth
             disabled={!rejectReason}
+            isLoading={rejectReserveMutation.isLoading}
             onClick={() => rejectReserveMutation.mutate()}
           >
             رد درخواست

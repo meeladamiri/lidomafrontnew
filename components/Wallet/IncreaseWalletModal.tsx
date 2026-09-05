@@ -184,6 +184,11 @@ function IncreaseWalletModal({
           isFullWidth
           className=""
           onClick={() => increaseWalletMutation.mutate()}
+          // Two requests happen behind this: the top-up is created, then a
+          // gateway token is minted. Both are money, and neither used to show
+          // anything, so the button sat there looking unpressed.
+          isLoading={increaseWalletMutation.isLoading || getPaymentTokenMutation.isLoading}
+          loadingText="در حال انتقال به درگاه…"
           disabled={
             !chargeAmount || chargeAmount.split("").every((char) => char === chargeAmount[0])
           }

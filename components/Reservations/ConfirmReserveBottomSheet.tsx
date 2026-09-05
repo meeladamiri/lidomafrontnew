@@ -40,7 +40,13 @@ function ConfirmReserveBottomSheet({
         آیا از تأیید این درخواست اطمینان دارید ؟
       </p>
       <div>
-        <Button isFullWidth className="mb-12" onClick={() => acceptReserveMutation.mutate()}>
+        <Button
+          isFullWidth
+          className="mb-12"
+          isLoading={acceptReserveMutation.isLoading}
+          loadingText="در حال تأیید…"
+          onClick={() => acceptReserveMutation.mutate()}
+        >
           بله، تأیید کن
         </Button>
         <Button isFullWidth variant="outlined" color="error" onClick={handleSmoothClose}>

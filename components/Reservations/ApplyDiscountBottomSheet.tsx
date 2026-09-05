@@ -82,6 +82,7 @@ function ApplyDiscountBottomSheet({
           color="primary"
           variant="contained"
           isFullWidth
+          isLoading={submitDiscountCodeMutation.isLoading}
           onClick={() => submitDiscountCodeMutation.mutate()}
           disabled={!guestEnteredCode}
         >
