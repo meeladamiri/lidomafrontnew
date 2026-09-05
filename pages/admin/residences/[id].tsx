@@ -172,6 +172,8 @@ const TABS = [
   { key: "stats", label: "آمار اقامتگاه" },
   { key: "reviews", label: "نظرات" },
   { key: "documents", label: "مدرک مالکیت" },
+  { key: "edits", label: "بررسی ویرایش اقامتگاه" },
+  { key: "defects", label: "نقص‌ها" },
 ] as const;
 
 type TabKey = (typeof TABS)[number]["key"];
@@ -240,20 +242,39 @@ export default function AdminResidenceDetailPage() {
       }
       toolbar={
         <Card className="px-8 py-6 flex items-center gap-x-4 overflow-x-auto">
-          {TABS.map((t) => (
-            <button
-              key={t.key}
-              onClick={() => setTab(t.key)}
-              aria-pressed={tab === t.key}
-              className={`px-14 py-8 rounded-10 text-13 leading-20 font-m whitespace-nowrap transition ${
-                tab === t.key
-                  ? "bg-primary-main text-white"
-                  : "text-gray-6C6A7D hover:bg-gray-F0F0F0"
-              }`}
-            >
-              {t.label}
-            </button>
-          ))}
+          {TABS.map((t) => {
+            const count =
+              t.key === "edits"
+                ? data?.pendingChanges && Object.keys(data.pendingChanges).length > 0
+                  ? 1
+                  : 0
+                : t.key === "defects"
+                  ? (data?.defects?.filter((d) => !d.resolvedAt).length ?? 0)
+                  : 0;
+            return (
+              <button
+                key={t.key}
+                onClick={() => setTab(t.key)}
+                aria-pressed={tab === t.key}
+                className={`flex items-center gap-x-6 px-14 py-8 rounded-10 text-13 leading-20 font-m whitespace-nowrap transition ${
+                  tab === t.key
+                    ? "bg-primary-main text-white"
+                    : "text-gray-6C6A7D hover:bg-gray-F0F0F0"
+                }`}
+              >
+                {t.label}
+                {count > 0 && (
+                  <span
+                    className={`flex h-18 min-w-[18px] items-center justify-center rounded-full px-4 text-11 leading-16 ${
+                      tab === t.key ? "bg-white text-primary-dark" : "bg-error-light text-white"
+                    }`}
+                  >
+                    {count}
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </Card>
       }
     >
@@ -331,6 +352,28 @@ export default function AdminResidenceDetailPage() {
       {data && tab === "reviews" && <ReviewsTab residenceId={data.id} />}
 
       {data && tab === "documents" && <DocumentsTab residenceId={data.id} />}
+
+      {data && tab === "edits" && (
+        <>
+          {data.pendingChanges && Object.keys(data.pendingChanges).length > 0 ? (
+            <PendingChangesCard
+              residenceId={data.id}
+              residence={data}
+              pendingChanges={data.pendingChanges}
+              submittedAt={data.pendingChangesSubmittedAt}
+              onSaved={() => mutate()}
+            />
+          ) : (
+            <Card className="p-24 text-center text-13 text-gray-6C6A7D">
+              هیچ درخواست ویرایشی برای بررسی نیست
+            </Card>
+          )}
+        </>
+      )}
+
+      {data && tab === "defects" && (
+        <DefectsCard residenceId={data.id} defects={data.defects} onSaved={() => mutate()} />
+      )}
 
       {data && tab === "basic" && (
         <div className="flex gap-x-16 items-start">
@@ -489,24 +532,12 @@ export default function AdminResidenceDetailPage() {
               </Card>
             )}
 
-            {!!data.pendingChanges && Object.keys(data.pendingChanges).length > 0 && (
-              <PendingChangesCard
-                residenceId={data.id}
-                residence={data}
-                pendingChanges={data.pendingChanges}
-                submittedAt={data.pendingChangesSubmittedAt}
-                onSaved={() => mutate()}
-              />
-            )}
-
             <SuspensionCard
               residenceId={data.id}
               suspendedAt={data.suspendedAt}
               suspensionReason={data.suspensionReason}
               onSaved={() => mutate()}
             />
-
-            <DefectsCard residenceId={data.id} defects={data.defects} onSaved={() => mutate()} />
 
             <ClassificationCard residenceId={data.id} onSaved={mutate} />
 

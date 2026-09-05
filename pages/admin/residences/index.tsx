@@ -53,7 +53,7 @@ interface ResidenceRow {
   images: { url: string }[];
 }
 
-type Tab = "all" | "suit" | "boomgardi" | "hotel" | "pending";
+type Tab = "all" | "suit" | "boomgardi" | "hotel" | "pending" | "edited";
 
 const TABS: { key: Tab; label: string }[] = [
   { key: "all", label: "همه اقامتگاه‌ها" },
@@ -61,6 +61,7 @@ const TABS: { key: Tab; label: string }[] = [
   { key: "boomgardi", label: "بوم‌گردی‌ها" },
   { key: "hotel", label: "هتل‌ها" },
   { key: "pending", label: "در انتظار تایید" },
+  { key: "edited", label: "ویرایش شده" },
 ];
 
 // "نوع ملک" — the residence category (Odoo x_display_type)

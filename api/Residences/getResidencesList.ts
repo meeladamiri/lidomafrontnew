@@ -6,6 +6,7 @@ import { residenceTypeSlug } from "@/utilities/residenceType";
 
 import { ResidenceStates_enum } from "@/constants/enums/residence_states";
 import { I_Residence_display_type } from "@/interfaces/Residences";
+import type { DefectSection } from "./hostWizard";
 import apiBuilder from "../apiBuilder";
 
 // Kept for other consumers' import compatibility (GeneralPricingAll,
@@ -55,6 +56,9 @@ export interface IServerResidence {
   has_open_defect: boolean;
   /** An open defect the host has already asked to be re-checked. */
   defect_review_requested: boolean;
+  /** The specialist's own notes, for `has_open_defect` residences — shown
+   * directly on the list card with a jump-to-step button. */
+  open_defects: { section: DefectSection; severity: "MANDATORY" | "SUGGESTED"; description: string }[];
   completion_percent?: number;
   step?: number;
 }
@@ -73,15 +77,19 @@ function mapState(state: string): ResidenceStates_enum {
     case "PUBLISHED":
       return ResidenceStates_enum.ACTIVE;
     case "DEACTIVATED":
-      return ResidenceStates_enum.SUSPENDED;
+      return ResidenceStates_enum.DISABLED;
     default:
       return ResidenceStates_enum.DISABLED;
   }
 }
 
 function mapResidence(r: any): IServerResidence {
-  const openDefects: { severity: "MANDATORY" | "SUGGESTED"; reviewRequestedAt: string | null }[] =
-    r.defects || [];
+  const openDefects: {
+    section: DefectSection;
+    severity: "MANDATORY" | "SUGGESTED";
+    description: string;
+    reviewRequestedAt: string | null;
+  }[] = r.defects || [];
   const defectReviewRequested = openDefects.some((d) => !!d.reviewRequestedAt);
   const hasOpenDefect = openDefects.length > 0 && !defectReviewRequested;
 
@@ -108,6 +116,9 @@ function mapResidence(r: any): IServerResidence {
     has_pending_changes: !!r.pendingChangesSubmittedAt,
     has_open_defect: hasOpenDefect,
     defect_review_requested: defectReviewRequested,
+    open_defects: hasOpenDefect
+      ? openDefects.map((d) => ({ section: d.section, severity: d.severity, description: d.description }))
+      : [],
     completion_percent:
       r.state === "DRAFT" ? Math.round(((r.step || 0) / WIZARD_STEP_COUNT) * 100) : 100,
     step: r.step || 0,

@@ -4,34 +4,12 @@ import { useRouter } from "next/router";
 import { STEPS, TOTAL_STEPS } from "./steps";
 import { useWizard } from "./useWizard";
 import { Blockers, Callout, ConfirmDialog, faDigits, SaveStatus, Spinner } from "./ui";
-import { requestDefectReview, type DefectSection, type Draft } from "@/api/Residences/hostWizard";
-
-const SECTION_LABEL: Record<DefectSection, string> = {
-  DETAILS: "نوع و منطقه اقامتگاه",
-  SPECS: "نام و توضیحات",
-  LOCATION: "آدرس و محل دقیق",
-  CAPACITY: "ظرفیت و اتاق‌ها",
-  AMENITIES: "امکانات",
-  PRICING: "نرخ‌گذاری",
-  GALLERY: "گالری تصاویر",
-  DOCUMENTS: "مدارک",
-  RULES: "قوانین و شرایط",
-  OTHER: "سایر",
-};
-
-/** A defect's section, as the step index it maps to in `STEPS` — one-to-one
- * except OTHER, which names nothing specific to jump to. */
-const SECTION_STEP_INDEX: Partial<Record<DefectSection, number>> = {
-  DETAILS: 0,
-  SPECS: 1,
-  LOCATION: 2,
-  CAPACITY: 3,
-  AMENITIES: 4,
-  PRICING: 5,
-  GALLERY: 6,
-  DOCUMENTS: 7,
-  RULES: 8,
-};
+import {
+  requestDefectReview,
+  SECTION_LABEL,
+  SECTION_STEP_INDEX,
+  type Draft,
+} from "@/api/Residences/hostWizard";
 
 /**
  * The frame every step sits in.

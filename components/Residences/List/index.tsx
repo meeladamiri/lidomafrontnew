@@ -13,6 +13,7 @@ import { defaultError, EXCEPTIONTYPES } from "@/constants/enums/exception_types"
 import { TabsSkeleton } from "@/components/General/Skeletons/FrequentlyUsed/TabsSkeleton";
 import { ResidenceCartSkeleton } from "@/components/General/Skeletons/FrequentlyUsed/ResidenceCartSkeleton";
 import { IServerResidence, getResidencesList } from "@/api/Residences/getResidencesList";
+import { SECTION_STEP_INDEX } from "@/api/Residences/hostWizard";
 
 /**
  * Six tabs, each a pure predicate over what the API already computed —
@@ -36,6 +37,9 @@ const TABS: { key: string; label: string; match: (r: IServerResidence) => boolea
     match: (r) => r.raw_state === "PENDING" || r.has_pending_changes || r.defect_review_requested,
   },
   { key: "defective", label: "دارای نقص", match: (r) => r.has_open_defect },
+  // Host's own deactivate toggle — distinct from admin suspension above.
+  // Always last: it's the terminal, least-common state to land in.
+  { key: "deactivated", label: "غیرفعال", match: (r) => r.raw_state === "DEACTIVATED" },
 ];
 
 const EMPTY_MESSAGE: Record<string, string> = {
@@ -45,6 +49,7 @@ const EMPTY_MESSAGE: Record<string, string> = {
   drafting: "اقامتگاه درحال تکمیلی نداری",
   in_review: "اقامتگاهی در انتظار بررسی نداری",
   defective: "اقامتگاه دارای نقصی نداری",
+  deactivated: "اقامتگاه غیرفعالی نداری",
 };
 
 function badgeFor(r: IServerResidence): { text: string; bgColorClass: string } | undefined {
@@ -55,10 +60,20 @@ function badgeFor(r: IServerResidence): { text: string; bgColorClass: string } |
   return undefined;
 }
 
+function defectNoteFor(r: IServerResidence) {
+  if (!r.has_open_defect || r.open_defects.length === 0) return undefined;
+  const [first, ...rest] = r.open_defects;
+  return {
+    description: first.description,
+    stepIndex: SECTION_STEP_INDEX[first.section],
+    extraCount: rest.length,
+  };
+}
+
 const pageSize = 8;
 
 function ResidencesList() {
-  const [activeTab, setActiveTab] = useState<number | null>(null);
+  const [activeTabKey, setActiveTabKey] = useState<string | null>(null);
   const [residencesList, setResidencesList] = useState<IServerResidence[]>();
   const [shown, setShown] = useState(pageSize);
 
@@ -74,39 +89,57 @@ function ResidencesList() {
     }
   }, [data]);
 
-  // Preserving Tab-index
+  // Tabs with nothing in them are hidden (e.g. no point showing «دارای نقص»
+  // when nothing has a defect) — so which tabs exist depends on the data.
+  const visibleTabs = useMemo(() => {
+    if (!residencesList) return TABS;
+    return TABS.filter((t) => residencesList.some(t.match));
+  }, [residencesList]);
+
+  // Preserving which tab was open, by key rather than index — a hidden tab
+  // can appear/disappear between visits as the underlying data changes, so
+  // an index into a shorter or reordered array would silently point at the
+  // wrong tab.
   useEffect(() => {
-    if (!!activeTab || activeTab === 0) {
-      sessionStorage.setItem(ResidencesList_ActiveTab_KEYWORD, activeTab.toString());
-    }
-  }, [activeTab]);
+    if (activeTabKey) sessionStorage.setItem(ResidencesList_ActiveTab_KEYWORD, activeTabKey);
+  }, [activeTabKey]);
 
   useEffect(() => {
-    const residencesListActiveTab = sessionStorage.getItem(ResidencesList_ActiveTab_KEYWORD);
-    const stored = !!residencesListActiveTab ? Number(residencesListActiveTab) : 0;
-    // The saved index came from the old three-tab layout on someone's last
-    // visit — out of range here, so it falls back to «فعال» instead of
-    // silently landing on the wrong tab.
-    setActiveTab(stored >= 0 && stored < TABS.length ? stored : 0);
+    const stored = sessionStorage.getItem(ResidencesList_ActiveTab_KEYWORD);
+    // A key from an old numeric-index scheme (or one no longer valid) falls
+    // back to «فعال» instead of silently landing on the wrong tab.
+    setActiveTabKey(stored && TABS.some((t) => t.key === stored) ? stored : TABS[0].key);
   }, []);
-  // End of Preserving Tab-index
+  // End of Preserving Tab-key
+
+  // If the active tab's last listing just got fixed/resolved and the tab
+  // disappears, fall back to «همه» rather than showing a blank strip.
+  useEffect(() => {
+    if (!residencesList || !activeTabKey) return;
+    if (!visibleTabs.some((t) => t.key === activeTabKey)) setActiveTabKey("all");
+  }, [residencesList, visibleTabs, activeTabKey]);
 
   // Resets the page size back to one page whenever the tab changes, so
   // switching tabs doesn't carry over how far a different list was scrolled.
   useEffect(() => {
     setShown(pageSize);
-  }, [activeTab]);
+  }, [activeTabKey]);
+
+  const activeTabDef = useMemo(
+    () => visibleTabs.find((t) => t.key === activeTabKey),
+    [visibleTabs, activeTabKey]
+  );
 
   const matched = useMemo(() => {
-    if (activeTab === null || !residencesList) return undefined;
-    return residencesList.filter(TABS[activeTab].match);
-  }, [activeTab, residencesList]);
+    if (!activeTabDef || !residencesList) return undefined;
+    return residencesList.filter(activeTabDef.match);
+  }, [activeTabDef, residencesList]);
 
   const list = matched?.slice(0, shown);
 
   const pageIsNotReady: boolean = useMemo(() => {
-    return isLoading || activeTab === null;
-  }, [isLoading, activeTab]);
+    return isLoading || !activeTabDef;
+  }, [isLoading, activeTabDef]);
 
   return (
     <div className="pb-40 ">
@@ -144,9 +177,10 @@ function ResidencesList() {
         <>
           <div className="mb-24 overflow-x-auto">
             <Tabs
-              activeIndex={activeTab as number}
-              onChange={(idx: number) => setActiveTab(idx)}
-              data={TABS.map((t, tabIndex) => ({
+              scroll
+              activeIndex={visibleTabs.findIndex((t) => t.key === activeTabKey)}
+              onChange={(idx: number) => setActiveTabKey(visibleTabs[idx].key)}
+              data={visibleTabs.map((t, tabIndex) => ({
                 tabLabel: !!residencesList
                   ? `${t.label} (${residencesList.filter(t.match).length})`
                   : t.label,
@@ -159,7 +193,7 @@ function ResidencesList() {
             {!list || list.length === 0 ? (
               <div className="pt-40 col-span-full">
                 <UnHappyMessage
-                  title={EMPTY_MESSAGE[TABS[activeTab as number].key]}
+                  title={activeTabDef ? EMPTY_MESSAGE[activeTabDef.key] : ""}
                   iconSrc="/assets/No-residance.svg"
                 />
               </div>
@@ -179,6 +213,7 @@ function ResidencesList() {
                     displayType={r.res_type}
                     residenceType={ResidenceTypes_enum.PRODUCT}
                     badgeOverride={badgeFor(r)}
+                    defectNote={defectNoteFor(r)}
                   />
                 </div>
               ))

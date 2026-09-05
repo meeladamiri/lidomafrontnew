@@ -44,6 +44,12 @@ interface IResidenceCart {
    * either live or not underneath.
    */
   badgeOverride?: { text: string; bgColorClass: string };
+  /** The specialist's own note for an open defect — shown right on the card
+   * so a host doesn't have to open the wizard just to see why a listing is
+   * flagged. `stepIndex` (from `SECTION_STEP_INDEX`) turns «رفع نقص» into a
+   * jump straight to the relevant step; omitted (section `OTHER`), the card
+   * still shows the text but with no link to jump to. */
+  defectNote?: { description: string; stepIndex?: number; extraCount: number };
 }
 
 export interface IDeleteResidenceBottomSheet {
@@ -91,6 +97,7 @@ function ResidenceCart({
   residenceType,
   imageUrl,
   badgeOverride,
+  defectNote,
 }: IResidenceCart) {
   const router = useRouter();
 
@@ -355,6 +362,22 @@ function ResidenceCart({
       </div>
 
       <div className="p-12 border-1 border-solid border-[#1C345442] border-t-none rounded-br-12 rounded-bl-12 grow">
+        {!!defectNote && (
+          <div className="mb-10 flex items-start justify-between gap-x-8 rounded-10 bg-error-light bg-opacity-10 px-10 py-8">
+            <p className="text-11 leading-18 font-r text-error-light">
+              {defectNote.description}
+              {defectNote.extraCount > 0 && ` (و ${defectNote.extraCount} نقص دیگر)`}
+            </p>
+            {defectNote.stepIndex !== undefined && (
+              <Link
+                href={`/residences/submit?productId=${residenceId}&step=${defectNote.stepIndex}`}
+                className="shrink-0 text-11 leading-18 font-m text-primary-dark underline"
+              >
+                رفع نقص
+              </Link>
+            )}
+          </div>
+        )}
         {state === ResidenceStates_enum.ACTIVE ? (
           <ActiveResidenceActions
             residenceId={residenceId}

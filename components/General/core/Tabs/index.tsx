@@ -3,6 +3,10 @@ interface ITab {
   tabIndex: number;
   currentActiveIndex?: number;
   onChange: onChange;
+  /** Tabs keep their natural width and overflow into horizontal scroll on
+   * mobile instead of shrinking to fit — for tab strips whose count varies
+   * (e.g. the host residence-list tabs, which hide empty ones). */
+  scroll?: boolean;
 }
 
 type onChange = (arg: number) => void;
@@ -12,6 +16,7 @@ interface ITabs {
   activeIndex: number;
   data: { tabLabel: string | JSX.Element; tabIndex?: number }[];
   onChange: onChange;
+  scroll?: boolean;
 }
 
 export function Tab(props: ITab) {
@@ -22,8 +27,11 @@ export function Tab(props: ITab) {
       // }}
       className={`
         flex flex-row md:flex-col items-center justify-center cursor-pointer pt-4 pb-4 px-4 md:px-0 md:pt-10 md:pb-0
-        grow md:grow-0 shrink md:shrink-0
-        basis-0 md:basis-auto
+        ${
+          props.scroll
+            ? "grow-0 shrink-0 basis-auto whitespace-nowrap"
+            : "grow md:grow-0 shrink md:shrink-0 basis-0 md:basis-auto"
+        }
         ${
           props.currentActiveIndex === props.tabIndex
             ? "bg-white rounded-6 md:after:content-[''] md:after:w-full md:after:mt-10 md:after:block md:after:h-4 md:after:bg-primary-main md:after:rounded-tr-100 md:after:rounded-tl-100"
@@ -45,7 +53,7 @@ export function Tab(props: ITab) {
   );
 }
 
-function Tabs({ activeIndex, onChange, data }: ITabs) {
+function Tabs({ activeIndex, onChange, data, scroll }: ITabs) {
   //   let tabs: Array<ReactElement<ITab>>;
 
   //   if (!Array.isArray(children)) {
@@ -64,6 +72,7 @@ function Tabs({ activeIndex, onChange, data }: ITabs) {
             tabIndex={item.tabIndex || i}
             currentActiveIndex={activeIndex}
             onChange={onChange}
+            scroll={scroll}
           />
         );
       })}

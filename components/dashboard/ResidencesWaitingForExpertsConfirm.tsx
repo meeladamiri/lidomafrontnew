@@ -43,7 +43,7 @@ function ResidencesWaitingForExpertsConfirm({
           variant="outlined"
           color="black"
           onClick={() => {
-            sessionStorage.setItem(ResidencesList_ActiveTab_KEYWORD, "1");
+            sessionStorage.setItem(ResidencesList_ActiveTab_KEYWORD, "all");
           }}
         >
           مشاهده نتایج بیشتر

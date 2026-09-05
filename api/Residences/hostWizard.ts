@@ -184,6 +184,35 @@ export interface DraftDefect {
   resolvedAt: string | null;
 }
 
+export const SECTION_LABEL: Record<DefectSection, string> = {
+  DETAILS: "نوع و منطقه اقامتگاه",
+  SPECS: "نام و توضیحات",
+  LOCATION: "آدرس و محل دقیق",
+  CAPACITY: "ظرفیت و اتاق‌ها",
+  AMENITIES: "امکانات",
+  PRICING: "نرخ‌گذاری",
+  GALLERY: "گالری تصاویر",
+  DOCUMENTS: "مدارک",
+  RULES: "قوانین و شرایط",
+  OTHER: "سایر",
+};
+
+/** A defect's section, as the step index it maps to in the wizard's `STEPS`
+ * — one-to-one except OTHER, which names nothing specific to jump to. Used
+ * both inside the wizard (`goTo`) and from outside it (a `?step=` link from
+ * the residence list). */
+export const SECTION_STEP_INDEX: Partial<Record<DefectSection, number>> = {
+  DETAILS: 0,
+  SPECS: 1,
+  LOCATION: 2,
+  CAPACITY: 3,
+  AMENITIES: 4,
+  PRICING: 5,
+  GALLERY: 6,
+  DOCUMENTS: 7,
+  RULES: 8,
+};
+
 const base = "/api/host/residences";
 
 // ------------------------------------------------------------ the calls ---
