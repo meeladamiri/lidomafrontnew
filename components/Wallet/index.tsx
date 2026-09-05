@@ -1,4 +1,5 @@
 import PageTitle from "components/General/PageTitle";
+import SectionError from "components/General/SectionError";
 import { Button } from "components/General/core/Button";
 import { useEffect, useMemo, useState } from "react";
 import BankCart from "components/Wallet/BankCart";
@@ -83,7 +84,7 @@ function Wallet() {
 
   const [walletData, setWalletData] = useState<IWalletSummary>();
 
-  const { isLoading, data, refetch } = useQuery({
+  const { isLoading, data, refetch, isError, isFetching } = useQuery({
     queryKey: ["wallet"],
     queryFn: getWallet,
   });
@@ -163,6 +164,22 @@ function Wallet() {
 
         {pageIsNotReady ? (
           <WalletPageSkeleton />
+        ) : isError || !walletData ? (
+          /**
+           * A failed request must not be rendered as money.
+           *
+           * Every figure below reads `walletData?.x || 0`, so when the request
+           * failed the page said the balance, the blocked amount and the gift
+           * credit were all zero — a specific, wrong financial claim, shown
+           * with no hint that anything had gone wrong. An empty list is a
+           * nuisance; this is misinformation about someone's money.
+           */
+          <SectionError
+            title="موجودی کیف پول بارگذاری نشد"
+            subTitle="برای جلوگیری از نمایش مبلغ نادرست، چیزی نشان داده نمی‌شود. دوباره تلاش کنید."
+            onRetry={() => void refetch()}
+            isRetrying={isFetching}
+          />
         ) : (
           <div className="grid grid-cols-14 md:gap-x-16">
             <div className="col-span-full md:col-span-6 md:p-24 md:border-gray-CACFD3 md:border-solid md:border-1 md:rounded-20 max-h-[820px]">
