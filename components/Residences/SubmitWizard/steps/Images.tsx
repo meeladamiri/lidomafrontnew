@@ -70,6 +70,8 @@ export default function ImagesStep() {
   const [gallery, setGallery] = useState<IUploadedResidenceImage[]>([]);
   const [seeded, setSeeded] = useState(false);
   const [uploading, setUploading] = useState<string[]>([]);
+  /** Local previews of photos still on their way up, keyed by upload token. */
+  const [pending, setPending] = useState<{ token: string; url: string }[]>([]);
   const [uploadError, setUploadError] = useState<string | undefined>();
   const [previewSheet, setPreviewSheet] =
     useState<IUploadedImagePreviewBottomSheet>(emptyPreviewSheet);
@@ -108,36 +110,81 @@ export default function ImagesStep() {
 
   // ------------------------------------------------------------ uploading ---
 
+  /**
+   * How many photos go up at once.
+   *
+   * They used to go strictly one at a time, so picking eight on a phone meant
+   * eight round trips end to end — most of that spent waiting rather than
+   * sending. A small pool overlaps them without opening enough sockets to
+   * starve the connection the page itself is using.
+   */
+  const UPLOAD_CONCURRENCY = 3;
+
   const addFiles = useCallback(
     async (files: FileList | null) => {
       if (!files?.length || !residenceId) return;
       setUploadError(undefined);
 
+      const accepted: { token: string; file: File; url: string }[] = [];
       for (const file of Array.from(files)) {
         const problem = validate(file);
         if (problem) {
           setUploadError(problem);
           continue;
         }
-        const token = `${file.name}-${Date.now()}`;
-        setUploading((previous) => [...previous, token]);
-        // Shrunk in the browser: a phone photo is 4–8 MB and the site never
-        // shows it above 1600px.
-        const prepared = await shrink(file);
-        // No `isMain`: the server flags the first photo a listing ever gets,
-        // which is the same rule this screen states. Sending it from here as
-        // well would be a second opinion about the same thing.
-        const result = await uploadImage(residenceId, prepared);
-        setUploading((previous) => previous.filter((t) => t !== token));
-        if (!result.ok) {
-          setUploadError(result.message);
-          continue;
-        }
+        accepted.push({
+          token: `${file.name}-${Date.now()}-${Math.random()}`,
+          file,
+          // Shown immediately, straight from the file the host just picked, so
+          // the wait is spent looking at their own photos rather than at a
+          // spinner that could mean anything.
+          url: URL.createObjectURL(file),
+        });
       }
+      if (!accepted.length) return;
+
+      setPending(accepted.map(({ token, url }) => ({ token, url })));
+      setUploading(accepted.map((item) => item.token));
+
+      const queue = [...accepted];
+      const worker = async () => {
+        for (;;) {
+          const item = queue.shift();
+          if (!item) return;
+          // Shrunk in the browser: a phone photo is 4–8 MB and the site never
+          // shows it above 1600px.
+          const prepared = await shrink(item.file);
+          // No `isMain`: the server flags the first photo a listing ever gets,
+          // which is the same rule this screen states. Sending it from here as
+          // well would be a second opinion about the same thing.
+          const result = await uploadImage(residenceId, prepared);
+          if (!result.ok) setUploadError(result.message);
+          setUploading((previous) => previous.filter((t) => t !== item.token));
+          setPending((previous) => {
+            const done = previous.find((p) => p.token === item.token);
+            if (done) URL.revokeObjectURL(done.url);
+            return previous.filter((p) => p.token !== item.token);
+          });
+        }
+      };
+
+      await Promise.all(
+        Array.from({ length: Math.min(UPLOAD_CONCURRENCY, accepted.length) }, worker)
+      );
       await reload();
     },
     [residenceId, reload]
   );
+
+  // Nothing should hold an object URL open after this screen goes away.
+  useEffect(() => {
+    return () => {
+      setPending((previous) => {
+        previous.forEach((p) => URL.revokeObjectURL(p.url));
+        return [];
+      });
+    };
+  }, []);
 
   // ------------------------------------------------------------- the cover ---
 
@@ -270,6 +317,29 @@ export default function ImagesStep() {
               onMakeMain={(image) => promoteToCover(image.id)}
             />
           </DragDropContext>
+        )}
+
+        {/* The photos the host just picked, from the files themselves — on
+            screen before a byte has been sent, so the wait has something to
+            look at and it is obvious which ones are still going up. */}
+        {pending.length > 0 && (
+          <ul className="mt-12 grid grid-cols-3 gap-8 md:grid-cols-4">
+            {pending.map((item) => (
+              <li
+                key={item.token}
+                className="relative aspect-square overflow-hidden rounded-12 bg-gray-F3F5F7"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={item.url} alt="" className="h-full w-full object-cover opacity-60" />
+                <span className="absolute inset-0 grid place-items-center">
+                  <i
+                    aria-hidden="true"
+                    className="icon-Refresh text-24 text-primary-dark animate-spin"
+                  />
+                </span>
+              </li>
+            ))}
+          </ul>
         )}
 
         <label
