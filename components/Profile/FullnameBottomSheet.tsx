@@ -78,7 +78,13 @@ function FullnameBottomSheet({
           </Button>
         </div>
         <div className="col-span-2">
-          <Button isFullWidth type="submit" disabled={!formik.values.fullname}>
+          <Button
+            isFullWidth
+            type="submit"
+            isLoading={updateAccountMutation.isLoading}
+            loadingText="در حال ذخیره…"
+            disabled={!formik.values.fullname}
+          >
             ذخیره
           </Button>
         </div>

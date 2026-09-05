@@ -71,7 +71,13 @@ function EmailBottomSheet({
           </Button>
         </div>
         <div className="col-span-2">
-          <Button isFullWidth type="submit" disabled={!formik.values["email"]}>
+          <Button
+            isFullWidth
+            type="submit"
+            isLoading={updateAccountMutation.isLoading}
+            loadingText="در حال ذخیره…"
+            disabled={!formik.values["email"]}
+          >
             ذخیره
           </Button>
         </div>

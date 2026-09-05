@@ -106,7 +106,13 @@ function BirthDateBottomSheet({
           </Button>
         </div>
         <div className="col-span-2">
-          <Button isFullWidth type="submit" onClick={() => handleClickOnSave()}>
+          <Button
+            isFullWidth
+            type="submit"
+            isLoading={updateAccountMutation.isLoading}
+            loadingText="در حال ذخیره…"
+            onClick={() => handleClickOnSave()}
+          >
             ذخیره
           </Button>
         </div>
