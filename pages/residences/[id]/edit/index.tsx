@@ -1,4 +1,4 @@
-import EditResidence from "components/Residences/Edit/Residence";
+import EditResidence from "components/Residences/EditHub";
 import { PROJECTNAMEFA } from "configs/info";
 import type { GetServerSideProps, NextPage } from "next";
 

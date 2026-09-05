@@ -45,11 +45,11 @@ interface IResidenceCart {
    */
   badgeOverride?: { text: string; bgColorClass: string };
   /** The specialist's own note for an open defect — shown right on the card
-   * so a host doesn't have to open the wizard just to see why a listing is
-   * flagged. `stepIndex` (from `SECTION_STEP_INDEX`) turns «رفع نقص» into a
-   * jump straight to the relevant step; omitted (section `OTHER`), the card
-   * still shows the text but with no link to jump to. */
-  defectNote?: { description: string; stepIndex?: number; extraCount: number };
+   * so a host doesn't have to open the editor just to see why a listing is
+   * flagged. `sectionKey` (from `SECTION_STEP_KEY`) turns «رفع نقص» into a
+   * jump straight to that section of the edit page; omitted (section
+   * `OTHER`), the card still shows the text but with no link to jump to. */
+  defectNote?: { description: string; sectionKey?: string; extraCount: number };
 }
 
 export interface IDeleteResidenceBottomSheet {
@@ -368,9 +368,9 @@ function ResidenceCart({
               {defectNote.description}
               {defectNote.extraCount > 0 && ` (و ${defectNote.extraCount} نقص دیگر)`}
             </p>
-            {defectNote.stepIndex !== undefined && (
+            {defectNote.sectionKey !== undefined && (
               <Link
-                href={`/residences/submit?productId=${residenceId}&step=${defectNote.stepIndex}`}
+                href={`/residences/${residenceId}/edit?section=${defectNote.sectionKey}`}
                 className="shrink-0 text-11 leading-18 font-m text-primary-dark underline"
               >
                 رفع نقص

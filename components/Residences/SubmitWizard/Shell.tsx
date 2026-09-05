@@ -541,17 +541,23 @@ interface StepLayoutProps {
   footerNote?: React.ReactNode;
 }
 
+/** A step that did not ask for its own wording gets «ذخیره و ادامه» while
+ * building and «ذخیره تغییرات» while editing — one that did (the review step's
+ * «ثبت نهایی») keeps what it asked for. */
+const DEFAULT_NEXT_LABEL = "ذخیره و ادامه";
+
 export function StepLayout({
   children,
   onNext,
-  nextLabel = "ذخیره و ادامه",
+  nextLabel = DEFAULT_NEXT_LABEL,
   nextDisabled,
   busy,
   hideBack,
   footerNote,
 }: StepLayoutProps) {
-  const { step, index, back, saveState, error, clearError } = useWizard();
+  const { step, index, back, saveState, error, clearError, mode, backToHub } = useWizard();
   const [blockers, setBlockers] = useState<string[]>([]);
+  const editing = mode === "edit";
 
   /**
    * The page has to reserve exactly as much room as the bar takes.
@@ -615,10 +621,22 @@ export function StepLayout({
   return (
     <>
       <header className="mb-20">
-        <p className="hidden md:flex md:items-center md:gap-x-12 text-12 font-m text-gray-77828F mb-8">
-          مرحله {faDigits(index + 1)} از {faDigits(TOTAL_STEPS)}
-          <SaveStatus state={saveState} />
-        </p>
+        {editing ? (
+          <button
+            type="button"
+            onClick={backToHub}
+            className="flex items-center gap-x-6 text-12 font-m text-gray-77828F mb-8 hover:text-black transition-colors"
+          >
+            <i aria-hidden="true" className="icon-FlashRight text-14" />
+            بازگشت به ویرایش اقامتگاه
+            <SaveStatus state={saveState} />
+          </button>
+        ) : (
+          <p className="hidden md:flex md:items-center md:gap-x-12 text-12 font-m text-gray-77828F mb-8">
+            مرحله {faDigits(index + 1)} از {faDigits(TOTAL_STEPS)}
+            <SaveStatus state={saveState} />
+          </p>
+        )}
         <h2 className="text-20 leading-32 md:text-24 md:leading-38 font-b text-black">
           {step.title}
         </h2>
@@ -666,13 +684,13 @@ export function StepLayout({
           footerNote && <div className="mb-10">{footerNote}</div>
         )}
         <div className="flex items-center gap-x-12">
-          {!hideBack && index > 0 && (
+          {!hideBack && (editing || index > 0) && (
             <button
               type="button"
               onClick={back}
               className="h-[52px] px-20 shrink-0 rounded-12 border border-gray-DBDFE5 text-14 font-m text-black transition-colors hover:border-gray-A9B1BC focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-main"
             >
-              قبلی
+              {editing ? "انصراف" : "قبلی"}
             </button>
           )}
           <button
@@ -682,7 +700,11 @@ export function StepLayout({
             className="grow h-[52px] rounded-12 bg-primary-main text-14 font-b text-black transition-opacity hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-main focus-visible:ring-offset-2 flex items-center justify-center gap-x-8"
           >
             {busy && <Spinner className="!w-16 !h-16 !border-black/20 !border-t-black" />}
-            {busy ? "در حال ذخیره…" : nextLabel}
+            {busy
+              ? "در حال ذخیره…"
+              : editing && nextLabel === DEFAULT_NEXT_LABEL
+                ? "ذخیره تغییرات"
+                : nextLabel}
           </button>
         </div>
       </div>

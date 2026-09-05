@@ -38,7 +38,19 @@ interface SaveOptions {
   reload?: boolean;
 }
 
+/**
+ * Same forms, two jobs.
+ *
+ * «create» is the wizard: a line of steps with a gate at each one, walked once.
+ * «edit» is the hub: the same ten forms, reachable in any order, each saved on
+ * its own and returning to the list it was opened from. The steps themselves
+ * cannot tell the difference — everything that differs (what «ادامه» means,
+ * whether a step can be skipped to, what the URL carries) lives here.
+ */
+export type WizardMode = "create" | "edit";
+
 interface WizardValue {
+  mode: WizardMode;
   residenceId?: number;
   draft?: Draft;
   isLoading: boolean;
@@ -52,6 +64,10 @@ interface WizardValue {
   back: () => void;
   /** How far the host may jump ahead: no skipping past an unfilled gate. */
   maxReachable: number;
+  /** Edit mode only: which section is open, or null on the hub itself. */
+  openSection: string | null;
+  /** Edit mode only: close the open section and return to the hub. */
+  backToHub: () => void;
 
   /**
    * Runs one step's write and reports whether it stuck.
@@ -120,14 +136,24 @@ function isDraftLike(value: unknown): value is Draft {
   return !!value && typeof value === "object" && typeof (value as Draft).id === "number";
 }
 
-export function WizardProvider({ children }: { children: React.ReactNode }) {
+export function WizardProvider({
+  children,
+  mode = "create",
+  residenceId: residenceIdProp,
+}: {
+  children: React.ReactNode;
+  mode?: WizardMode;
+  /** Edit mode addresses the listing by route param, not `?productId`. */
+  residenceId?: number;
+}) {
   const router = useRouter();
   const queryClient = useQueryClient();
 
   const residenceId = useMemo(() => {
+    if (residenceIdProp) return residenceIdProp;
     const raw = Number(router.query?.productId);
     return Number.isFinite(raw) && raw > 0 ? raw : undefined;
-  }, [router.query?.productId]);
+  }, [residenceIdProp, router.query?.productId]);
 
   const {
     data: draft,
@@ -161,30 +187,64 @@ export function WizardProvider({ children }: { children: React.ReactNode }) {
    */
   const requested = Number(router.query?.step);
   const resume = resumeIndex(draft);
-  const maxReachable = draft ? Math.max(resume, 0) : 0;
+
+  /** Nothing is out of reach on a listing that already exists — the gates
+   * exist to stop someone skipping ahead while building, not to stop an owner
+   * from correcting the address of a live listing. */
+  const maxReachable = mode === "edit" ? TOTAL_STEPS - 1 : draft ? Math.max(resume, 0) : 0;
+
+  const openSection = useMemo(() => {
+    if (mode !== "edit") return null;
+    const raw = router.query?.section;
+    const key = typeof raw === "string" ? raw : null;
+    return key && STEPS.some((s) => s.key === key) ? key : null;
+  }, [mode, router.query?.section]);
 
   const index = useMemo(() => {
+    if (mode === "edit") {
+      const found = STEPS.findIndex((s) => s.key === openSection);
+      return found === -1 ? 0 : found;
+    }
     if (!Number.isFinite(requested)) return resume;
     if (requested < 0 || requested >= TOTAL_STEPS) return resume;
     // Free movement backwards over finished work; forward only to the gap.
     return Math.min(requested, Math.max(maxReachable, 0));
-  }, [requested, resume, maxReachable]);
+  }, [mode, openSection, requested, resume, maxReachable]);
 
   const step = STEPS[index] ?? STEPS[0];
 
   const goTo = useCallback(
     (target: number) => {
       const clamped = Math.max(0, Math.min(target, TOTAL_STEPS - 1));
-      const query: Record<string, string> = { step: String(clamped) };
-      if (residenceId) query.productId = String(residenceId);
+      const query: Record<string, string> =
+        mode === "edit"
+          ? { ...(router.query as Record<string, string>), section: STEPS[clamped].key }
+          : { step: String(clamped) };
+      if (mode !== "edit" && residenceId) query.productId = String(residenceId);
       router.push({ pathname: router.pathname, query }, undefined, { shallow: true });
       if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
     },
-    [residenceId, router]
+    [mode, residenceId, router]
   );
 
-  const next = useCallback(() => goTo(index + 1), [goTo, index]);
-  const back = useCallback(() => goTo(index - 1), [goTo, index]);
+  const backToHub = useCallback(() => {
+    const query = { ...(router.query as Record<string, string>) };
+    delete query.section;
+    router.push({ pathname: router.pathname, query }, undefined, { shallow: true });
+    if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [router]);
+
+  // Saving a section in edit mode is the end of that errand, not a step toward
+  // the next one — so «ادامه» lands back on the hub the host came from.
+  const next = useCallback(() => {
+    if (mode === "edit") return backToHub();
+    goTo(index + 1);
+  }, [mode, backToHub, goTo, index]);
+
+  const back = useCallback(() => {
+    if (mode === "edit") return backToHub();
+    goTo(index - 1);
+  }, [mode, backToHub, goTo, index]);
 
   // -------------------------------------------------------------- saving ---
 
@@ -368,6 +428,7 @@ export function WizardProvider({ children }: { children: React.ReactNode }) {
   }, [dirty, router]);
 
   const value: WizardValue = {
+    mode,
     residenceId,
     draft,
     isLoading: !!residenceId && isLoading,
@@ -380,6 +441,8 @@ export function WizardProvider({ children }: { children: React.ReactNode }) {
     next,
     back,
     maxReachable,
+    openSection,
+    backToHub,
 
     save,
     commit,

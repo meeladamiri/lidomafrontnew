@@ -243,8 +243,7 @@ export const SECTION_LABEL: Record<DefectSection, string> = {
 
 /** A defect's section, as the step index it maps to in the wizard's `STEPS`
  * — one-to-one except OTHER, which names nothing specific to jump to. Used
- * both inside the wizard (`goTo`) and from outside it (a `?step=` link from
- * the residence list). */
+ * inside the wizard, where positions are what `goTo` speaks. */
 export const SECTION_STEP_INDEX: Partial<Record<DefectSection, number>> = {
   DETAILS: 0,
   SPECS: 1,
@@ -255,6 +254,21 @@ export const SECTION_STEP_INDEX: Partial<Record<DefectSection, number>> = {
   GALLERY: 6,
   DOCUMENTS: 7,
   RULES: 8,
+};
+
+/** The same map for links from outside the wizard: the edit page addresses
+ * sections by name (`?section=rules`), which survives the steps being
+ * reordered in a way a position does not. */
+export const SECTION_STEP_KEY: Partial<Record<DefectSection, string>> = {
+  DETAILS: "details",
+  SPECS: "specs",
+  LOCATION: "address",
+  CAPACITY: "capacity",
+  AMENITIES: "amenities",
+  PRICING: "pricing",
+  GALLERY: "images",
+  DOCUMENTS: "documents",
+  RULES: "rules",
 };
 
 const base = "/api/host/residences";

@@ -13,7 +13,7 @@ import { defaultError, EXCEPTIONTYPES } from "@/constants/enums/exception_types"
 import { TabsSkeleton } from "@/components/General/Skeletons/FrequentlyUsed/TabsSkeleton";
 import { ResidenceCartSkeleton } from "@/components/General/Skeletons/FrequentlyUsed/ResidenceCartSkeleton";
 import { IServerResidence, getResidencesList } from "@/api/Residences/getResidencesList";
-import { SECTION_STEP_INDEX } from "@/api/Residences/hostWizard";
+import { SECTION_STEP_KEY } from "@/api/Residences/hostWizard";
 
 /**
  * Six tabs, each a pure predicate over what the API already computed —
@@ -65,7 +65,7 @@ function defectNoteFor(r: IServerResidence) {
   const [first, ...rest] = r.open_defects;
   return {
     description: first.description,
-    stepIndex: SECTION_STEP_INDEX[first.section],
+    sectionKey: SECTION_STEP_KEY[first.section],
     extraCount: rest.length,
   };
 }

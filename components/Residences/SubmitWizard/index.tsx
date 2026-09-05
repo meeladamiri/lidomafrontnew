@@ -1,38 +1,17 @@
 import React, { useEffect } from "react";
-import dynamic from "next/dynamic";
 import { StepBlocked, WizardShell } from "./Shell";
 import { STEPS } from "./steps";
+import { STEP_COMPONENTS, STEP_LOADERS } from "./stepComponents";
 import { WizardProvider, useWizard } from "./useWizard";
 import { StepSkeleton } from "./ui";
 
 /**
- * One list, two uses.
- *
- * `dynamic()` is built from it and so is the prefetcher, so a step cannot be
- * registered for rendering and forgotten for preloading. The wizard is a
- * single route with a `?step=` parameter, so `router.prefetch` has nothing to
- * do here — calling the import is what starts the chunk.
+ * The wizard is a single route with a `?step=` parameter, so `router.prefetch`
+ * has nothing to do here — calling the import is what starts the chunk.
  */
-const LOADERS = [
-  () => import("./steps/Details"),
-  () => import("./steps/Specs"),
-  () => import("./steps/Address"),
-  () => import("./steps/Capacity"),
-  () => import("./steps/Amenities"),
-  () => import("./steps/Pricing"),
-  () => import("./steps/Images"),
-  () => import("./steps/Documents"),
-  () => import("./steps/Rules"),
-  () => import("./steps/Review"),
-];
-
-const STEP_COMPONENTS = LOADERS.map((load) =>
-  dynamic(load, { ssr: false, loading: () => <StepSkeleton /> })
-);
-
 function usePrefetchNext(index: number) {
   useEffect(() => {
-    const load = LOADERS[index + 1];
+    const load = STEP_LOADERS[index + 1];
     if (!load) return;
     // A beat behind, so it never competes with the step the host is reading.
     const timer = setTimeout(() => {
