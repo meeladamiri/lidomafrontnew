@@ -60,15 +60,49 @@ function Notifications() {
     onError: () => toast.error("انجام نشد. دوباره تلاش کنید."),
   });
 
+  /**
+   * Reading and archiving happen on the row, now.
+   *
+   * Both used to wait for the server and then for a refetch of the whole list
+   * before anything moved, so tapping a notification left the blue dot sitting
+   * there for a beat and archiving left the row in place — long enough to tap
+   * again. Neither is a risky thing to assume: marking read is idempotent,
+   * archiving is reversible from the other tab, and neither touches money. So
+   * the list changes immediately and the request follows; if it fails, the
+   * previous list is put back and the toast says so.
+   */
+  const patchCachedPages = useCallback(
+    (change: (list: INotification[]) => INotification[]) => {
+      const key = ["notifications", archived];
+      const previous = queryClient.getQueryData(key);
+      queryClient.setQueryData(key, (current: any) =>
+        current
+          ? { ...current, pages: current.pages.map((p: any) => ({ ...p, items: change(p.items) })) }
+          : current
+      );
+      return () => queryClient.setQueryData(key, previous);
+    },
+    [queryClient, archived]
+  );
+
   const readOne = useMutation({
     mutationFn: (id: number) => markNotificationsRead([id]),
+    onMutate: (id) =>
+      patchCachedPages((list) => list.map((n) => (n.id === id ? { ...n, is_read: true } : n))),
+    onError: (_error, _id, rollback) => rollback?.(),
     onSuccess: refresh,
   });
 
   const archiveOne = useMutation({
     mutationFn: (id: number) => archiveNotification(id, !archived),
+    // It leaves whichever list is on screen — out of «اعلان‌ها» when archiving,
+    // out of «بایگانی» when restoring.
+    onMutate: (id) => patchCachedPages((list) => list.filter((n) => n.id !== id)),
+    onError: (_error, _id, rollback) => {
+      rollback?.();
+      toast.error("انجام نشد. دوباره تلاش کنید.");
+    },
     onSuccess: refresh,
-    onError: () => toast.error("انجام نشد. دوباره تلاش کنید."),
   });
 
   const archiveEverything = useMutation({
