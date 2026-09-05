@@ -1,3 +1,4 @@
+import Image from "next/image";
 import type { IConversationRow } from "@/api/chats";
 import { listStampOf } from "./chatFormat";
 
@@ -53,11 +54,42 @@ function ConversationList({ items, selectedId, onSelect }: Props) {
               }`}
             >
               <span className="relative shrink-0">
+                {/*
+                  The person first, then the listing.
+
+                  The row is titled with `peer.name` but was illustrated with
+                  `residence.image`, so a thread read as "مرتضی محمدی" next to
+                  a photo of a villa — and the same thread's own header, one
+                  column over, showed that person's avatar. A round frame at
+                  the head of a titled row is read as "who", not "about what".
+
+                  The listing photo stays as the middle fallback: for a booking
+                  thread it still says more than a grey silhouette.
+                */}
                 <span className="flex h-46 w-46 items-center justify-center overflow-hidden rounded-full bg-gray-F8F8F8 ring-1 ring-white">
                   {isSupport ? (
                     <i aria-hidden="true" className="icon-OnlineContact text-20 text-primary-dark" />
-                  ) : row.residence?.image ? (
-                    <img src={row.residence.image} alt="" className="h-full w-full object-cover" />
+                  ) : row.peer?.avatar || row.residence?.image ? (
+                    /*
+                      Through `next/image`, not a bare <img>.
+                      The bare tag was reaching the storage bucket straight from
+                      the browser and every one of these failed to decode —
+                      `complete` true, `naturalWidth` 0 — while the very same
+                      URL fetched server-side through /_next/image answered 200.
+                      Both hosts these come from are already in
+                      `next.config.js`'s `images.domains`, so the reason the
+                      original comment gave for avoiding the optimiser (a host
+                      that would have to be whitelisted) does not apply here.
+                      It also stops a full-size photo being downloaded for a
+                      46px circle.
+                    */
+                    <Image
+                      src={(row.peer?.avatar || row.residence?.image) as string}
+                      alt=""
+                      width={46}
+                      height={46}
+                      className="h-full w-full object-cover"
+                    />
                   ) : (
                     <i aria-hidden="true" className="icon-Profile text-20 text-gray-A9B1BC" />
                   )}

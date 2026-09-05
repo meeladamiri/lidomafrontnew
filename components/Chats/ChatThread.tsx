@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -185,7 +186,15 @@ function ChatThread({ conversationId, meId, isDesktop, typingFrom, onBack }: Pro
 
         <div className="flex h-42 w-42 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gray-F8F8F8 ring-1 ring-white">
           {peer?.avatar ? (
-            <img src={peer.avatar} alt="" className="h-full w-full object-cover" />
+            // See ConversationList: a bare <img> to the uploads bucket does not
+            // render in the browser, though the optimiser fetches it fine.
+            <Image
+              src={peer.avatar}
+              alt=""
+              width={42}
+              height={42}
+              className="h-full w-full object-cover"
+            />
           ) : (
             <i
               aria-hidden="true"
