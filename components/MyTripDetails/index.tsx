@@ -933,7 +933,11 @@ function MyTripDetails() {
                         </LinkButton>
                       ) : (
                         <LinkButton
-                          href={`/chats/${reserveInfo?.id}`}
+                          href={
+                            reserveInfo?.conversation_public_id
+                              ? `/chats?c=${reserveInfo.conversation_public_id}`
+                              : "/chats"
+                          }
                           color="secondary"
                           isFullWidth
                           rightIcon={<i className="icon-message text-24" />}

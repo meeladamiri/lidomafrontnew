@@ -175,6 +175,8 @@ export function mapReservationDetail(r: any) {
     // nobody asked for FAQ content on (DRAFT, CANCEL).
     faqs: (r.faqs || []).map((f: { id: number; question: string; answer: string }) => f),
     order_details: {
+      /** The booking's chat thread, addressed the way /chats addresses one. */
+      conversation_public_id: r.conversationPublicId ?? null,
       paid_amount: r.paidAmount ?? 0,
       remaining_amount: r.remainingAmount ?? 0,
       // The guest's own bill, not the rent alone — see `guestPayable`. Both

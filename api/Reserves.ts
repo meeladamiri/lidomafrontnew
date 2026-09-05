@@ -204,6 +204,10 @@ export interface IAlterResidences {
 export interface IReserveDetails {
   faqs: IReserveDetailsFAQ[];
   order_details: {
+    /** The booking's chat thread, as /chats addresses one (`?c=`). Null while
+     * the thread has not been created yet. Lives here rather than at the top
+     * level because this is the object the detail screens actually hold. */
+    conversation_public_id?: string | null;
     has_review?: boolean;
     review_id?: number | null;
     paid_amount?: number;
