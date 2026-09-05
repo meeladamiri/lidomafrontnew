@@ -25,10 +25,26 @@ import useDialog from "Hooks/useDialog";
 import Dialog from "../General/core/Dialog";
 import { useEffect } from "react";
 import Loader from "../General/Loader";
+import { useUserProfile } from "@/providers/Profile";
 
 function Dashboard() {
   const { data, isLoading, refetch } = useQuery(["getDashboardData"], () => getDashboardData());
   const { ref, onOpen, onClose } = useDialog();
+
+  /**
+   * Whether this is a host — from the profile, which is where the rest of the
+   * shell reads it.
+   *
+   * This page used to answer the question for itself, out of its own payload
+   * (`partner.is_host`). Two sources for one boolean, arriving at different
+   * times: the bottom bar and the side menu already knew (the session says so)
+   * while the page did not yet, so a host briefly got the guest dashboard —
+   * guest tiles, and an «اقامتگاه دارید؟ میزبان شوید» card offered to someone
+   * with three listings. Reading the same source as everything else makes that
+   * window impossible rather than merely short.
+   */
+  const profile = useUserProfile();
+  const isHost = profile.is_host || !!data?.params?.partner?.is_host;
 
   useEffect(() => {
     if (!!data?.params?.announcement?.title && !!data?.params?.announcement?.text) {
@@ -86,7 +102,7 @@ function Dashboard() {
 
       <div className="mt-16 mb-24 ">
         <div className="grid grid-cols-12 gap-10">
-          {isLoading ? <DashboardPageGrid /> : <Grid isHost={!!data?.params?.partner?.is_host} badges={data?.params?.badges} />}
+          {isLoading ? <DashboardPageGrid /> : <Grid isHost={isHost} badges={data?.params?.badges} />}
         </div>
       </div>
 
@@ -118,7 +134,7 @@ function Dashboard() {
             hasAvatar={!!data?.params?.partner?.has_avatar}
             hasShaba={!!data?.params?.partner?.has_shaba}
             hasNationalCard={!!data?.params?.partner?.has_national_card_image}
-            isHost={!!data?.params?.partner?.is_host}
+            isHost={isHost}
             avatarUrl={data?.params?.partner?.image_url}
             onDone={() => refetch()}
           />
@@ -139,7 +155,7 @@ function Dashboard() {
       )}
 
       {!isLoading &&
-        !!data?.params?.partner?.is_host &&
+        isHost &&
         !!data?.params?.host_current_requests?.length && (
           <CurrentReservations
             title="رزروهای جاری اقامتگاه‌های شما"
@@ -161,7 +177,7 @@ function Dashboard() {
         // reported as sitting with a reviewer, and the genuinely pending
         // listings (`residences_waiting_confirm`, built by the backend all
         // along) were rendered nowhere.
-        !!data?.params?.partner?.is_host &&
+        isHost &&
         data?.params?.new_residences?.length > 0 && (
           <IncompleteResidences
             incompleteResidencesData={data?.params?.new_residences
@@ -186,7 +202,7 @@ function Dashboard() {
         <ResidencesWaitingForExpertsConfirmSkeleton />
       ) : (
         !!data &&
-        !!data?.params?.partner?.is_host &&
+        isHost &&
         data?.params?.residences_waiting_confirm?.length > 0 && (
           <ResidencesWaitingForExpertsConfirm
             residencesWaitingForExpertsConfirmData={data?.params?.residences_waiting_confirm
@@ -207,7 +223,7 @@ function Dashboard() {
 
       {/* "نظرات مهمان‌ها" is about reviews left ON a host's listings — there is
           nothing there for someone who has never hosted. */}
-      {!!data?.params?.partner?.is_host &&
+      {isHost &&
         (isLoading ? (
           <ReviewsSkeleton />
         ) : (
@@ -222,7 +238,7 @@ function Dashboard() {
 
       {/* The one thing a guest's dashboard should offer that a host's should
           not. Placed last: an invitation, not an interruption. */}
-      {!isLoading && !!data && !data?.params?.partner?.is_host && (
+      {!isLoading && !!data && !isHost && (
         <div className="py-16">
           <div className="rounded-16 bg-primary-light p-20">
             <p className="text-16 leading-26 text-black font-m mb-4">
