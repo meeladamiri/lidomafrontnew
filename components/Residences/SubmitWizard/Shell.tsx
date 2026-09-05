@@ -624,7 +624,7 @@ export function StepLayout({
         {editing ? (
           <button
             type="button"
-            onClick={backToHub}
+            onClick={() => backToHub()}
             className="flex items-center gap-x-6 text-12 font-m text-gray-77828F mb-8 hover:text-black transition-colors"
           >
             <i aria-hidden="true" className="icon-FlashRight text-14" />

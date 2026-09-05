@@ -39,6 +39,19 @@ export interface WizardStepDef {
 const has = (v: unknown) => v !== null && v !== undefined && String(v).trim() !== "";
 const positive = (v: number | null | undefined) => typeof v === "number" && v > 0;
 
+/**
+ * Whether the listing carries the «منطقه» answer.
+ *
+ * Not `residence.region`. That column is a dead end — the panel used to write
+ * free text into it and nothing ever read it back; the real answer lives as an
+ * amenity keyed `area`, which is what the SEO tag pages match on. The wizard
+ * writes both (see the Details step), but the 9,570 listings migrated from
+ * Odoo only ever got the amenity — so asking `region` alone told every single
+ * one of them, live and selling, that their details were incomplete.
+ */
+const hasArea = (d: Draft) =>
+  has(d.region) || (d.amenities ?? []).some((a) => a.amenity?.key === "area");
+
 /** What `createResidence` writes before the host has named anything. */
 export const DEFAULT_NAME = "اقامتگاه بدون نام";
 
@@ -52,7 +65,7 @@ export const STEPS: WizardStepDef[] = [
     short: "جزئیات",
     icon: "icon-Home",
     hint: "نوع و منطقه، دو چیزی که مهمان اول از همه بر اساسشان جست‌وجو می‌کند.",
-    isComplete: (d) => !!d.type && has(d.region),
+    isComplete: (d) => !!d.type && hasArea(d),
   },
   {
     key: "specs",
@@ -115,7 +128,13 @@ export const STEPS: WizardStepDef[] = [
     title: "قوانین و شرایط",
     short: "قوانین",
     icon: "icon-CancellationRules",
-    isComplete: (d) => has(d.checkinFrom) && has(d.checkout) && has(d.cancellationPolicy),
+    // Deliberately not `cancellationPolicy`: it was never migrated, so 9,569
+    // of 9,570 live listings have none and run on the platform default. The
+    // Rules step still requires a host to choose one before saving, which is
+    // the gate that actually matters; asking for it here only mislabelled
+    // every old listing. Check-in and check-out are different — a guest is
+    // genuinely shown nothing when they are missing.
+    isComplete: (d) => has(d.checkinFrom) && has(d.checkout),
   },
   {
     key: "review",

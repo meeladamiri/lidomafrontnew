@@ -123,7 +123,10 @@ export interface Draft {
   amenities: {
     amenityId: number;
     extraFeatures?: any;
-    amenity?: { id: number; name: string };
+    /** `key` marks the two classification amenities («نوع» و «منطقه») apart
+     * from ordinary facilities — the SEO tag engine matches on it, and it is
+     * how a listing's region is actually recorded. */
+    amenity?: { id: number; name: string; key?: string | null };
   }[];
   otherAmenities: string | null;
 

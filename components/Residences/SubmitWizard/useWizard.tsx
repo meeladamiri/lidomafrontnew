@@ -66,8 +66,10 @@ interface WizardValue {
   maxReachable: number;
   /** Edit mode only: which section is open, or null on the hub itself. */
   openSection: string | null;
-  /** Edit mode only: close the open section and return to the hub. */
-  backToHub: () => void;
+  /** Edit mode only: close the open section and return to the hub. Prompts
+   * when the section has unsaved work, unless `force` (used right after a
+   * save, where there is nothing to lose). */
+  backToHub: (options?: { force?: boolean }) => void;
 
   /**
    * Runs one step's write and reports whether it stuck.
@@ -213,8 +215,24 @@ export function WizardProvider({
 
   const step = STEPS[index] ?? STEPS[0];
 
+  /**
+   * Leaving a form in edit mode, with work in it.
+   *
+   * The route guard below deliberately ignores same-pathname navigation —
+   * right for the wizard, where «ادامه» saves before it moves. The editor
+   * moves the same way but its «بازگشت» does not save, so without this a
+   * half-typed section is dropped in silence. Mirrored into a ref because the
+   * navigation callbacks are memoised and `dirty` is declared further down.
+   */
+  const dirtyRef = useRef(false);
+  const confirmLeavingSection = useCallback(() => {
+    if (mode !== "edit" || !dirtyRef.current) return true;
+    return window.confirm("تغییرات ذخیره‌نشده‌ی این بخش از بین می‌رود. مطمئنید؟");
+  }, [mode]);
+
   const goTo = useCallback(
     (target: number) => {
+      if (!confirmLeavingSection()) return;
       const clamped = Math.max(0, Math.min(target, TOTAL_STEPS - 1));
       const query: Record<string, string> =
         mode === "edit"
@@ -224,20 +242,23 @@ export function WizardProvider({
       router.push({ pathname: router.pathname, query }, undefined, { shallow: true });
       if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
     },
-    [mode, residenceId, router]
+    [confirmLeavingSection, mode, residenceId, router]
   );
 
-  const backToHub = useCallback(() => {
+  const backToHub = useCallback((options?: { force?: boolean }) => {
+    if (!options?.force && !confirmLeavingSection()) return;
     const query = { ...(router.query as Record<string, string>) };
     delete query.section;
     router.push({ pathname: router.pathname, query }, undefined, { shallow: true });
     if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
-  }, [router]);
+  }, [confirmLeavingSection, router]);
 
   // Saving a section in edit mode is the end of that errand, not a step toward
-  // the next one — so «ادامه» lands back on the hub the host came from.
+  // the next one — so «ادامه» lands back on the hub the host came from. The
+  // step has just handed its write to `commit`, so there is nothing left to
+  // warn about: no prompt on this path.
   const next = useCallback(() => {
-    if (mode === "edit") return backToHub();
+    if (mode === "edit") return backToHub({ force: true });
     goTo(index + 1);
   }, [mode, backToHub, goTo, index]);
 
@@ -374,6 +395,7 @@ export function WizardProvider({
   // --------------------------------------------------- unsaved-work guard ---
 
   const [dirty, setDirty] = useState(false);
+  dirtyRef.current = dirty;
 
   /**
    * Set when the host leaves through the wizard's own exit, which has already
