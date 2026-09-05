@@ -159,8 +159,52 @@ export interface Draft {
   suspendedAt: string | null;
   suspensionReason: string | null;
   pendingChangesSubmittedAt: string | null;
+  /** What the host changed on a live listing that an admin has not ruled on
+   * yet — one key per wizard step, plus `gallery`/`documents`. The live row
+   * above still holds the approved values, which is what guests see. */
+  pendingChanges: PendingChanges | null;
   defects: DraftDefect[];
 }
+
+export interface PendingGallery {
+  /** Uploaded but not yet a real image row — addressed by negative id. */
+  add: { url: string; title?: string | null }[];
+  removeIds: number[];
+  order?: number[];
+  main?: number | string | null;
+}
+
+export interface PendingChanges {
+  specs?: Record<string, unknown>;
+  amenities?: Record<string, unknown>;
+  rules?: Record<string, unknown>;
+  pricing?: Record<string, unknown>;
+  capacity?: Record<string, unknown>;
+  gallery?: PendingGallery;
+  documents?: Record<string, unknown>;
+}
+
+/** Which wizard step each pending key belongs to, so «در انتظار بررسی» shows
+ * on the screen the host edited. Mirrors the backend's own step keys. */
+export const PENDING_STEP_INDEX: Record<string, number> = {
+  specs: 1,
+  capacity: 3,
+  amenities: 4,
+  pricing: 5,
+  gallery: 6,
+  documents: 7,
+  rules: 8,
+};
+
+export const PENDING_STEP_LABEL: Record<string, string> = {
+  specs: "نام و مشخصات",
+  capacity: "ظرفیت",
+  amenities: "امکانات",
+  pricing: "نرخ‌گذاری",
+  gallery: "تصاویر",
+  documents: "مدارک",
+  rules: "قوانین و شرایط",
+};
 
 export type DefectSection =
   | "DETAILS"

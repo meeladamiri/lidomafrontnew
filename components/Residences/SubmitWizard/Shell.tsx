@@ -10,6 +10,7 @@ import {
   SECTION_STEP_INDEX,
   type Draft,
 } from "@/api/Residences/hostWizard";
+import { PendingEditsCard } from "./PendingEdits";
 
 /**
  * The frame every step sits in.
@@ -394,10 +395,7 @@ function ResidenceStatusBanner({ draft, onReloaded }: { draft: Draft; onReloaded
       )}
 
       {!!draft.pendingChangesSubmittedAt && (
-        <Callout tone="info">
-          تغییراتی که ثبت کرده‌اید در انتظار بررسی کارشناس است. تا تأیید، نسخه‌ی قبلی همچنان روی
-          سایت نمایش داده می‌شود.
-        </Callout>
+        <PendingEditsCard pending={draft.pendingChanges} onGoToStep={goTo} />
       )}
 
       {unresolvedDefects.length > 0 && (

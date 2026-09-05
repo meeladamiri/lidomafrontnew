@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { apiFetch } from "@/api/Admin/adminApi";
-import { Badge, Button, Card, Modal, faDate } from "@/components/Admin/ui";
+import { adminImageUrl, Badge, Button, Card, Modal, faDate } from "@/components/Admin/ui";
 
 const STEP_LABEL: Record<string, string> = {
   specs: "نام و توضیحات",
@@ -8,6 +8,8 @@ const STEP_LABEL: Record<string, string> = {
   rules: "قوانین و شرایط",
   pricing: "نرخ‌گذاری",
   capacity: "ظرفیت و اتاق‌ها",
+  gallery: "تصاویر",
+  documents: "مدارک",
 };
 
 const FIELD_LABEL: Record<string, string> = {
@@ -30,7 +32,77 @@ const FIELD_LABEL: Record<string, string> = {
   minReservableDays: "حداقل شب رزرو",
   cancellationPolicy: "قانون لغو",
   other: "سایر امکانات (متن آزاد)",
+  documentUrl: "سند اقامتگاه",
+  hostNationalCardUrl: "کارت ملی میزبان",
+  ownerNationalCardUrl: "کارت ملی مالک",
 };
+
+/**
+ * The gallery can't use the field table: a photo is not a value to read in a
+ * cell, and «الان روی سایت» for images means the whole live gallery. So the
+ * proposal is shown as what it is — thumbnails to be added, and which of the
+ * current ones would go.
+ */
+function GalleryDiff({
+  proposal,
+  liveImages,
+}: {
+  proposal: { add?: { url: string; title?: string | null }[]; removeIds?: number[]; main?: unknown };
+  liveImages: { id: number; url: string }[];
+}) {
+  const added = proposal.add ?? [];
+  const removed = liveImages.filter((image) => (proposal.removeIds ?? []).includes(image.id));
+
+  return (
+    <div className="flex flex-col gap-y-12">
+      {added.length > 0 && (
+        <div>
+          <p className="text-12 text-gray-6C6A7D mb-6">
+            تصاویر پیشنهادی برای افزودن ({added.length})
+          </p>
+          <div className="flex flex-wrap gap-8">
+            {added.map((image, index) => (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                key={`${image.url}-${index}`}
+                src={adminImageUrl(image.url, 240)}
+                alt=""
+                className="w-[96px] h-[72px] object-cover rounded-8 border border-gray-E5E5E6"
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {removed.length > 0 && (
+        <div>
+          <p className="text-12 text-gray-6C6A7D mb-6">
+            تصاویری که حذف می‌شوند ({removed.length})
+          </p>
+          <div className="flex flex-wrap gap-8">
+            {removed.map((image) => (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                key={image.id}
+                src={adminImageUrl(image.url, 240)}
+                alt=""
+                className="w-[96px] h-[72px] object-cover rounded-8 border-2 border-[#C62828] opacity-60"
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {proposal.main !== undefined && proposal.main !== null && (
+        <p className="text-12 text-gray-6C6A7D">میزبان تصویر اصلی را عوض کرده است.</p>
+      )}
+
+      {added.length === 0 && removed.length === 0 && proposal.main == null && (
+        <p className="text-12 text-gray-9B9BAA">فقط ترتیب تصاویر تغییر کرده است.</p>
+      )}
+    </div>
+  );
+}
 
 function fmt(v: unknown): string {
   if (v === null || v === undefined || v === "") return "—";
@@ -97,6 +169,15 @@ export default function PendingChangesCard({
         {steps.map((stepKey) => {
           const payload = pendingChanges[stepKey] ?? {};
           const entries = Object.entries(payload).filter(([k]) => k !== "step" && k !== "scopeIds");
+          if (stepKey === "gallery") {
+            return (
+              <div key={stepKey}>
+                <h4 className="text-13 font-m text-black mb-8">{STEP_LABEL[stepKey]}</h4>
+                <GalleryDiff proposal={payload} liveImages={residence.images ?? []} />
+              </div>
+            );
+          }
+
           return (
             <div key={stepKey}>
               <h4 className="text-13 font-m text-black mb-8">{STEP_LABEL[stepKey] ?? stepKey}</h4>
